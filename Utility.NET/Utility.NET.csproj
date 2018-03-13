@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <RootNamespace>JLR.Utility.NET</RootNamespace>
+    <AssemblyName>JLR.Utility.NET</AssemblyName>
+    <Authors>Jonathan Ruisi</Authors>
+    <Company />
+    <Product />
+    <PackageLicenseUrl>https://github.com/jonathanruisi/Utility.NET/blob/master/LICENSE</PackageLicenseUrl>
+    <PackageProjectUrl>https://github.com/jonathanruisi/Utility.NET</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/jonathanruisi/Utility.NET</RepositoryUrl>
+    <RepositoryType>GIT</RepositoryType>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <DocumentationFile></DocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="JetBrains.Annotations" Version="11.1.0" />
+  </ItemGroup>
+
+</Project>
