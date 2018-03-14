@@ -50,7 +50,13 @@
     <Reference Include="PresentationFramework" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controls\ColorSetCreator.xaml.cs">
+      <DependentUpon>ColorSetCreator.xaml</DependentUpon>
+    </Compile>
     <Compile Include="Controls\MediaSlider.cs" />
+    <Compile Include="Elements\GlyphPixelGrid.cs" />
+    <Compile Include="Elements\LineGraph.cs" />
+    <Compile Include="Elements\PixelGrid.cs" />
     <Compile Include="Elements\TickBarAdvanced.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">
@@ -66,6 +72,8 @@
       <DependentUpon>Settings.settings</DependentUpon>
       <DesignTimeSharedInput>True</DesignTimeSharedInput>
     </Compile>
+    <Compile Include="ValidationRules\NumericTextRule.cs" />
+    <Compile Include="ValidationRules\TextLengthRule.cs" />
     <Compile Include="ValueConverters.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
@@ -85,6 +93,10 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <Page Include="Controls\ColorSetCreator.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <Page Include="Themes\Generic.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>

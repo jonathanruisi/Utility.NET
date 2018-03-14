@@ -1,0 +1,364 @@
+﻿<UserControl x:Class="JLR.Utility.WPF.Controls.ColorSetCreator"
+			 xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:controls="clr-namespace:JLR.Utility.WPF"
+			 DataContext="{Binding RelativeSource={RelativeSource Self}}"
+			 mc:Ignorable="d" d:DesignHeight="300" d:DesignWidth="400"
+			 MinHeight="300" MinWidth="400"
+			 SnapsToDevicePixels="True" Loaded="UserControl_Loaded">
+	<UserControl.Resources>
+		<controls:ColorSpaceToSolidColorBrushConverter x:Key="ColorSpaceConverter"/>
+
+		<Style x:Key="ColorSetItemContainerStyle" TargetType="ListBoxItem">
+			<Setter Property="Template">
+				<Setter.Value>
+					<ControlTemplate TargetType="ListBoxItem">
+						<Border Name="ColorSetItemBorder" Width="25" Height="25" Margin="3"
+								BorderBrush="Black" BorderThickness="1">
+							<Rectangle Stretch="Fill"
+									   Fill="{Binding Converter={StaticResource ColorSpaceConverter}}"/>
+						</Border>
+
+						<ControlTemplate.Triggers>
+							<Trigger Property="IsMouseOver" Value="True">
+								<Setter TargetName="ColorSetItemBorder" Property="BorderThickness" Value="3"/>
+							</Trigger>
+							<Trigger Property="IsSelected" Value="True">
+								<Setter TargetName="ColorSetItemBorder" Property="BorderThickness" Value="3"/>
+								<Setter TargetName="ColorSetItemBorder" Property="CornerRadius" Value="3"/>
+							</Trigger>
+						</ControlTemplate.Triggers>
+					</ControlTemplate>
+				</Setter.Value>
+			</Setter>
+		</Style>
+	</UserControl.Resources>
+
+	<Grid>
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="*" MinWidth="150"/>
+			<ColumnDefinition Width="Auto"/>
+			<ColumnDefinition Width="*" MinWidth="150"/>
+		</Grid.ColumnDefinitions>
+
+		<GridSplitter Grid.Column="1" Width="5" Background="{Binding Midground}"
+					  VerticalAlignment="Stretch"
+					  ResizeBehavior="PreviousAndNext" ResizeDirection="Columns"/>
+
+		<!-- Left Side -->
+		<Grid Grid.Column="0">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*"/>
+				<RowDefinition Height="Auto"/>
+			</Grid.RowDefinitions>
+
+			<!-- Top-Left Controls -->
+			<Grid Grid.Row="0" Background="{Binding Midground}">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<CheckBox Name="CheckBoxRandom" Grid.Column="0" Margin="3"
+						  HorizontalAlignment="Stretch" HorizontalContentAlignment="Stretch"
+						  VerticalAlignment="Center" VerticalContentAlignment="Center"
+						  Foreground="{Binding Accent}"
+						  Checked="CheckBoxRandom_CheckedChanged"
+						  Unchecked="CheckBoxRandom_CheckedChanged">
+					Random
+				</CheckBox>
+				<ComboBox Name="ComboBoxColorSpace" Grid.Column="1" Margin="3"
+						  HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						  VerticalAlignment="Center" VerticalContentAlignment="Center"
+						  SelectionChanged="ComboBoxColorSpace_SelectionChanged"/>
+			</Grid>
+
+			<!-- Middle-Left Controls -->
+			<Grid Grid.Row="1">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="2"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="2"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="2"/>
+					<RowDefinition Height="Auto"/>
+					<RowDefinition Height="Auto"/>
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="Auto"/>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="55"/>
+				</Grid.ColumnDefinitions>
+
+				<!-- Dividers -->
+				<Rectangle Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="4" Stretch="Fill" Fill="{Binding Midground}"/>
+				<Rectangle Grid.Row="5" Grid.Column="0" Grid.ColumnSpan="4" Stretch="Fill" Fill="{Binding Midground}"/>
+				<Rectangle Grid.Row="8" Grid.Column="0" Grid.ColumnSpan="4" Stretch="Fill" Fill="{Binding Midground}"/>
+
+				<!-- Property Labels -->
+				<TextBlock Name="TextBlockLabelA1" Grid.Row="0" Grid.Column="0" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					A1
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelA2" Grid.Row="1" Grid.Column="0" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					A2
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelB1" Grid.Row="3" Grid.Column="0" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					B1
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelB2" Grid.Row="4" Grid.Column="0" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					B2
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelC1" Grid.Row="6" Grid.Column="0" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					C1
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelC2" Grid.Row="7" Grid.Column="0" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					C2
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelD1" Grid.Row="9" Grid.Column="0" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					D1
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelD2" Grid.Row="10" Grid.Column="0" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					D2
+				</TextBlock>
+
+				<!-- Property Min/Max Labels -->
+				<TextBlock Name="TextBlockLabelAMin" Grid.Row="0" Grid.Column="1" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					(Min)
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelAMax" Grid.Row="1" Grid.Column="1" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					(Max)
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelBMin" Grid.Row="3" Grid.Column="1" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					(Min)
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelBMax" Grid.Row="4" Grid.Column="1" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					(Max)
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelCMin" Grid.Row="6" Grid.Column="1" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					(Min)
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelCMax" Grid.Row="7" Grid.Column="1" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					(Max)
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelDMin" Grid.Row="9" Grid.Column="1" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					(Min)
+				</TextBlock>
+				<TextBlock Name="TextBlockLabelDMax" Grid.Row="10" Grid.Column="1" Margin="3"
+						   HorizontalAlignment="Right" VerticalAlignment="Center">
+					(Max)
+				</TextBlock>
+
+				<!-- Property Values -->
+				<TextBox Name="TextBoxValueA1" Grid.Row="0" Grid.Column="3" Margin="3"
+						 BorderThickness="2" BorderBrush="{Binding Midground}"
+						 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						 VerticalAlignment="Center" VerticalContentAlignment="Center">
+					A1
+				</TextBox>
+				<TextBox Name="TextBoxValueA2" Grid.Row="1" Grid.Column="3" Margin="3"
+						 BorderThickness="2" BorderBrush="{Binding Midground}"
+						 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						 VerticalAlignment="Center" VerticalContentAlignment="Center">
+					A2
+				</TextBox>
+				<TextBox Name="TextBoxValueB1" Grid.Row="3" Grid.Column="3" Margin="3"
+						 BorderThickness="2" BorderBrush="{Binding Midground}"
+						 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						 VerticalAlignment="Center" VerticalContentAlignment="Center">
+					B1
+				</TextBox>
+				<TextBox Name="TextBoxValueB2" Grid.Row="4" Grid.Column="3" Margin="3"
+						 BorderThickness="2" BorderBrush="{Binding Midground}"
+						 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						 VerticalAlignment="Center" VerticalContentAlignment="Center">
+					B2
+				</TextBox>
+				<TextBox Name="TextBoxValueC1" Grid.Row="6" Grid.Column="3" Margin="3"
+						 BorderThickness="2" BorderBrush="{Binding Midground}"
+						 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						 VerticalAlignment="Center" VerticalContentAlignment="Center">
+					C1
+				</TextBox>
+				<TextBox Name="TextBoxValueC2" Grid.Row="7" Grid.Column="3" Margin="3"
+						 BorderThickness="2" BorderBrush="{Binding Midground}"
+						 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						 VerticalAlignment="Center" VerticalContentAlignment="Center">
+					C2
+				</TextBox>
+				<TextBox Name="TextBoxValueD1" Grid.Row="9" Grid.Column="3" Margin="3"
+						 BorderThickness="2" BorderBrush="{Binding Midground}"
+						 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						 VerticalAlignment="Center" VerticalContentAlignment="Center">
+					D1
+				</TextBox>
+				<TextBox Name="TextBoxValueD2" Grid.Row="10" Grid.Column="3" Margin="3"
+						 BorderThickness="2" BorderBrush="{Binding Midground}"
+						 HorizontalAlignment="Stretch" HorizontalContentAlignment="Left"
+						 VerticalAlignment="Center" VerticalContentAlignment="Center">
+					D2
+				</TextBox>
+
+				<!-- Sliders -->
+				<Slider Name="SliderA1" Grid.Row="0" Grid.Column="2" Margin="3" Foreground="{Binding Foreground}"
+						Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.1"
+						TickFrequency="0.1" TickPlacement="BottomRight" ValueChanged="SliderA1_ValueChanged"/>
+				<Slider Name="SliderA2" Grid.Row="1" Grid.Column="2" Margin="3" Foreground="{Binding Foreground}"
+						Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.1"
+						TickFrequency="0.1" TickPlacement="BottomRight" ValueChanged="SliderA2_ValueChanged"/>
+				<Slider Name="SliderB1" Grid.Row="3" Grid.Column="2" Margin="3" Foreground="{Binding Foreground}"
+						Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.1"
+						TickFrequency="0.1" TickPlacement="BottomRight" ValueChanged="SliderB1_ValueChanged"/>
+				<Slider Name="SliderB2" Grid.Row="4" Grid.Column="2" Margin="3" Foreground="{Binding Foreground}"
+						Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.1"
+						TickFrequency="0.1" TickPlacement="BottomRight" ValueChanged="SliderB2_ValueChanged"/>
+				<Slider Name="SliderC1" Grid.Row="6" Grid.Column="2" Margin="3" Foreground="{Binding Foreground}"
+						Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.1"
+						TickFrequency="0.1" TickPlacement="BottomRight" ValueChanged="SliderC1_ValueChanged"/>
+				<Slider Name="SliderC2" Grid.Row="7" Grid.Column="2" Margin="3" Foreground="{Binding Foreground}"
+						Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.1"
+						TickFrequency="0.1" TickPlacement="BottomRight" ValueChanged="SliderC2_ValueChanged"/>
+				<Slider Name="SliderD1" Grid.Row="9" Grid.Column="2" Margin="3" Foreground="{Binding Foreground}"
+						Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.1"
+						TickFrequency="0.1" TickPlacement="BottomRight" ValueChanged="SliderD1_ValueChanged"/>
+				<Slider Name="SliderD2" Grid.Row="10" Grid.Column="2" Margin="3" Foreground="{Binding Foreground}"
+						Minimum="0.0" Maximum="1.0" SmallChange="0.01" LargeChange="0.1"
+						TickFrequency="0.1" TickPlacement="BottomRight" ValueChanged="SliderD2_ValueChanged"/>
+			</Grid>
+
+			<!-- Bottom-Left Controls -->
+			<Grid Grid.Row="2" Background="{Binding Midground}">
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="1.5*"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<CheckBox Name="CheckBoxIncrement" Grid.Column="0" Margin="3" Foreground="{Binding Accent}"
+						  HorizontalAlignment="Left" HorizontalContentAlignment="Left"
+						  VerticalAlignment="Center" VerticalContentAlignment="Center"
+						  FontFamily="Lucida Console" FontSize="11"
+						  Checked="CheckBoxIncrement_CheckedChanged" Unchecked="CheckBoxIncrement_CheckedChanged">
+					<TextBlock TextWrapping="Wrap" TextAlignment="Center">Random Values Snap To Ticks</TextBlock>
+				</CheckBox>
+
+				<Button Name="ButtonRandomize" Grid.Column="1" Click="ButtonRandomize_Click">Randomize</Button>
+			</Grid>
+		</Grid>
+
+		<!-- Right Side -->
+		<Grid Grid.Column="2">
+			<Grid.RowDefinitions>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Name="ListBoxColorSetRow" Height="1.5*" MinHeight="75"/>
+				<RowDefinition Height="Auto"/>
+				<RowDefinition Height="*" MinHeight="75"/>
+			</Grid.RowDefinitions>
+
+			<GridSplitter Name="RightSideGridSplitter" Grid.Row="2" Height="5" Background="{Binding Midground}"
+						  HorizontalAlignment="Stretch"
+						  ResizeBehavior="PreviousAndNext" ResizeDirection="Rows"/>
+
+			<!-- Color Set Tools -->
+			<StackPanel Name="StackPanelColorSetTools" Grid.Row="0" Orientation="Horizontal" Background="{Binding Midground}">
+				<Button Name="ButtonAdd" Margin="3"
+						Background="Transparent" BorderThickness="2" BorderBrush="{Binding Accent}"
+						Click="ButtonAdd_Click">
+					<Grid Width="20" Height="20">
+						<Line X1="1" Y1="10" X2="19" Y2="10" Stroke="Green" StrokeThickness="3"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+						<Line X1="10" Y1="1" X2="10" Y2="19" Stroke="Green" StrokeThickness="3"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+					</Grid>
+				</Button>
+
+				<Button Name="ButtonRemove" Margin="3"
+						Background="Transparent" BorderThickness="2" BorderBrush="{Binding Accent}"
+						Click="ButtonRemove_Click">
+					<Grid Width="20" Height="20">
+						<Line X1="1" Y1="1" X2="19" Y2="19" Stroke="Red" StrokeThickness="3"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+						<Line X1="19" Y1="1" X2="1" Y2="19" Stroke="Red" StrokeThickness="3"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+					</Grid>
+				</Button>
+
+				<Button Name="ButtonMoveUp" Margin="3"
+						Background="Transparent" BorderThickness="2" BorderBrush="{Binding Accent}"
+						Click="ButtonMoveUp_Click">
+					<Grid Width="20" Height="20">
+						<Line X1="10" Y1="1" X2="10" Y2="19" Stroke="RoyalBlue" StrokeThickness="2"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+						<Line X1="5" Y1="7.5" X2="10" Y2="1" Stroke="RoyalBlue" StrokeThickness="2"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+						<Line X1="15" Y1="7.5" X2="10" Y2="1" Stroke="RoyalBlue" StrokeThickness="2"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+					</Grid>
+				</Button>
+
+				<Button Name="ButtonMoveDown" Margin="3"
+						Background="Transparent" BorderThickness="2" BorderBrush="{Binding Accent}"
+						Click="ButtonMoveDown_Click">
+					<Grid Width="20" Height="20">
+						<Line X1="10" Y1="1" X2="10" Y2="19" Stroke="RoyalBlue" StrokeThickness="2"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+						<Line X1="5" Y1="12.5" X2="10" Y2="19" Stroke="RoyalBlue" StrokeThickness="2"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+						<Line X1="15" Y1="12.5" X2="10" Y2="19" Stroke="RoyalBlue" StrokeThickness="2"
+							  StrokeStartLineCap="Round" StrokeEndLineCap="Round"/>
+					</Grid>
+				</Button>
+			</StackPanel>
+
+			<!-- Color Set List Box -->
+			<ListBox Name="ListBoxColorSet" Grid.Row="1" SelectionMode="Extended"
+					 ItemContainerStyle="{StaticResource ColorSetItemContainerStyle}"
+					 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+					 SelectionChanged="ListBoxColorSet_SelectionChanged">
+				<ListBox.ItemsPanel>
+					<ItemsPanelTemplate>
+						<WrapPanel Orientation="Horizontal"/>
+					</ItemsPanelTemplate>
+				</ListBox.ItemsPanel>
+			</ListBox>
+
+			<!-- Current Color Rectangles -->
+			<Grid Grid.Row="3">
+				<Grid.RowDefinitions>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="0.5*"/>
+				</Grid.RowDefinitions>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*"/>
+					<ColumnDefinition Width="*"/>
+				</Grid.ColumnDefinitions>
+
+				<Rectangle Name="RectangleCurrentColor1" Grid.Row="0" Grid.Column="0" Stretch="Fill" StrokeThickness="0"/>
+				<Rectangle Name="RectangleCurrentColor2" Grid.Row="0" Grid.Column="1" Stretch="Fill" StrokeThickness="0"/>
+				<Rectangle Name="RectangleRandomColor1" Grid.Row="1" Grid.Column="0" Stretch="Fill" StrokeThickness="0"/>
+				<Rectangle Name="RectangleRandomColor2" Grid.Row="1" Grid.Column="1" Stretch="Fill" StrokeThickness="0"/>
+			</Grid>
+		</Grid>
+	</Grid>
+</UserControl>
