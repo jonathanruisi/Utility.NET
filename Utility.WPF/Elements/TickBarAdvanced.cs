@@ -182,7 +182,7 @@ namespace JLR.Utility.WPF.Elements
 			"OriginTickThickness",
 			typeof(double),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(2.0, FrameworkPropertyMetadataOptions.AffectsRender));
+			new FrameworkPropertyMetadata(2.0, FrameworkPropertyMetadataOptions.AffectsRender, OnDependencyPropertyChanged));
 
 		public double MajorTickThickness
 		{
@@ -194,7 +194,7 @@ namespace JLR.Utility.WPF.Elements
 			"MajorTickThickness",
 			typeof(double),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender));
+			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender, OnDependencyPropertyChanged));
 
 		public double MinorTickThickness
 		{
@@ -206,7 +206,7 @@ namespace JLR.Utility.WPF.Elements
 			"MinorTickThickness",
 			typeof(double),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender));
+			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender, OnDependencyPropertyChanged));
 		#endregion
 
 		#region Brush
@@ -228,7 +228,10 @@ namespace JLR.Utility.WPF.Elements
 			"OriginTickBrush",
 			typeof(Brush),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(Brushes.Black, FrameworkPropertyMetadataOptions.AffectsRender));
+			new FrameworkPropertyMetadata(
+				Brushes.Black,
+				FrameworkPropertyMetadataOptions.AffectsRender,
+				OnDependencyPropertyChanged));
 
 		public Brush MajorTickBrush
 		{
@@ -240,7 +243,10 @@ namespace JLR.Utility.WPF.Elements
 			"MajorTickBrush",
 			typeof(Brush),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(Brushes.Black, FrameworkPropertyMetadataOptions.AffectsRender));
+			new FrameworkPropertyMetadata(
+				Brushes.Black,
+				FrameworkPropertyMetadataOptions.AffectsRender,
+				OnDependencyPropertyChanged));
 
 		public Brush MinorTickBrush
 		{
@@ -252,7 +258,10 @@ namespace JLR.Utility.WPF.Elements
 			"MinorTickBrush",
 			typeof(Brush),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(Brushes.DimGray, FrameworkPropertyMetadataOptions.AffectsRender));
+			new FrameworkPropertyMetadata(
+				Brushes.DimGray,
+				FrameworkPropertyMetadataOptions.AffectsRender,
+				OnDependencyPropertyChanged));
 		#endregion
 		#endregion
 
@@ -429,7 +438,8 @@ namespace JLR.Utility.WPF.Elements
 		{
 			if (!(d is TickBarAdvanced tickBar)) return;
 
-			if (e.Property == MajorTickBrushProperty || e.Property == MinorTickBrushProperty ||
+			if (e.Property == OriginTickBrushProperty || e.Property == MajorTickBrushProperty ||
+				e.Property == MinorTickBrushProperty || e.Property == OriginTickThicknessProperty ||
 				e.Property == MajorTickThicknessProperty || e.Property == MinorTickThicknessProperty)
 			{
 				tickBar.UpdatePens();

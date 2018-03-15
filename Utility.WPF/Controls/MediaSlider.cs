@@ -197,6 +197,42 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Top, OnAlignmentAndSizingPropertyChanged));
 
+		public Position SelectionRangeHighlightAlignment
+		{
+			get => (Position)GetValue(SelectionRangeHighlightAlignmentProperty);
+			set => SetValue(SelectionRangeHighlightAlignmentProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectionRangeHighlightAlignmentProperty = DependencyProperty.Register(
+			"SelectionRangeHighlightAlignment",
+			typeof(Position),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Middle, OnAlignmentAndSizingPropertyChanged));
+
+		public GridLength ZoomBarSize
+		{
+			get => (GridLength)GetValue(ZoomBarSizeProperty);
+			set => SetValue(ZoomBarSizeProperty, value);
+		}
+
+		public static readonly DependencyProperty ZoomBarSizeProperty = DependencyProperty.Register(
+			"ZoomBarSize",
+			typeof(GridLength),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+
+		public GridLength InnerGapSize
+		{
+			get => (GridLength)GetValue(InnerGapSizeProperty);
+			set => SetValue(InnerGapSizeProperty, value);
+		}
+
+		public static readonly DependencyProperty InnerGapSizeProperty = DependencyProperty.Register(
+			"InnerGapSize",
+			typeof(GridLength),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+
 		public double PositionRelativeSize
 		{
 			get => (double)GetValue(PositionRelativeSizeProperty);
@@ -491,7 +527,8 @@ namespace JLR.Utility.WPF.Controls
 				mediaSlider.ArrangePositionElement();
 			}
 			else if (e.Property == SelectionRangeRelativeSizeProperty ||
-				e.Property == SelectionRangeHighlightRelativeSizeProperty || e.Property == SelectionRangeAlignmentProperty)
+				e.Property == SelectionRangeHighlightRelativeSizeProperty || e.Property == SelectionRangeAlignmentProperty ||
+				e.Property == SelectionRangeHighlightAlignmentProperty)
 			{
 				mediaSlider.ArrangeSelectionElements();
 			}
@@ -828,7 +865,7 @@ namespace JLR.Utility.WPF.Controls
 		private void ArrangeSelectionElements()
 		{
 			var newRangeHeight     = SelectionRangeRelativeSize * _mainPanel.ActualHeight;
-			var newHighlightHeight = SelectionRangeHighlightRelativeSize * _mainPanel.ActualHeight;
+			var newHighlightHeight = SelectionRangeHighlightRelativeSize * newRangeHeight;
 			_selectionStart.Height = newRangeHeight;
 			_selectionEnd.Height   = newRangeHeight;
 			_selectionRange.Height = newHighlightHeight;
@@ -839,7 +876,6 @@ namespace JLR.Utility.WPF.Controls
 				case JLR.Utility.NET.Position.Left:
 					Canvas.SetTop(_selectionStart, 0);
 					Canvas.SetTop(_selectionEnd,   0);
-					Canvas.SetTop(_selectionRange, 0);
 					break;
 				case JLR.Utility.NET.Position.Middle:
 				case JLR.Utility.NET.Position.Center:
@@ -852,6 +888,26 @@ namespace JLR.Utility.WPF.Controls
 					Canvas.SetTop(_selectionStart, _mainPanel.ActualHeight - newRangeHeight);
 					Canvas.SetTop(_selectionEnd,   _mainPanel.ActualHeight - newRangeHeight);
 					Canvas.SetTop(_selectionRange, _mainPanel.ActualHeight - newHighlightHeight);
+					break;
+				default:
+					break;
+			}
+
+			switch (SelectionRangeHighlightAlignment)
+			{
+				case JLR.Utility.NET.Position.Top:
+				case JLR.Utility.NET.Position.Left:
+					Canvas.SetTop(_selectionRange, Canvas.GetTop(_selectionStart));
+					break;
+				case JLR.Utility.NET.Position.Middle:
+				case JLR.Utility.NET.Position.Center:
+					Canvas.SetTop(_selectionRange, Canvas.GetTop(_selectionStart) + (newRangeHeight - newHighlightHeight) / 2);
+					break;
+				case JLR.Utility.NET.Position.Bottom:
+				case JLR.Utility.NET.Position.Right:
+					Canvas.SetTop(_selectionRange, Canvas.GetTop(_selectionStart) + (newRangeHeight - newHighlightHeight));
+					break;
+				default:
 					break;
 			}
 		}
@@ -963,13 +1019,19 @@ namespace JLR.Utility.WPF.Controls
 			pos.X -= _position.ActualWidth / 2;
 			var dist = Math.Abs(pos.X);
 
-			if (pos.X < 0 && dist > _snapDistance.visual / 2 && Position - _snapDistance.temporal > VisibleRangeStart)
+			if (pos.X < 0 && dist > _snapDistance.visual / 2)
 			{
-				Position -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				if (Position - _snapDistance.temporal > VisibleRangeStart)
+					Position -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				else
+					Position = VisibleRangeStart;
 			}
-			else if (pos.X > 0 && dist > _snapDistance.visual / 2 && Position + _snapDistance.temporal < VisibleRangeEnd)
+			else if (pos.X > 0 && dist > _snapDistance.visual / 2)
 			{
-				Position += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				if (Position + _snapDistance.temporal < VisibleRangeEnd)
+					Position += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				else
+					Position = VisibleRangeEnd;
 			}
 		}
 
@@ -1025,13 +1087,19 @@ namespace JLR.Utility.WPF.Controls
 			pos.X -= _selectionStart.ActualWidth / 2;
 			var dist = Math.Abs(pos.X);
 
-			if (pos.X < 0 && dist > _snapDistance.visual / 2 && SelectionStart - _snapDistance.temporal > VisibleRangeStart)
+			if (pos.X < 0 && dist > _snapDistance.visual / 2)
 			{
-				SelectionStart -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				if (SelectionStart - _snapDistance.temporal > VisibleRangeStart)
+					SelectionStart -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				else
+					SelectionStart = VisibleRangeStart;
 			}
-			else if (pos.X > 0 && dist > _snapDistance.visual / 2 && SelectionStart + _snapDistance.temporal < VisibleRangeEnd)
+			else if (pos.X > 0 && dist > _snapDistance.visual / 2)
 			{
-				SelectionStart += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				if (SelectionStart + _snapDistance.temporal < VisibleRangeEnd)
+					SelectionStart += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				else
+					SelectionStart = VisibleRangeEnd;
 			}
 		}
 
@@ -1087,13 +1155,19 @@ namespace JLR.Utility.WPF.Controls
 			pos.X -= _selectionEnd.ActualWidth / 2;
 			var dist = Math.Abs(pos.X);
 
-			if (pos.X < 0 && dist > _snapDistance.visual / 2 && SelectionEnd - _snapDistance.temporal > VisibleRangeStart)
+			if (pos.X < 0 && dist > _snapDistance.visual / 2)
 			{
-				SelectionEnd -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				if (SelectionEnd - _snapDistance.temporal > VisibleRangeStart)
+					SelectionEnd -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				else
+					SelectionEnd = VisibleRangeStart;
 			}
-			else if (pos.X > 0 && dist > _snapDistance.visual / 2 && SelectionEnd + _snapDistance.temporal < VisibleRangeEnd)
+			else if (pos.X > 0 && dist > _snapDistance.visual / 2)
 			{
-				SelectionEnd += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				if (SelectionEnd + _snapDistance.temporal < VisibleRangeEnd)
+					SelectionEnd += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
+				else
+					SelectionEnd = VisibleRangeEnd;
 			}
 		}
 
@@ -1125,8 +1199,8 @@ namespace JLR.Utility.WPF.Controls
 				VisualStateManager.GoToElementState(visibleRangeStart, "MouseLeftButtonDown", false);
 			}
 
-			_isMouseLeftButtonDown = true;
 			_visibleRangeStart.CaptureMouse();
+			_isMouseLeftButtonDown = true;
 		}
 
 		private void VisibleRangeStart_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -1139,13 +1213,13 @@ namespace JLR.Utility.WPF.Controls
 					false);
 			}
 
-			_isMouseLeftButtonDown = false;
 			_visibleRangeStart.ReleaseMouseCapture();
+			_isMouseLeftButtonDown = false;
 		}
 
 		private void VisibleRangeStart_MouseMove(object sender, MouseEventArgs e)
 		{
-			if (!_isMouseLeftButtonDown) return;
+			if (!_isMouseLeftButtonDown || !_visibleRangeStart.IsMouseCaptureWithin) return;
 
 			var pos   = e.GetPosition(_visibleRangeStart);
 			var delta = (decimal)pos.X * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
@@ -1185,8 +1259,8 @@ namespace JLR.Utility.WPF.Controls
 				VisualStateManager.GoToElementState(visibleRangeEnd, "MouseLeftButtonDown", false);
 			}
 
-			_isMouseLeftButtonDown = true;
 			_visibleRangeEnd.CaptureMouse();
+			_isMouseLeftButtonDown = true;
 		}
 
 		private void VisibleRangeEnd_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -1196,13 +1270,13 @@ namespace JLR.Utility.WPF.Controls
 				VisualStateManager.GoToElementState(visibleRangeEnd, _visibleRangeEnd.IsMouseOver ? "MouseOver" : "Normal", false);
 			}
 
-			_isMouseLeftButtonDown = false;
 			_visibleRangeEnd.ReleaseMouseCapture();
+			_isMouseLeftButtonDown = false;
 		}
 
 		private void VisibleRangeEnd_MouseMove(object sender, MouseEventArgs e)
 		{
-			if (!_isMouseLeftButtonDown) return;
+			if (!_isMouseLeftButtonDown || !_visibleRangeEnd.IsMouseCaptureWithin) return;
 
 			var pos   = e.GetPosition(_visibleRangeEnd);
 			var delta = (decimal)pos.X * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
@@ -1243,7 +1317,13 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_visibleRange.CaptureMouse();
-			_prevMouseCoord        = e.GetPosition(_visibleRange).X;
+			_prevMouseCoord = e.GetPosition(_visibleRange).X;
+			if (e.ClickCount >= 2)
+			{
+				VisibleRangeStart = Minimum;
+				VisibleRangeEnd   = Maximum;
+			}
+
 			_isMouseLeftButtonDown = true;
 		}
 
@@ -1260,7 +1340,7 @@ namespace JLR.Utility.WPF.Controls
 
 		private void VisibleRange_MouseMove(object sender, MouseEventArgs e)
 		{
-			if (!_isMouseLeftButtonDown) return;
+			if (!_isMouseLeftButtonDown || !_visibleRange.IsMouseCaptureWithin) return;
 
 			var delta = (decimal)(e.GetPosition(_visibleRange).X - _prevMouseCoord) * (Maximum - Minimum) /
 				(decimal)_zoomPanel.ActualWidth;
