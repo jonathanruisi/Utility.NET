@@ -130,28 +130,31 @@ namespace Utility.WPF.Tests
 					for (var num = nMin; num <= nMax; num++)
 					{
 						timer.Start();
-						var result = MathHelper.Factorize(num);
+						var result = MathHelper.PrimeFactors(num);
 						timer.Stop();
 
 						str.Clear();
 						str.Append('{');
-						for (var i = 0; i < result.Length; i++)
+						for (var i = 0; i < result.Count; i++)
 						{
 							if (i > 0)
 								str.Append(',');
-							str.Append(result[i]);
+							str.Append($"{result[i].factor}^{result[i].power}");
 						}
 
 						str.Append('}');
-						file.WriteLine("{0,-20:D}{1,-20:0.0000}{2,-30}{3}", num, timer.Elapsed.Ticks / 10000M, str, result.Length);
+						file.WriteLine("{0,-20:D}{1,-20:0.0000}{2,-30}{3}", num, timer.Elapsed.Ticks / 10000M, str, result.Count);
 						totalTime = totalTime.Add(timer.Elapsed);
 						timer.Reset();
 					}
 
+					file.WriteLine($"Total computation time: {totalTime.TotalMilliseconds:0.###} ms\n");
+					file.WriteLine($"Total number of primes in cache: {MathHelper._primes.Count}");
+
 					file.Flush();
 					file.Close();
 
-					MessageBox.Show($"Done!\nTotal computation time: {totalTime.TotalMilliseconds:0.###} ms");
+					MessageBox.Show($"Total computation time: {totalTime.TotalMilliseconds:0.###} ms\n");
 					Process.Start(filePath);
 					break;
 				case "2":

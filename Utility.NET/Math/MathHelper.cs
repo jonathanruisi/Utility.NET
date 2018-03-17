@@ -13,6 +13,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -22,13 +23,41 @@ namespace JLR.Utility.NET.Math
 	public static class MathHelper
 	{
 		#region Constants
-		private static readonly double Rad5          = System.Math.Sqrt(5);
-		private const           int    MaxPrimeCache = 1024;
+		private static readonly double Rad5 = System.Math.Sqrt(5);
 		#endregion
 
 		#region Fields
-		private static uint   _highestSpf = 0;
-		private static uint[] _spf        = new uint[MaxPrimeCache];
+		private static bool _isPrimeCacheEnabled;
+		private static long _largestPrime;
+		public static HashSet<long> _primes;
+		#endregion
+
+		#region Properties
+		public static bool IsPrimeCacheEnabled
+		{
+			get => _isPrimeCacheEnabled;
+			set
+			{
+				_isPrimeCacheEnabled = value;
+				if (value && _primes == null)
+				{
+					_primes = new HashSet<long>() { 2, 3 };
+					_largestPrime = 3;
+				}
+				else
+				{
+					_primes = null;
+					_largestPrime = 0;
+				}
+			}
+		}
+		#endregion
+
+		#region Constructor
+		static MathHelper()
+		{
+			IsPrimeCacheEnabled = true;
+		}
 		#endregion
 
 		#region Public Methods
@@ -172,94 +201,50 @@ namespace JLR.Utility.NET.Math
 			return values.Aggregate((a, b) => a == 0 && b == 0 ? 0 : (System.Math.Abs(a) / Gcd(a, b)) * System.Math.Abs(b));
 		}
 
-		/// <summary>
-		/// Computes the prime factorization of an integer.
-		/// The Sieve of Eratosthenes algorithm is used for values less than MaxPrimeCache,
-		/// in which the smallest prime factor for each is memoized.
-		/// For values >= MaxPrimeCache, trial division is used.
-		/// </summary>
-		/// <param name="value">The value to factorize</param>
-		/// <returns>An array containing the prime factors of <see cref="value"/></returns>
-		public static long[] Factorize(long value)
+		public static List<(long factor, byte power)> PrimeFactors(long value)
 		{
-			value = System.Math.Abs(value);
-			var result = new List<long>();
+			var result = new List<(long, byte)>();
+			if (value < 2)
+				return result;
 
-			if (value > 0 && value < MaxPrimeCache)
+			byte power = 0;
+			while (value % 2 == 0)
 			{
-				if (value > _highestSpf)
-					Sieve((uint)value);
-
-				while (value != 1)
-				{
-					if (!result.Contains(_spf[value]))
-						result.Add(_spf[value]);
-					value /= _spf[value];
-				}
-			}
-			else if (value > 0)
-			{
-				var exponent = 0;
-
-				while (value % 2 == 0)
-				{
-					exponent++;
-					value >>= 1;
-				}
-
-				if (exponent > 0)
-					result.Add(2);
-
-				for (long i = 3; i * i <= value; i += 2)
-				{
-					exponent = 0;
-					while (value % i == 0)
-					{
-						exponent++;
-						value /= i;
-					}
-
-					if (exponent > 0)
-						result.Add(i);
-				}
-
-				if (value > 2)
-					result.Add(value);
+				power++;
+				value >>= 1;
 			}
 
-			return result.ToArray();
+			if (power > 0)
+				result.Add((2, power));
+
+			for (long i = 3; i * i <= value; i += 2)
+			{
+				power = 0;
+				while (value % i == 0)
+				{
+					power++;
+					value /= i;
+				}
+
+				if (power <= 0) continue;
+				result.Add((i, power));
+				if (!IsPrimeCacheEnabled || i <= _largestPrime) continue;
+				_primes.Add(i);
+				_largestPrime = i;
+			}
+
+			if (value <= 2) return result;
+			result.Add((value, 1));
+			if (!IsPrimeCacheEnabled || _primes.Contains(value)) return result;
+			_primes.Add(value);
+			_largestPrime = value;
+
+			return result;
 		}
 		#endregion
 
 		#region Private Methods
-		private static void Sieve(uint nMax)
-		{
-			++_highestSpf;
-
-			for (var i = _highestSpf; i <= nMax; ++i)
-			{
-				_spf[i] = i;
-			}
-
-			for (var i = _highestSpf % 2 == 0 ? _highestSpf : _highestSpf + 1; i <= nMax; i += 2)
-			{
-				_spf[i] = 2;
-			}
-
-			for (var i = 3U; i * i <= nMax; ++i)
-			{
-				if (_spf[i] == i)
-				{
-					for (var j = i * i; j <= nMax; j += i)
-					{
-						if (_spf[j] == j)
-							_spf[j] = i;
-					}
-				}
-			}
-
-			_highestSpf = nMax;
-		}
+		
 		#endregion
 	}
 }
