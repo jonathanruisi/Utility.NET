@@ -1,6 +1,13 @@
-﻿using System.Windows;
+﻿using System;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
+
+using JLR.Utility.NET.Math;
 
 namespace Utility.WPF.Tests
 {
@@ -91,14 +98,91 @@ namespace Utility.WPF.Tests
 			MediaSliderTest.PositionChanged += MediaSliderTest_PositionChanged;
 		}
 
+		private void MediaSliderTest_PositionChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
+		{
+			
+		}
+
 		private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
 			
 		}
 
-		private void MediaSliderTest_PositionChanged(object sender, RoutedEventArgs e)
+		private void Button_Click(object sender, RoutedEventArgs e)
 		{
-			
+			if (!(sender is Button btn)) return;
+
+			switch (btn.Content)
+			{
+				case "1":
+					var nMin      = int.Parse(TextBoxD0.Text);
+					var nMax      = int.Parse(TextBoxD1.Text);
+					var timer     = new Stopwatch();
+					var str       = new StringBuilder();
+					var totalTime = new TimeSpan();
+
+					const string filePath = "C:\\Users\\Jonathan\\Desktop\\Results.txt";
+					if (File.Exists(filePath))
+						File.Delete(filePath);
+					var file = new StreamWriter(filePath);
+					file.WriteLine("{0,-20}{1,-20}{2,-30}{3}", "Number", "Time (ms)", "Factorization", "Prime Count");
+
+					for (var num = nMin; num <= nMax; num++)
+					{
+						timer.Start();
+						var result = MathHelper.Factorize(num);
+						timer.Stop();
+
+						str.Clear();
+						str.Append('{');
+						for (var i = 0; i < result.Length; i++)
+						{
+							if (i > 0)
+								str.Append(',');
+							str.Append(result[i]);
+						}
+
+						str.Append('}');
+						file.WriteLine("{0,-20:D}{1,-20:0.0000}{2,-30}{3}", num, timer.Elapsed.Ticks / 10000M, str, result.Length);
+						totalTime = totalTime.Add(timer.Elapsed);
+						timer.Reset();
+					}
+
+					file.Flush();
+					file.Close();
+
+					MessageBox.Show($"Done!\nTotal computation time: {totalTime.TotalMilliseconds:0.###} ms");
+					Process.Start(filePath);
+					break;
+				case "2":
+					break;
+				case "3":
+					break;
+				case "4":
+					break;
+				case "5":
+					break;
+				case "6":
+					break;
+				case "7":
+					break;
+				case "8":
+					break;
+				case "9":
+					break;
+				case "10":
+					break;
+				case "11":
+					break;
+				case "12":
+					break;
+				case "13":
+					break;
+				case "14":
+					break;
+				case "15":
+					break;
+			}
 		}
 	}
 }

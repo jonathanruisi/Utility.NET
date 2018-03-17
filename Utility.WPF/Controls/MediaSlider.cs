@@ -219,7 +219,8 @@ namespace JLR.Utility.WPF.Controls
 			"ZoomBarSize",
 			typeof(GridLength),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(null));
+			new FrameworkPropertyMetadata(new GridLength(1, GridUnitType.Star)),
+			IsGridLengthValid);
 
 		public GridLength InnerGapSize
 		{
@@ -231,7 +232,8 @@ namespace JLR.Utility.WPF.Controls
 			"InnerGapSize",
 			typeof(GridLength),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(null));
+			new FrameworkPropertyMetadata(new GridLength(1, GridUnitType.Star)),
+			IsGridLengthValid);
 
 		public double PositionRelativeSize
 		{
@@ -303,7 +305,7 @@ namespace JLR.Utility.WPF.Controls
 			"MinorTickRelativeSize",
 			typeof(double),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(0.333333));
+			new FrameworkPropertyMetadata(1.0));
 
 		public double OriginTickThickness
 		{
@@ -315,7 +317,7 @@ namespace JLR.Utility.WPF.Controls
 			"OriginTickThickness",
 			typeof(double),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(2.0));
+			new FrameworkPropertyMetadata(1.0));
 
 		public double MajorTickThickness
 		{
@@ -353,7 +355,7 @@ namespace JLR.Utility.WPF.Controls
 			"TickBarBackground",
 			typeof(Brush),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(Brushes.Transparent));
+			new FrameworkPropertyMetadata(null));
 
 		public Brush ZoomBarBackground
 		{
@@ -365,7 +367,7 @@ namespace JLR.Utility.WPF.Controls
 			"ZoomBarBackground",
 			typeof(Brush),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(Brushes.Transparent));
+			new FrameworkPropertyMetadata(null));
 
 		public Brush OriginTickBrush
 		{
@@ -377,7 +379,7 @@ namespace JLR.Utility.WPF.Controls
 			"OriginTickBrush",
 			typeof(Brush),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(Brushes.Black));
+			new FrameworkPropertyMetadata(null));
 
 		public Brush MajorTickBrush
 		{
@@ -389,7 +391,7 @@ namespace JLR.Utility.WPF.Controls
 			"MajorTickBrush",
 			typeof(Brush),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(Brushes.Black));
+			new FrameworkPropertyMetadata(null));
 
 		public Brush MinorTickBrush
 		{
@@ -401,12 +403,12 @@ namespace JLR.Utility.WPF.Controls
 			"MinorTickBrush",
 			typeof(Brush),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(Brushes.DimGray));
+			new FrameworkPropertyMetadata(null));
 		#endregion
 		#endregion
 
 		#region Events
-		public event RoutedEventHandler PositionChanged
+		public event RoutedPropertyChangedEventHandler<decimal> PositionChanged
 		{
 			add => AddHandler(PositionChangedEvent, value);
 			remove => RemoveHandler(PositionChangedEvent, value);
@@ -415,7 +417,19 @@ namespace JLR.Utility.WPF.Controls
 		public static readonly RoutedEvent PositionChangedEvent = EventManager.RegisterRoutedEvent(
 			"PositionChanged",
 			RoutingStrategy.Bubble,
-			typeof(RoutedEventHandler),
+			typeof(RoutedPropertyChangedEventHandler<decimal>),
+			typeof(MediaSlider));
+
+		public event RoutedPropertyChangedEventHandler<(decimal start, decimal end)?> SelectionChanged
+		{
+			add => AddHandler(SelectionChangedEvent, value);
+			remove => RemoveHandler(SelectionChangedEvent, value);
+		}
+
+		public static readonly RoutedEvent SelectionChangedEvent = EventManager.RegisterRoutedEvent(
+			"SelectionChanged",
+			RoutingStrategy.Bubble,
+			typeof(RoutedPropertyChangedEventHandler<(decimal start, decimal end)?>),
 			typeof(MediaSlider));
 		#endregion
 
@@ -488,12 +502,15 @@ namespace JLR.Utility.WPF.Controls
 			else if (e.Property == PositionProperty)
 			{
 				mediaSlider.UpdatePositionElement();
-				mediaSlider.RaiseEvent(new RoutedEventArgs(PositionChangedEvent, mediaSlider));
+				mediaSlider.RaiseEvent(
+					new RoutedPropertyChangedEventArgs<decimal>((decimal)e.OldValue, (decimal)e.NewValue, PositionChangedEvent));
 			}
 			else if (e.Property == SelectionStartProperty)
 			{
 				if (e.NewValue is decimal newValue && newValue > mediaSlider.SelectionEnd)
 					mediaSlider.SelectionEnd = newValue;
+				else if (e.NewValue == null)
+					mediaSlider.SelectionEnd = null;
 
 				mediaSlider.UpdateSelectionRangeElements();
 			}
@@ -501,6 +518,8 @@ namespace JLR.Utility.WPF.Controls
 			{
 				if (e.NewValue is decimal newValue && newValue < mediaSlider.SelectionStart)
 					mediaSlider.SelectionStart = newValue;
+				else if (e.NewValue == null)
+					mediaSlider.SelectionStart = null;
 
 				mediaSlider.UpdateSelectionRangeElements();
 			}
@@ -610,6 +629,16 @@ namespace JLR.Utility.WPF.Controls
 				return offset < mediaSlider.Maximum ? offset : mediaSlider.Maximum;
 
 			return visibleRangeEnd;
+		}
+
+		/// <summary>
+		/// Checks that a GridLength value is explicitly set as either a pixel value or relative size
+		/// </summary>
+		/// <param name="value">The GridLength to be validated</param>
+		/// <returns>True if valid, false if invalid</returns>
+		private static bool IsGridLengthValid(object value)
+		{
+			return value is GridLength gridLength && !gridLength.IsAuto;
 		}
 		#endregion
 

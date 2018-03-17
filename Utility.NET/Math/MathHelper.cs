@@ -12,15 +12,26 @@
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace JLR.Utility.NET.Math
 {
 	public static class MathHelper
 	{
 		#region Constants
-		private static readonly double Rad5 = System.Math.Sqrt(5);
+		private static readonly double Rad5          = System.Math.Sqrt(5);
+		private const           int    MaxPrimeCache = 1024;
 		#endregion
 
+		#region Fields
+		private static uint   _highestSpf = 0;
+		private static uint[] _spf        = new uint[MaxPrimeCache];
+		#endregion
+
+		#region Public Methods
 		/// <summary>
 		/// Returns the largest of the specified values
 		/// </summary>
@@ -98,8 +109,8 @@ namespace JLR.Utility.NET.Math
 		/// from a set of <paramref name="n"/> objects
 		/// without replacement and where order does not matter.
 		/// </summary>
-		/// <param name="n"></param>
-		/// <param name="r"></param>
+		/// <param name="n">The "n" value (total number of objects)</param>
+		/// <param name="r">The "r" value (number of choices)</param>
 		/// <returns>The combination nCr (n choose r)</returns>
 		public static ulong Combination(ulong n, ulong r)
 		{
@@ -118,5 +129,137 @@ namespace JLR.Utility.NET.Math
 		{
 			return (int)((System.Math.Pow(1 + Rad5, n) - System.Math.Pow(1 - Rad5, n)) / (System.Math.Pow(2, n) * Rad5));
 		}
+
+		/// <summary>
+		/// Computes the greatest common divisor of a set of integers
+		/// </summary>
+		/// <param name="values">Set of integer values</param>
+		/// <returns>The greatest common divisor of the specified values</returns>
+		public static long Gcd(params long[] values)
+		{
+			return values.Aggregate(Gcd);
+		}
+
+		/// <summary>
+		/// Computes the greatest common divisor of two integers
+		/// </summary>
+		/// <param name="a">An integer value</param>
+		/// <param name="b">An integer value</param>
+		/// <returns>The greatest common divisor of the specified values</returns>
+		public static long Gcd(long a, long b)
+		{
+			if (a < 0) a = System.Math.Abs(a);
+			if (b < 0) b = System.Math.Abs(b);
+
+			while (a != 0 && b != 0)
+			{
+				if (a > b)
+					a %= b;
+				else
+					b %= a;
+			}
+
+			return a == 0 ? b : a;
+		}
+
+		/// <summary>
+		/// Computes the least common multiple of a set of integers
+		/// </summary>
+		/// <param name="values">Set of integer values</param>
+		/// <returns>The least common multiple of the specified values</returns>
+		public static long Lcm(params long[] values)
+		{
+			return values.Aggregate((a, b) => a == 0 && b == 0 ? 0 : (System.Math.Abs(a) / Gcd(a, b)) * System.Math.Abs(b));
+		}
+
+		/// <summary>
+		/// Computes the prime factorization of an integer.
+		/// The Sieve of Eratosthenes algorithm is used for values less than MaxPrimeCache,
+		/// in which the smallest prime factor for each is memoized.
+		/// For values >= MaxPrimeCache, trial division is used.
+		/// </summary>
+		/// <param name="value">The value to factorize</param>
+		/// <returns>An array containing the prime factors of <see cref="value"/></returns>
+		public static long[] Factorize(long value)
+		{
+			value = System.Math.Abs(value);
+			var result = new List<long>();
+
+			if (value > 0 && value < MaxPrimeCache)
+			{
+				if (value > _highestSpf)
+					Sieve((uint)value);
+
+				while (value != 1)
+				{
+					if (!result.Contains(_spf[value]))
+						result.Add(_spf[value]);
+					value /= _spf[value];
+				}
+			}
+			else if (value > 0)
+			{
+				var exponent = 0;
+
+				while (value % 2 == 0)
+				{
+					exponent++;
+					value >>= 1;
+				}
+
+				if (exponent > 0)
+					result.Add(2);
+
+				for (long i = 3; i * i <= value; i += 2)
+				{
+					exponent = 0;
+					while (value % i == 0)
+					{
+						exponent++;
+						value /= i;
+					}
+
+					if (exponent > 0)
+						result.Add(i);
+				}
+
+				if (value > 2)
+					result.Add(value);
+			}
+
+			return result.ToArray();
+		}
+		#endregion
+
+		#region Private Methods
+		private static void Sieve(uint nMax)
+		{
+			++_highestSpf;
+
+			for (var i = _highestSpf; i <= nMax; ++i)
+			{
+				_spf[i] = i;
+			}
+
+			for (var i = _highestSpf % 2 == 0 ? _highestSpf : _highestSpf + 1; i <= nMax; i += 2)
+			{
+				_spf[i] = 2;
+			}
+
+			for (var i = 3U; i * i <= nMax; ++i)
+			{
+				if (_spf[i] == i)
+				{
+					for (var j = i * i; j <= nMax; j += i)
+					{
+						if (_spf[j] == j)
+							_spf[j] = i;
+					}
+				}
+			}
+
+			_highestSpf = nMax;
+		}
+		#endregion
 	}
 }
