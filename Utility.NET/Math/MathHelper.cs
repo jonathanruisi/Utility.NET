@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
+using System.Numerics;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -28,9 +29,9 @@ namespace JLR.Utility.NET.Math
 		#endregion
 
 		#region Fields
-		private static bool          _isPrimeCacheEnabled;
-		private static long          _largestPrime;
-		private static HashSet<long> _primes;
+		private static bool           _isPrimeCacheEnabled;
+		private static ulong          _largestPrime;
+		private static HashSet<ulong> _primes;
 		#endregion
 
 		#region Properties
@@ -43,7 +44,7 @@ namespace JLR.Utility.NET.Math
 				if (value)
 				{
 					if (_primes != null) return;
-					_primes       = new HashSet<long>() { 2, 3 };
+					_primes       = new HashSet<ulong>() { 2, 3 };
 					_largestPrime = 3;
 				}
 				else
@@ -204,18 +205,18 @@ namespace JLR.Utility.NET.Math
 		}
 
 		/// <summary>
-		/// Computes the prime factorization of an integer using optimized trial division.
-		/// Primes can be cached using <code>MathHelper.IsPrimeCacheEnabled</code>.
+		/// Computes the prime factorization of a specified integer (using an optimized trial division algorithm)
 		/// </summary>
 		/// <param name="value">Value to factorize</param>
 		/// <returns>A list of tuples containing the prime factor and its power</returns>
-		public static List<(long factor, byte power)> PrimeFactors(long value)
+		/// <remarks>
+		/// This method adds values to the prime number cache
+		/// (if enabled via <code>MathHelper.IsPrimeCacheEnabled</code>)
+		/// </remarks>
+		public static List<(ulong factor, byte power)> PrimeFactors(ulong value)
 		{
-			var result = new List<(long factor, byte power)>();
-
-			var isNegative = value < 0;
-			if (isNegative)
-				value = -value;
+			BigInteger test;
+			var result = new List<(ulong factor, byte power)>();
 
 			if (value < 2)
 				return result;
@@ -228,9 +229,9 @@ namespace JLR.Utility.NET.Math
 			}
 
 			if (power > 0)
-				result.Add((isNegative ? -2 : 2, power));
+				result.Add((2, power));
 
-			for (long i = 3; i * i <= value; i += 2)
+			for (ulong i = 3; i * i <= value; i += 2)
 			{
 				power = 0;
 				while (value % i == 0)
@@ -240,14 +241,14 @@ namespace JLR.Utility.NET.Math
 				}
 
 				if (power == 0) continue;
-				result.Add((isNegative ? -i : i, power));
+				result.Add((i, power));
 				if (!IsPrimeCacheEnabled || i <= _largestPrime || _primes.Count >= CacheSizeLimit) continue;
 				_primes.Add(i);
 				_largestPrime = i;
 			}
 
 			if (value <= 2) return result;
-			result.Add((isNegative ? -value : value, 1));
+			result.Add((value, 1));
 			if (!IsPrimeCacheEnabled || _primes.Count >= CacheSizeLimit || _primes.Contains(value)) return result;
 			_primes.Add(value);
 			_largestPrime = value;
@@ -261,18 +262,54 @@ namespace JLR.Utility.NET.Math
 		/// </summary>
 		/// <param name="value">An integer value</param>
 		/// <returns><code>true</code> if <paramref name="value"/> is prime, <code>false</code> otherwise</returns>
-		public static bool IsPrime(long value)
+		public static bool IsPrime(ulong value)
 		{
-			value = System.Math.Abs(value);
 			if (value == 1)
 				return true;
-			if (value <= _largestPrime)
+			if (IsPrimeCacheEnabled && value <= _largestPrime)
 				return _primes.Contains(value);
 			var primeFactors = PrimeFactors(value);
 			return value > 2 && primeFactors[primeFactors.Count - 1].factor == value;
 		}
 
-		#region Private Methods
-		#endregion
+		/// <summary>
+		/// Computes all factors of a specified integer
+		/// </summary>
+		/// <param name="value">An integer value</param>
+		/// <param name="isResultSorted">
+		/// If <code>true</code>, the returned list of divisors will be sorted from smallest to largest.
+		/// This optional parameter is <code>true</code> by default.
+		/// </param>
+		/// <returns>
+		/// A list of <code>ulong</code> integers containing all divisors of <paramref name="value"/>,
+		/// including 1 and itself.
+		/// </returns>
+		public static List<ulong> Divisors(ulong value, bool isResultSorted = true)
+		{
+			var result = new List<ulong>();
+			if (value != 0)
+				result.Add(1);
+			var primeFactors = PrimeFactors(value);
+
+			CalculateDivisors(1, 0);
+
+			void CalculateDivisors(ulong n, ulong p)
+			{
+				for (var i = p; i < (ulong)primeFactors.Count; i++)
+				{
+					var x = primeFactors[(int)i].factor * n;
+					for (var j = 0; j < primeFactors[(int)i].power; j++)
+					{
+						result.Add(x);
+						CalculateDivisors(x, i + 1);
+						x *= primeFactors[(int)i].factor;
+					}
+				}
+			}
+
+			if (isResultSorted)
+				result.Sort();
+			return result;
+		}
 	}
 }

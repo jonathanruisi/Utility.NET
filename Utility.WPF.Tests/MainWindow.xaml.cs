@@ -100,15 +100,9 @@ namespace Utility.WPF.Tests
 			MediaSliderTest.VisibleRangeChanged += MediaSliderTest_VisibleRangeChanged;
 		}
 
-		private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
-		{
-			
-		}
+		private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) { }
 
-		private void MediaSliderTest_PositionChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
-		{
-			
-		}
+		private void MediaSliderTest_PositionChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e) { }
 
 		private void MediaSliderTest_SelectionChanged(object sender, RoutedEventArgs e)
 		{
@@ -130,60 +124,120 @@ namespace Utility.WPF.Tests
 			switch (btn.Content)
 			{
 				case "1": // Tests JLR.Utility.NET.MathHelper prime related methods
-					var nMin      = int.Parse(TextBoxD0.Text);
-					var nMax      = int.Parse(TextBoxD1.Text);
-					var timer     = new Stopwatch();
-					var str       = new StringBuilder();
-					var totalTime = new TimeSpan();
+					var nMin       = uint.Parse(TextBoxD0.Text);
+					var nMax       = uint.Parse(TextBoxD1.Text);
+					var isSort     = bool.Parse(TextBoxD2.Text);
+					var factorStr  = new StringBuilder();
+					var divisorStr = new StringBuilder();
+					var timerA     = new Stopwatch();
+					var timerB     = new Stopwatch();
+					var timerC     = new Stopwatch();
+					var totalTimeA = new TimeSpan();
+					var totalTimeB = new TimeSpan();
+					var totalTimeC = new TimeSpan();
 
-					MathHelper.IsPrimeCacheEnabled = true;
+					MathHelper.IsPrimeCacheEnabled = false;
 
-					const string filePath = "C:\\Users\\Jonathan\\Desktop\\Results.txt";
+					const string filePath = "C:\\Users\\Jonathan\\Desktop\\MathHelperTest.txt";
 					if (File.Exists(filePath))
 						File.Delete(filePath);
 					var file = new StreamWriter(filePath);
 					file.WriteLine(
-						"{0,-20}{1,-20}{2,-30}{3,-12}{4}",
+						"{0,-20}{5,-10}{6,-10}{7,-10}{1,-8}{2,-12}{3,-32}{4}",
 						"Number",
-						"Time (ms)",
-						"Factorization",
-						"Prime Count",
-						"Is Prime?");
+						"Prime?",
+						"# Divisors",
+						"Prime Factors",
+						"Divisors",
+						"Time(IP)",
+						"Time(PF)",
+						"Time(D)");
 
 					for (var num = nMin; num <= nMax; num++)
 					{
-						timer.Start();
-						var result  = MathHelper.PrimeFactors(num);
-						var isPrime = MathHelper.IsPrime(num);
-						timer.Stop();
+						timerA.Start();
+						var factors = MathHelper.PrimeFactors(num);
+						timerA.Stop();
 
-						str.Clear();
-						str.Append('{');
-						for (var i = 0; i < result.Count; i++)
+						timerB.Start();
+						var isPrime = MathHelper.IsPrime(num);
+						timerB.Stop();
+
+						timerC.Start();
+						var divisors = MathHelper.Divisors(num, isSort);
+						timerC.Stop();
+
+						factorStr.Clear();
+						factorStr.Append('{');
+						for (var i = 0; i < factors.Count; i++)
 						{
 							if (i > 0)
-								str.Append(',');
-							str.Append($"{result[i].factor}^{result[i].power}");
+								factorStr.Append(',');
+							factorStr.Append($"{factors[i].factor}^{factors[i].power}");
 						}
 
-						str.Append('}');
+						factorStr.Append('}');
+						divisorStr.Clear();
+						divisorStr.Append('{');
+						for (var i = 0; i < divisors.Count; i++)
+						{
+							if (i > 0)
+								divisorStr.Append(',');
+							divisorStr.Append($"{divisors[i]}");
+						}
+
+						divisorStr.Append('}');
+
 						file.WriteLine(
-							"{0,-20:D}{1,-20:0.0000}{2,-30}{3,-12}{4}",
+							"{0,-20:D}{5,-10:0.0000}{6,-10:0.0000}{7,-10:0.0000}{1,-8}{2,-12}{3,-32}{4}",
 							num,
-							timer.Elapsed.Ticks / 10000M,
-							str,
-							result.Count,
-							isPrime);
-						totalTime = totalTime.Add(timer.Elapsed);
-						timer.Reset();
+							isPrime,
+							divisors.Count,
+							factorStr,
+							divisorStr,
+							timerB.Elapsed.Ticks / 1000M,
+							timerA.Elapsed.Ticks / 1000M,
+							timerC.Elapsed.Ticks / 1000M);
+
+						totalTimeA = totalTimeA.Add(timerA.Elapsed);
+						totalTimeB = totalTimeB.Add(timerB.Elapsed);
+						totalTimeC = totalTimeC.Add(timerC.Elapsed);
+
+						timerA.Reset();
+						timerB.Reset();
+						timerC.Reset();
 					}
 
-					file.WriteLine($"Total computation time: {totalTime.TotalMilliseconds:0.###} ms\n");
+					file.WriteLine();
+					file.WriteLine(
+						totalTimeB.TotalSeconds < 1
+							? $"Total \"IsPrime?\" computation time   = {totalTimeB.TotalMilliseconds:0.###} ms"
+							: $"Total \"IsPrime?\" computation time   = {totalTimeB.TotalSeconds:0.###} s");
+
+					file.WriteLine(
+						totalTimeA.TotalSeconds < 1
+							? $"Total prime factor computation time = {totalTimeA.TotalMilliseconds:0.###} ms"
+							: $"Total prime factor computation time = {totalTimeA.TotalSeconds:0.###} s");
+
+					file.WriteLine(
+						totalTimeC.TotalSeconds < 1
+							? $"Total divisor computation time      = {totalTimeC.TotalMilliseconds:0.###} ms"
+							: $"Total divisor computation time      = {totalTimeC.TotalSeconds:0.###} s");
+
+					var totalTime = totalTimeA + totalTimeB + totalTimeC;
+					file.WriteLine();
+					file.WriteLine(
+						totalTime.TotalSeconds < 1
+							? $"Total computation time              = {totalTime.TotalMilliseconds:0.###} ms\n"
+							: $"Total computation time              = {totalTime.TotalSeconds:0.###} s\n");
 
 					file.Flush();
 					file.Close();
 
-					MessageBox.Show($"Total computation time: {totalTime.TotalMilliseconds:0.###} ms\n");
+					MessageBox.Show(
+						totalTime.TotalSeconds < 1
+							? $"Total computation time: {(totalTimeA + totalTimeB + totalTimeC).TotalMilliseconds:0.###} ms\n"
+							: $"Total computation time: {(totalTimeA + totalTimeB + totalTimeC).TotalSeconds:0.###} s\n");
 					Process.Start(filePath);
 					break;
 				case "2":
