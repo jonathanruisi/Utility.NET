@@ -215,7 +215,6 @@ namespace JLR.Utility.NET.Math
 		/// </remarks>
 		public static List<(ulong factor, byte power)> PrimeFactors(ulong value)
 		{
-			BigInteger test;
 			var result = new List<(ulong factor, byte power)>();
 
 			if (value < 2)
