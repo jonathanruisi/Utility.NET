@@ -16,7 +16,7 @@ namespace Utility.WPF.Tests
 		public MainWindow()
 		{
 			InitializeComponent();
-			Loaded += MainWindow_Loaded;
+			Loaded      += MainWindow_Loaded;
 			SizeChanged += MainWindow_SizeChanged;
 		}
 
@@ -95,7 +95,14 @@ namespace Utility.WPF.Tests
 			TextBoxE0.SetBinding(TextBlock.TextProperty, binding);
 			TextBoxE0.IsReadOnly = true;
 
-			MediaSliderTest.PositionChanged += MediaSliderTest_PositionChanged;
+			MediaSliderTest.PositionChanged     += MediaSliderTest_PositionChanged;
+			MediaSliderTest.SelectionChanged    += MediaSliderTest_SelectionChanged;
+			MediaSliderTest.VisibleRangeChanged += MediaSliderTest_VisibleRangeChanged;
+		}
+
+		private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+		{
+			
 		}
 
 		private void MediaSliderTest_PositionChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e)
@@ -103,9 +110,17 @@ namespace Utility.WPF.Tests
 			
 		}
 
-		private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e)
+		private void MediaSliderTest_SelectionChanged(object sender, RoutedEventArgs e)
 		{
-			
+			if (MediaSliderTest.SelectionStart == null || MediaSliderTest.SelectionEnd == null)
+				TextBoxC1.Text = "DISABLED";
+			else
+				TextBoxC1.Text = $"{MediaSliderTest.SelectionStart:0.00}-{MediaSliderTest.SelectionEnd:0.00}";
+		}
+
+		private void MediaSliderTest_VisibleRangeChanged(object sender, RoutedEventArgs e)
+		{
+			TextBoxB1.Text = $"{MediaSliderTest.VisibleRangeStart:0.00}-{MediaSliderTest.VisibleRangeEnd:0.00}";
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)
@@ -114,23 +129,32 @@ namespace Utility.WPF.Tests
 
 			switch (btn.Content)
 			{
-				case "1":
+				case "1": // Tests JLR.Utility.NET.MathHelper prime related methods
 					var nMin      = int.Parse(TextBoxD0.Text);
 					var nMax      = int.Parse(TextBoxD1.Text);
 					var timer     = new Stopwatch();
 					var str       = new StringBuilder();
 					var totalTime = new TimeSpan();
 
+					MathHelper.IsPrimeCacheEnabled = true;
+
 					const string filePath = "C:\\Users\\Jonathan\\Desktop\\Results.txt";
 					if (File.Exists(filePath))
 						File.Delete(filePath);
 					var file = new StreamWriter(filePath);
-					file.WriteLine("{0,-20}{1,-20}{2,-30}{3}", "Number", "Time (ms)", "Factorization", "Prime Count");
+					file.WriteLine(
+						"{0,-20}{1,-20}{2,-30}{3,-12}{4}",
+						"Number",
+						"Time (ms)",
+						"Factorization",
+						"Prime Count",
+						"Is Prime?");
 
 					for (var num = nMin; num <= nMax; num++)
 					{
 						timer.Start();
-						var result = MathHelper.PrimeFactors(num);
+						var result  = MathHelper.PrimeFactors(num);
+						var isPrime = MathHelper.IsPrime(num);
 						timer.Stop();
 
 						str.Clear();
@@ -143,13 +167,18 @@ namespace Utility.WPF.Tests
 						}
 
 						str.Append('}');
-						file.WriteLine("{0,-20:D}{1,-20:0.0000}{2,-30}{3}", num, timer.Elapsed.Ticks / 10000M, str, result.Count);
+						file.WriteLine(
+							"{0,-20:D}{1,-20:0.0000}{2,-30}{3,-12}{4}",
+							num,
+							timer.Elapsed.Ticks / 10000M,
+							str,
+							result.Count,
+							isPrime);
 						totalTime = totalTime.Add(timer.Elapsed);
 						timer.Reset();
 					}
 
 					file.WriteLine($"Total computation time: {totalTime.TotalMilliseconds:0.###} ms\n");
-					file.WriteLine($"Total number of primes in cache: {MathHelper._primes.Count}");
 
 					file.Flush();
 					file.Close();

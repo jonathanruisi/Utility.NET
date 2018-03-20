@@ -23,13 +23,14 @@ namespace JLR.Utility.NET.Math
 	public static class MathHelper
 	{
 		#region Constants
-		private static readonly double Rad5 = System.Math.Sqrt(5);
+		private static readonly double Rad5           = System.Math.Sqrt(5);
+		private static readonly uint   CacheSizeLimit = 1000000;
 		#endregion
 
 		#region Fields
-		private static bool _isPrimeCacheEnabled;
-		private static long _largestPrime;
-		public static HashSet<long> _primes;
+		private static bool          _isPrimeCacheEnabled;
+		private static long          _largestPrime;
+		private static HashSet<long> _primes;
 		#endregion
 
 		#region Properties
@@ -39,14 +40,15 @@ namespace JLR.Utility.NET.Math
 			set
 			{
 				_isPrimeCacheEnabled = value;
-				if (value && _primes == null)
+				if (value)
 				{
-					_primes = new HashSet<long>() { 2, 3 };
+					if (_primes != null) return;
+					_primes       = new HashSet<long>() { 2, 3 };
 					_largestPrime = 3;
 				}
 				else
 				{
-					_primes = null;
+					_primes       = null;
 					_largestPrime = 0;
 				}
 			}
@@ -56,7 +58,7 @@ namespace JLR.Utility.NET.Math
 		#region Constructor
 		static MathHelper()
 		{
-			IsPrimeCacheEnabled = true;
+			IsPrimeCacheEnabled = false;
 		}
 		#endregion
 
@@ -201,9 +203,20 @@ namespace JLR.Utility.NET.Math
 			return values.Aggregate((a, b) => a == 0 && b == 0 ? 0 : (System.Math.Abs(a) / Gcd(a, b)) * System.Math.Abs(b));
 		}
 
+		/// <summary>
+		/// Computes the prime factorization of an integer using optimized trial division.
+		/// Primes can be cached using <code>MathHelper.IsPrimeCacheEnabled</code>.
+		/// </summary>
+		/// <param name="value">Value to factorize</param>
+		/// <returns>A list of tuples containing the prime factor and its power</returns>
 		public static List<(long factor, byte power)> PrimeFactors(long value)
 		{
-			var result = new List<(long, byte)>();
+			var result = new List<(long factor, byte power)>();
+
+			var isNegative = value < 0;
+			if (isNegative)
+				value = -value;
+
 			if (value < 2)
 				return result;
 
@@ -215,7 +228,7 @@ namespace JLR.Utility.NET.Math
 			}
 
 			if (power > 0)
-				result.Add((2, power));
+				result.Add((isNegative ? -2 : 2, power));
 
 			for (long i = 3; i * i <= value; i += 2)
 			{
@@ -226,16 +239,16 @@ namespace JLR.Utility.NET.Math
 					value /= i;
 				}
 
-				if (power <= 0) continue;
-				result.Add((i, power));
-				if (!IsPrimeCacheEnabled || i <= _largestPrime) continue;
+				if (power == 0) continue;
+				result.Add((isNegative ? -i : i, power));
+				if (!IsPrimeCacheEnabled || i <= _largestPrime || _primes.Count >= CacheSizeLimit) continue;
 				_primes.Add(i);
 				_largestPrime = i;
 			}
 
 			if (value <= 2) return result;
-			result.Add((value, 1));
-			if (!IsPrimeCacheEnabled || _primes.Contains(value)) return result;
+			result.Add((isNegative ? -value : value, 1));
+			if (!IsPrimeCacheEnabled || _primes.Count >= CacheSizeLimit || _primes.Contains(value)) return result;
 			_primes.Add(value);
 			_largestPrime = value;
 
@@ -243,8 +256,23 @@ namespace JLR.Utility.NET.Math
 		}
 		#endregion
 
+		/// <summary>
+		/// Determines if the specified integer is a prime number
+		/// </summary>
+		/// <param name="value">An integer value</param>
+		/// <returns><code>true</code> if <paramref name="value"/> is prime, <code>false</code> otherwise</returns>
+		public static bool IsPrime(long value)
+		{
+			value = System.Math.Abs(value);
+			if (value == 1)
+				return true;
+			if (value <= _largestPrime)
+				return _primes.Contains(value);
+			var primeFactors = PrimeFactors(value);
+			return value > 2 && primeFactors[primeFactors.Count - 1].factor == value;
+		}
+
 		#region Private Methods
-		
 		#endregion
 	}
 }

@@ -275,7 +275,15 @@ namespace JLR.Utility.WPF.Elements
 					MinorTicks.Where(tick => tick > Minimum && tick < Maximum && tick != 0).Sum(tick => (decimal)MinorTickThickness);
 				if (Minimum <= 0 && Maximum >= 0)
 					result += (decimal)OriginTickThickness;
-				return result / (Orientation == Orientation.Horizontal ? (decimal)ActualWidth : (decimal)ActualHeight);
+				switch (Orientation)
+				{
+					case Orientation.Horizontal when ActualWidth > 0:
+						return result / (decimal)ActualWidth;
+					case Orientation.Vertical when ActualHeight > 0:
+						return result / (decimal)ActualHeight;
+					default:
+						return 0;
+				}
 			}
 		}
 

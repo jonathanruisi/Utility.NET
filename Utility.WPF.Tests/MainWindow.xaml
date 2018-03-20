@@ -72,11 +72,11 @@
 			<TextBlock Grid.Row="5" Grid.Column="0" TextAlignment="Center" Margin="0,5,0,0">Maximum</TextBlock>
 
 			<TextBlock Grid.Row="1" Grid.Column="1" TextAlignment="Center" Margin="0,0,0,0">Vis. Range (Start)</TextBlock>
-			<TextBlock Grid.Row="3" Grid.Column="1" TextAlignment="Center" Margin="0,5,0,0">B1</TextBlock>
+			<TextBlock Grid.Row="3" Grid.Column="1" TextAlignment="Center" Margin="0,5,0,0">Vis. Range</TextBlock>
 			<TextBlock Grid.Row="5" Grid.Column="1" TextAlignment="Center" Margin="0,5,0,0">Vis. Range (End)</TextBlock>
 
 			<TextBlock Grid.Row="1" Grid.Column="2" TextAlignment="Center" Margin="0,0,0,0">Selection (Start)</TextBlock>
-			<TextBlock Grid.Row="3" Grid.Column="2" TextAlignment="Center" Margin="0,5,0,0">C1</TextBlock>
+			<TextBlock Grid.Row="3" Grid.Column="2" TextAlignment="Center" Margin="0,5,0,0">Selection</TextBlock>
 			<TextBlock Grid.Row="5" Grid.Column="2" TextAlignment="Center" Margin="0,5,0,0">Selection (End)</TextBlock>
 
 			<TextBlock Grid.Row="1" Grid.Column="3" TextAlignment="Center" Margin="0,0,0,0">D0</TextBlock>
@@ -92,18 +92,18 @@
 			<TextBox Name="TextBoxA2" Grid.Row="6" Grid.Column="0" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
 
 			<TextBox Name="TextBoxB0" Grid.Row="2" Grid.Column="1" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
-			<TextBox Name="TextBoxB1" Grid.Row="4" Grid.Column="1" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
+			<TextBox Name="TextBoxB1" Grid.Row="4" Grid.Column="1" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0" IsReadOnly="True"/>
 			<TextBox Name="TextBoxB2" Grid.Row="6" Grid.Column="1" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
 
 			<TextBox Name="TextBoxC0" Grid.Row="2" Grid.Column="2" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
-			<TextBox Name="TextBoxC1" Grid.Row="4" Grid.Column="2" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
+			<TextBox Name="TextBoxC1" Grid.Row="4" Grid.Column="2" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0" IsReadOnly="True"/>
 			<TextBox Name="TextBoxC2" Grid.Row="6" Grid.Column="2" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
 
 			<TextBox Name="TextBoxD0" Grid.Row="2" Grid.Column="3" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
 			<TextBox Name="TextBoxD1" Grid.Row="4" Grid.Column="3" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
 			<TextBox Name="TextBoxD2" Grid.Row="6" Grid.Column="3" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
 
-			<TextBox Name="TextBoxE0" Grid.Row="2" Grid.Column="4" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
+			<TextBox Name="TextBoxE0" Grid.Row="2" Grid.Column="4" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0" IsReadOnly="True"/>
 			<TextBox Name="TextBoxE1" Grid.Row="4" Grid.Column="4" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
 			<TextBox Name="TextBoxE2" Grid.Row="6" Grid.Column="4" TextAlignment="Center" Width="50" BorderThickness="0" Background="#F0F0F0"/>
 		</Grid>
