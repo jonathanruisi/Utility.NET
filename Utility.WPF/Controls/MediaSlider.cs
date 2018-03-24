@@ -41,26 +41,34 @@ namespace JLR.Utility.WPF.Controls
 	public class MediaSlider : Control
 	{
 		#region Fields
-		private ContentPresenter                  _selectionStart,    _selectionEnd,    _selectionRange;
-		private ContentPresenter                  _visibleRangeStart, _visibleRangeEnd, _visibleRange;
-		private ContentPresenter                  _position;
-		private Panel                             _mainPanel, _zoomPanel;
-		private TickBarAdvanced                   _tickBar;
-		private bool                              _isMouseLeftButtonDown;
-		private double                            _prevMouseCoord;
+		private ContentPresenter _position;
+		private ContentPresenter _visibleRangeStart, _visibleRangeEnd, _visibleRange;
+		private ContentPresenter _selectionStart, _selectionEnd, _selectionRange;
+		private Panel _mainPanel, _zoomPanel;
+		private TickBarAdvanced _tickBar;
+		private bool _isMouseLeftButtonDown;
+		private bool _isVisualRangeChanging;
+		private bool _isVisualRangeDragging;
+		private double _prevMouseCoord;
+		private double _lastDensity;
+		private LinkedList<int> _fpsDivisors;
+		private LinkedListNode<int> _currentFpsDivisor;
 		private (decimal temporal, double visual) _snapDistance;
 		#endregion
 
 		#region Properties
-		public double MouseDist { get => (double)GetValue(MouseDistProperty); set => SetValue(MouseDistProperty, value); }
+		#region General
+		public double TickDensityThreshold
+		{
+			get => (double)GetValue(TickDensityThresholdProperty);
+			set => SetValue(TickDensityThresholdProperty, value);
+		}
 
-		public static readonly DependencyProperty MouseDistProperty = DependencyProperty.Register(
-			"MouseDist",
+		public static readonly DependencyProperty TickDensityThresholdProperty = DependencyProperty.Register(
+			"TickDensityThreshold",
 			typeof(double),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(0.0));
-
-		#region General
+			new FrameworkPropertyMetadata(3.0));
 		#endregion
 
 		#region Media
@@ -434,6 +442,18 @@ namespace JLR.Utility.WPF.Controls
 			RoutingStrategy.Bubble,
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
+
+		public event RoutedPropertyChangedEventHandler<double> TestOneChanged
+		{
+			add => AddHandler(TestOneChangedEvent, value);
+			remove => RemoveHandler(TestOneChangedEvent, value);
+		}
+
+		public static readonly RoutedEvent TestOneChangedEvent = EventManager.RegisterRoutedEvent(
+			"TestOneChanged",
+			RoutingStrategy.Bubble,
+			typeof(RoutedPropertyChangedEventHandler<double>),
+			typeof(MediaSlider));
 		#endregion
 
 		#region Constructors
@@ -528,18 +548,28 @@ namespace JLR.Utility.WPF.Controls
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.RaiseEvent(new RoutedEventArgs(SelectionChangedEvent, d));
 			}
-			else if (e.Property == VisibleRangeStartProperty)
+			else if (e.Property == VisibleRangeStartProperty && !mediaSlider._isVisualRangeChanging)
 			{
+				var oldRange = mediaSlider.VisibleRangeEnd - (decimal)e.OldValue;
+				var newRange = mediaSlider.VisibleRangeEnd - (decimal)e.NewValue;
+
 				mediaSlider.UpdatePositionElement();
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.UpdateVisibleRangeElements();
+				if (!mediaSlider._isVisualRangeDragging)
+					mediaSlider.AdjustTickDensity(oldRange.CompareTo(newRange));
 				mediaSlider.RaiseEvent(new RoutedEventArgs(VisibleRangeChangedEvent, d));
 			}
-			else if (e.Property == VisibleRangeEndProperty)
+			else if (e.Property == VisibleRangeEndProperty && !mediaSlider._isVisualRangeChanging)
 			{
+				var oldRange = (decimal)e.OldValue - mediaSlider.VisibleRangeStart;
+				var newRange = (decimal)e.NewValue - mediaSlider.VisibleRangeStart;
+
 				mediaSlider.UpdatePositionElement();
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.UpdateVisibleRangeElements();
+				if (!mediaSlider._isVisualRangeDragging)
+					mediaSlider.AdjustTickDensity(oldRange.CompareTo(newRange));
 				mediaSlider.RaiseEvent(new RoutedEventArgs(VisibleRangeChangedEvent, d));
 			}
 		}
@@ -564,7 +594,10 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!(d is MediaSlider mediaSlider)) return;
 
-			if (e.Property == FramesPerSecondProperty) { }
+			if (e.Property == FramesPerSecondProperty)
+			{
+				mediaSlider.AdjustTickDensity(0, true);
+			}
 		}
 
 		private static object CoerceMaximum(DependencyObject d, object value)
@@ -664,14 +697,6 @@ namespace JLR.Utility.WPF.Controls
 			if (GetTemplateChild("PART_TickBar") is TickBarAdvanced tickBar)
 			{
 				_tickBar = tickBar;
-				var binding = new Binding
-				{
-					Path      = new PropertyPath("FramesPerSecond"),
-					Source    = this,
-					Converter = new NumericInverseConverter()
-				};
-				_tickBar.SetBinding(TickBarAdvanced.MinorTickFrequencyProperty, binding);
-
 				if (VisualTreeHelper.GetParent(tickBar) is Panel parent)
 				{
 					_mainPanel                     =  parent;
@@ -750,6 +775,11 @@ namespace JLR.Utility.WPF.Controls
 				_visibleRange.MouseLeftButtonUp   += VisibleRange_MouseLeftButtonUp;
 				_visibleRange.MouseMove           += VisibleRange_MouseMove;
 			}
+
+			/*var binding = new Binding { Path = new PropertyPath("Minimum"), Source = this };
+			SetBinding(VisibleRangeStartProperty, binding);
+			binding = new Binding { Path = new PropertyPath("Maximum"), Source = this };
+			SetBinding(VisibleRangeEndProperty, binding);*/
 
 			Loaded += MediaSlider_Loaded;
 		}
@@ -963,17 +993,107 @@ namespace JLR.Utility.WPF.Controls
 			Canvas.SetTop(_visibleRange,      0);
 		}
 
-		private void UpdateSnapDistance()
+		/// <summary>
+		/// Adjusts the temporal and visual snap distance based on the visual range of the slider,
+		/// amount of drawing space currently available, and the tick density threshold.
+		/// This method directly modifies the major and minor tick frequencies,
+		/// as well as the _snapDistance tuple.
+		/// </summary>
+		/// <param name="zoomChange">
+		/// Specifies whether or not a change has occurred that has the effect of zooming in or out.
+		/// A positive value indicates zooming in (more space between tick marks),
+		/// a negative value indicates zooming out (less space between tick marks),
+		/// and zero indicates no change in zoom (no change to the space between tick marks).
+		/// </param>
+		/// <param name="initialize">
+		/// If true, the list of FPS divisors will be (re)initialized and the tick density will be reevaluated.
+		/// </param>
+		private void AdjustTickDensity(int zoomChange, bool initialize = false)
 		{
-			if (_tickBar == null || _mainPanel == null)
+			if (_mainPanel == null || _tickBar == null || Math.Abs(_mainPanel.ActualWidth) < double.Epsilon)
 			{
 				_snapDistance = (0, 0);
 				return;
 			}
 
-			_snapDistance.temporal = _tickBar.MinorTickFrequency;
-			_snapDistance.visual = decimal.ToDouble(
-				_snapDistance.temporal * (decimal)_mainPanel.ActualWidth / (VisibleRangeEnd - VisibleRangeStart));
+			if (_fpsDivisors == null)
+				initialize = true;
+
+			if (initialize)
+			{
+				_fpsDivisors = new LinkedList<int>();
+				foreach (var divisor in MathHelper.Divisors((ulong)FramesPerSecond, true))
+				{
+					_fpsDivisors.AddLast((int)divisor);
+				}
+
+				_currentFpsDivisor     = _fpsDivisors.First;
+				_snapDistance.temporal = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
+				_lastDensity           = 0;
+			}
+
+			UpdateVisualSnapDistance();
+
+			if (zoomChange < 0 || initialize)
+			{
+				while (TestTickDensity() < 0)
+				{
+					if (_currentFpsDivisor.Next != null)
+					{
+						_currentFpsDivisor     = _currentFpsDivisor.Next;
+						_snapDistance.temporal = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
+						UpdateVisualSnapDistance();
+					}
+					else if (_snapDistance.temporal >= 1)
+					{
+						_snapDistance.temporal += 1;
+						UpdateVisualSnapDistance();
+					}
+				}
+			}
+			else if (zoomChange > 0)
+			{
+				while (TestTickDensity() > TickDensityThreshold && _currentFpsDivisor != _fpsDivisors.First)
+				{
+					if (_snapDistance.temporal > 1)
+					{
+						_snapDistance.temporal -= 1;
+						UpdateVisualSnapDistance();
+					}
+					else if (_currentFpsDivisor.Previous != null)
+					{
+						_currentFpsDivisor     = _currentFpsDivisor.Previous;
+						_snapDistance.temporal = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
+						UpdateVisualSnapDistance();
+					}
+				}
+			}
+			else return;
+
+			if (_snapDistance.temporal < 1)
+			{
+				_tickBar.MinorTickFrequency = _snapDistance.temporal;
+				_tickBar.MajorTickFrequency = 1;
+			}
+			else
+			{
+				_tickBar.MinorTickFrequency = 0;
+				_tickBar.MajorTickFrequency = _snapDistance.temporal;
+			}
+
+			#region Local Methods
+			void UpdateVisualSnapDistance()
+			{
+				_snapDistance.visual = decimal.ToDouble(
+					_snapDistance.temporal * (decimal)_mainPanel.ActualWidth / (VisibleRangeEnd - VisibleRangeStart));
+			}
+
+			double TestTickDensity()
+			{
+				var thickness = _snapDistance.temporal < 1 ? _tickBar.MinorTickThickness : _tickBar.MajorTickThickness;
+				return _snapDistance.visual - (thickness * TickDensityThreshold);
+			}
+			#endregion
 		}
 		#endregion
 
@@ -981,6 +1101,7 @@ namespace JLR.Utility.WPF.Controls
 		private void MediaSlider_Loaded(object sender, RoutedEventArgs e)
 		{
 			AdjustPaddingToFit();
+			AdjustTickDensity(0, true);
 		}
 
 		private void MediaSlider_MainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -989,6 +1110,7 @@ namespace JLR.Utility.WPF.Controls
 			ArrangePositionElement();
 			UpdateSelectionRangeElements();
 			ArrangeSelectionElements();
+			AdjustTickDensity(e.NewSize.Width.CompareTo(e.PreviousSize.Width));
 		}
 
 		private void MediaSlider_ZoomPanel_SizeChanged(object sender, SizeChangedEventArgs e)
@@ -1039,7 +1161,6 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_position.CaptureMouse();
-			UpdateSnapDistance();
 			_isMouseLeftButtonDown = true;
 		}
 
@@ -1109,7 +1230,6 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_selectionStart.CaptureMouse();
-			UpdateSnapDistance();
 			_isMouseLeftButtonDown = true;
 		}
 
@@ -1179,7 +1299,6 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_selectionEnd.CaptureMouse();
-			UpdateSnapDistance();
 			_isMouseLeftButtonDown = true;
 		}
 
@@ -1270,10 +1389,12 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown || !_visibleRangeStart.IsMouseCaptureWithin) return;
 
-			var pos   = e.GetPosition(_visibleRangeStart);
+			// Get mouse position, but only continue if it has moved more than half of a pixel horizontally
+			var pos = e.GetPosition(_visibleRangeStart);
+			if (Math.Abs(pos.X) < 0.5)
+				return;
+
 			var delta = (decimal)pos.X * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
-
-
 			if ((pos.X < 0 && VisibleRangeStart > Minimum) || (pos.X > 0 && VisibleRangeStart < Maximum))
 			{
 				VisibleRangeStart += delta;
@@ -1329,11 +1450,13 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown || !_visibleRangeEnd.IsMouseCaptureWithin) return;
 
-			var pos   = e.GetPosition(_visibleRangeEnd);
+			// Get mouse position, but only continue if it has moved more than half of a pixel horizontally
+			var pos = e.GetPosition(_visibleRangeEnd);
+			if (Math.Abs(pos.X) < 0.5)
+				return;
+
 			var delta = (decimal)pos.X * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
-
-
-			if ((pos.X < 0 && VisibleRangeEnd > Minimum) || (pos.X > 0 && VisibleRangeEnd < Maximum))
+			if ((delta < 0 && VisibleRangeEnd > Minimum) || (delta > 0 && VisibleRangeEnd < Maximum))
 			{
 				VisibleRangeEnd += delta;
 			}
@@ -1369,12 +1492,15 @@ namespace JLR.Utility.WPF.Controls
 				VisualStateManager.GoToElementState(visibleRange, "MouseLeftButtonDown", false);
 			}
 
+			_isVisualRangeDragging = true;
 			_visibleRange.CaptureMouse();
 			_prevMouseCoord = e.GetPosition(_visibleRange).X;
 			if (e.ClickCount >= 2)
 			{
-				VisibleRangeStart = Minimum;
-				VisibleRangeEnd   = Maximum;
+				_isVisualRangeChanging = true;
+				VisibleRangeStart      = Minimum;
+				_isVisualRangeChanging = false;
+				VisibleRangeEnd        = Maximum;
 			}
 
 			_isMouseLeftButtonDown = true;
@@ -1388,6 +1514,7 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_visibleRange.ReleaseMouseCapture();
+			_isVisualRangeDragging = false;
 			_isMouseLeftButtonDown = false;
 		}
 
@@ -1395,18 +1522,27 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown || !_visibleRange.IsMouseCaptureWithin) return;
 
-			var delta = (decimal)(e.GetPosition(_visibleRange).X - _prevMouseCoord) * (Maximum - Minimum) /
+			// Get mouse position, but only continue if it has moved more than half of a pixel horizontally
+			var pos = e.GetPosition(_visibleRange);
+			if (Math.Abs(pos.X) < 0.5)
+				return;
+
+			var delta = (decimal)(pos.X - _prevMouseCoord) * (Maximum - Minimum) /
 				(decimal)_zoomPanel.ActualWidth;
 			var range = VisibleRangeEnd - VisibleRangeStart;
 
 			if (delta < 0 && VisibleRangeStart > Minimum)
 			{
+				_isVisualRangeChanging = true;
 				VisibleRangeStart = Math.Max(VisibleRangeStart + delta, Minimum);
+				_isVisualRangeChanging = false;
 				VisibleRangeEnd   = VisibleRangeStart + range;
 			}
 			else if (delta > 0 && VisibleRangeEnd < Maximum)
 			{
+				_isVisualRangeChanging = true;
 				VisibleRangeEnd   = Math.Min(VisibleRangeEnd + delta, Maximum);
+				_isVisualRangeChanging = false;
 				VisibleRangeStart = VisibleRangeEnd - range;
 			}
 		}

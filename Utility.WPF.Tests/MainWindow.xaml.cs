@@ -85,19 +85,16 @@ namespace Utility.WPF.Tests
 			};
 			TextBoxC2.SetBinding(TextBox.TextProperty, binding);
 
-			binding = new Binding
-			{
-				Path         = new PropertyPath("MouseDist"),
-				Source       = MediaSliderTest,
-				Mode         = BindingMode.OneWay,
-				StringFormat = "0.###"
-			};
-			TextBoxE0.SetBinding(TextBlock.TextProperty, binding);
-			TextBoxE0.IsReadOnly = true;
-
 			MediaSliderTest.PositionChanged     += MediaSliderTest_PositionChanged;
 			MediaSliderTest.SelectionChanged    += MediaSliderTest_SelectionChanged;
 			MediaSliderTest.VisibleRangeChanged += MediaSliderTest_VisibleRangeChanged;
+			MediaSliderTest.TestOneChanged += MediaSliderTest_TestOneChanged;
+		}
+
+		private void MediaSliderTest_TestOneChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+		{
+			TextBoxE0.Text = e.NewValue.ToString("0.###");
+			TextBoxE1.Text = e.OldValue.ToString("0.###");
 		}
 
 		private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) { }
@@ -121,7 +118,7 @@ namespace Utility.WPF.Tests
 		{
 			if (!(sender is Button btn)) return;
 
-			switch (btn.Content)
+			switch (btn.Tag)
 			{
 				case "1": // Tests JLR.Utility.NET.MathHelper prime related methods
 					var nMin       = uint.Parse(TextBoxD0.Text);
@@ -245,8 +242,10 @@ namespace Utility.WPF.Tests
 				case "3":
 					break;
 				case "4":
+					MediaSliderTest.VisibleRangeEnd += (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;
 					break;
 				case "5":
+					MediaSliderTest.VisibleRangeStart -= (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;
 					break;
 				case "6":
 					break;
@@ -255,8 +254,10 @@ namespace Utility.WPF.Tests
 				case "8":
 					break;
 				case "9":
+					MediaSliderTest.VisibleRangeEnd -= (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;
 					break;
 				case "10":
+					MediaSliderTest.VisibleRangeStart += (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;
 					break;
 				case "11":
 					break;

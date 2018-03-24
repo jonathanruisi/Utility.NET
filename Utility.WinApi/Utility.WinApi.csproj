@@ -60,13 +60,13 @@
     <Compile Include="Shell32\Shell32Helper.cs" />
   </ItemGroup>
   <ItemGroup>
+    <WCFMetadata Include="Connected Services\" />
+  </ItemGroup>
+  <ItemGroup>
     <ProjectReference Include="..\Utility.NET\Utility.NET.csproj">
       <Project>{4dcc55c7-3182-44f7-bf82-7058b9f00521}</Project>
       <Name>Utility.NET</Name>
     </ProjectReference>
-  </ItemGroup>
-  <ItemGroup>
-    <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

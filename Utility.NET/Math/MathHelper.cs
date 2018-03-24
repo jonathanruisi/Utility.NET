@@ -13,11 +13,7 @@
 
 using System;
 using System.Collections.Generic;
-using System.Collections.ObjectModel;
 using System.Linq;
-using System.Numerics;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace JLR.Utility.NET.Math
 {
