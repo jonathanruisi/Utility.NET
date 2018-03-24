@@ -88,13 +88,6 @@ namespace Utility.WPF.Tests
 			MediaSliderTest.PositionChanged     += MediaSliderTest_PositionChanged;
 			MediaSliderTest.SelectionChanged    += MediaSliderTest_SelectionChanged;
 			MediaSliderTest.VisibleRangeChanged += MediaSliderTest_VisibleRangeChanged;
-			MediaSliderTest.TestOneChanged += MediaSliderTest_TestOneChanged;
-		}
-
-		private void MediaSliderTest_TestOneChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-		{
-			TextBoxE0.Text = e.NewValue.ToString("0.###");
-			TextBoxE1.Text = e.OldValue.ToString("0.###");
 		}
 
 		private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) { }

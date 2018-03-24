@@ -50,7 +50,6 @@ namespace JLR.Utility.WPF.Controls
 		private bool _isVisualRangeChanging;
 		private bool _isVisualRangeDragging;
 		private double _prevMouseCoord;
-		private double _lastDensity;
 		private LinkedList<int> _fpsDivisors;
 		private LinkedListNode<int> _currentFpsDivisor;
 		private (decimal temporal, double visual) _snapDistance;
@@ -442,18 +441,6 @@ namespace JLR.Utility.WPF.Controls
 			RoutingStrategy.Bubble,
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
-
-		public event RoutedPropertyChangedEventHandler<double> TestOneChanged
-		{
-			add => AddHandler(TestOneChangedEvent, value);
-			remove => RemoveHandler(TestOneChangedEvent, value);
-		}
-
-		public static readonly RoutedEvent TestOneChangedEvent = EventManager.RegisterRoutedEvent(
-			"TestOneChanged",
-			RoutingStrategy.Bubble,
-			typeof(RoutedPropertyChangedEventHandler<double>),
-			typeof(MediaSlider));
 		#endregion
 
 		#region Constructors
@@ -776,10 +763,10 @@ namespace JLR.Utility.WPF.Controls
 				_visibleRange.MouseMove           += VisibleRange_MouseMove;
 			}
 
-			/*var binding = new Binding { Path = new PropertyPath("Minimum"), Source = this };
+			var binding = new Binding { Path = new PropertyPath("Minimum"), Source = this };
 			SetBinding(VisibleRangeStartProperty, binding);
 			binding = new Binding { Path = new PropertyPath("Maximum"), Source = this };
-			SetBinding(VisibleRangeEndProperty, binding);*/
+			SetBinding(VisibleRangeEndProperty, binding);
 
 			Loaded += MediaSlider_Loaded;
 		}
@@ -1029,7 +1016,6 @@ namespace JLR.Utility.WPF.Controls
 
 				_currentFpsDivisor     = _fpsDivisors.First;
 				_snapDistance.temporal = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
-				_lastDensity           = 0;
 			}
 
 			UpdateVisualSnapDistance();
