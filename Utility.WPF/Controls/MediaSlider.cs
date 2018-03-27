@@ -40,6 +40,10 @@ namespace JLR.Utility.WPF.Controls
 	[TemplateVisualState(Name = "MouseLeftButtonDown", GroupName = "MouseStates")]
 	public class MediaSlider : Control
 	{
+		#region Constants
+		private const decimal MinVisibleRange = 1;
+		#endregion
+
 		#region Fields
 		private ContentPresenter _position;
 		private ContentPresenter _visibleRangeStart, _visibleRangeEnd, _visibleRange;
@@ -47,8 +51,7 @@ namespace JLR.Utility.WPF.Controls
 		private Panel _mainPanel, _zoomPanel;
 		private TickBarAdvanced _tickBar;
 		private bool _isMouseLeftButtonDown;
-		private bool _isVisualRangeChanging;
-		private bool _isVisualRangeDragging;
+		private bool _isVisibleRangeChanging, _isVisibleRangeDragging, _isSelectionRangeChanging;
 		private double _prevMouseCoord;
 		private LinkedList<int> _fpsDivisors;
 		private LinkedListNode<int> _currentFpsDivisor;
@@ -406,6 +409,30 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Events
+		public event RoutedEventHandler PositionDragStarted
+		{
+			add => AddHandler(PositionDragStartedEvent, value);
+			remove => RemoveHandler(PositionDragStartedEvent, value);
+		}
+
+		public static readonly RoutedEvent PositionDragStartedEvent = EventManager.RegisterRoutedEvent(
+			"PositionDragStarted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler PositionDragCompleted
+		{
+			add => AddHandler(PositionDragCompletedEvent, value);
+			remove => RemoveHandler(PositionDragCompletedEvent, value);
+		}
+
+		public static readonly RoutedEvent PositionDragCompletedEvent = EventManager.RegisterRoutedEvent(
+			"PositionDragCompleted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
 		public event RoutedPropertyChangedEventHandler<decimal> PositionChanged
 		{
 			add => AddHandler(PositionChangedEvent, value);
@@ -418,19 +445,67 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedPropertyChangedEventHandler<decimal>),
 			typeof(MediaSlider));
 
-		public event RoutedEventHandler SelectionChanged
+		public event RoutedEventHandler SelectionRangeDragStarted
 		{
-			add => AddHandler(SelectionChangedEvent, value);
-			remove => RemoveHandler(SelectionChangedEvent, value);
+			add => AddHandler(SelectionRangeDragStartedEvent, value);
+			remove => RemoveHandler(SelectionRangeDragStartedEvent, value);
 		}
 
-		public static readonly RoutedEvent SelectionChangedEvent = EventManager.RegisterRoutedEvent(
-			"SelectionChanged",
+		public static readonly RoutedEvent SelectionRangeDragStartedEvent = EventManager.RegisterRoutedEvent(
+			"SelectionRangeDragStarted",
 			RoutingStrategy.Bubble,
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
-		public event RoutedEventHandler VisibleRangeChanged
+		public event RoutedEventHandler SelectionRangeDragCompleted
+		{
+			add => AddHandler(SelectionRangeDragCompletedEvent, value);
+			remove => RemoveHandler(SelectionRangeDragCompletedEvent, value);
+		}
+
+		public static readonly RoutedEvent SelectionRangeDragCompletedEvent = EventManager.RegisterRoutedEvent(
+			"SelectionRangeDragCompleted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedPropertyChangedEventHandler<(decimal rangeStart, decimal rangeEnd)?> SelectionRangeChanged
+		{
+			add => AddHandler(SelectionRangeChangedEvent, value);
+			remove => RemoveHandler(SelectionRangeChangedEvent, value);
+		}
+
+		public static readonly RoutedEvent SelectionRangeChangedEvent = EventManager.RegisterRoutedEvent(
+			"SelectionRangeChanged",
+			RoutingStrategy.Bubble,
+			typeof(RoutedPropertyChangedEventHandler<(decimal rangeStart, decimal rangeEnd)?>),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler VisibleRangeDragStarted
+		{
+			add => AddHandler(VisibleRangeDragStartedEvent, value);
+			remove => RemoveHandler(VisibleRangeDragStartedEvent, value);
+		}
+
+		public static readonly RoutedEvent VisibleRangeDragStartedEvent = EventManager.RegisterRoutedEvent(
+			"VisibleRangeDragStarted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler VisibleRangeDragCompleted
+		{
+			add => AddHandler(VisibleRangeDragCompletedEvent, value);
+			remove => RemoveHandler(VisibleRangeDragCompletedEvent, value);
+		}
+
+		public static readonly RoutedEvent VisibleRangeDragCompletedEvent = EventManager.RegisterRoutedEvent(
+			"VisibleRangeDragCompleted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedPropertyChangedEventHandler<(decimal rangeStart, decimal rangeEnd)> VisibleRangeChanged
 		{
 			add => AddHandler(VisibleRangeChangedEvent, value);
 			remove => RemoveHandler(VisibleRangeChangedEvent, value);
@@ -439,7 +514,7 @@ namespace JLR.Utility.WPF.Controls
 		public static readonly RoutedEvent VisibleRangeChangedEvent = EventManager.RegisterRoutedEvent(
 			"VisibleRangeChanged",
 			RoutingStrategy.Bubble,
-			typeof(RoutedEventHandler),
+			typeof(RoutedPropertyChangedEventHandler<(decimal rangeStart, decimal rangeEnd)>),
 			typeof(MediaSlider));
 		#endregion
 
@@ -517,47 +592,113 @@ namespace JLR.Utility.WPF.Controls
 			}
 			else if (e.Property == SelectionStartProperty)
 			{
-				if (e.NewValue is decimal newValue && newValue > mediaSlider.SelectionEnd)
-					mediaSlider.SelectionEnd = newValue;
-				else if (e.NewValue == null)
-					mediaSlider.SelectionEnd = null;
+				(decimal rangeStart, decimal rangeEnd)? oldRange = null;
+				(decimal rangeStart, decimal rangeEnd)? newRange = null;
 
-				mediaSlider.UpdateSelectionRangeElements();
-				mediaSlider.RaiseEvent(new RoutedEventArgs(SelectionChangedEvent, d));
+				if (e.OldValue is decimal oldStart && mediaSlider.SelectionEnd != null)
+				{
+					oldRange = (oldStart, (decimal)mediaSlider.SelectionEnd);
+				}
+
+				if (e.NewValue is decimal newStart && mediaSlider.SelectionEnd != null)
+				{
+					if (newStart > mediaSlider.SelectionEnd)
+					{
+						mediaSlider._isSelectionRangeChanging = true;
+						mediaSlider.SelectionEnd              = newStart;
+					}
+
+					newRange = (newStart, (decimal)mediaSlider.SelectionEnd);
+				}
+				else if (e.NewValue == null)
+				{
+					mediaSlider._isSelectionRangeChanging = true;
+					mediaSlider.SelectionEnd              = null;
+				}
+
+				if (!mediaSlider._isSelectionRangeChanging)
+				{
+					mediaSlider.UpdateSelectionRangeElements();
+					mediaSlider.RaiseEvent(
+						new RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)?>(
+							oldRange,
+							newRange,
+							SelectionRangeChangedEvent));
+				}
+
+				mediaSlider._isSelectionRangeChanging = false;
 			}
 			else if (e.Property == SelectionEndProperty)
 			{
-				if (e.NewValue is decimal newValue && newValue < mediaSlider.SelectionStart)
-					mediaSlider.SelectionStart = newValue;
+				(decimal rangeStart, decimal rangeEnd)? oldRange = null;
+				(decimal rangeStart, decimal rangeEnd)? newRange = null;
+
+				if (e.OldValue is decimal oldEnd && mediaSlider.SelectionStart != null)
+				{
+					oldRange = ((decimal)mediaSlider.SelectionStart, oldEnd);
+				}
+
+				if (e.NewValue is decimal newEnd && mediaSlider.SelectionStart != null)
+				{
+					if (newEnd < mediaSlider.SelectionStart)
+					{
+						mediaSlider._isSelectionRangeChanging = true;
+						mediaSlider.SelectionStart            = newEnd;
+					}
+
+					newRange = ((decimal)mediaSlider.SelectionStart, newEnd);
+				}
 				else if (e.NewValue == null)
-					mediaSlider.SelectionStart = null;
+				{
+					mediaSlider._isSelectionRangeChanging = true;
+					mediaSlider.SelectionStart            = null;
+				}
 
-				mediaSlider.UpdateSelectionRangeElements();
-				mediaSlider.RaiseEvent(new RoutedEventArgs(SelectionChangedEvent, d));
+				if (!mediaSlider._isSelectionRangeChanging)
+				{
+					mediaSlider.UpdateSelectionRangeElements();
+					mediaSlider.RaiseEvent(
+						new RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)?>(
+							oldRange,
+							newRange,
+							SelectionRangeChangedEvent));
+				}
+
+				mediaSlider._isSelectionRangeChanging = false;
 			}
-			else if (e.Property == VisibleRangeStartProperty && !mediaSlider._isVisualRangeChanging)
+			else if (e.Property == VisibleRangeStartProperty && !mediaSlider._isVisibleRangeChanging)
 			{
-				var oldRange = mediaSlider.VisibleRangeEnd - (decimal)e.OldValue;
-				var newRange = mediaSlider.VisibleRangeEnd - (decimal)e.NewValue;
+				(decimal rangeStart, decimal rangeEnd) oldRange = ((decimal)e.OldValue, mediaSlider.VisibleRangeEnd);
+				(decimal rangeStart, decimal rangeEnd) newRange = ((decimal)e.NewValue, mediaSlider.VisibleRangeEnd);
 
 				mediaSlider.UpdatePositionElement();
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.UpdateVisibleRangeElements();
-				if (!mediaSlider._isVisualRangeDragging)
-					mediaSlider.AdjustTickDensity(oldRange.CompareTo(newRange));
-				mediaSlider.RaiseEvent(new RoutedEventArgs(VisibleRangeChangedEvent, d));
+				if (!mediaSlider._isVisibleRangeDragging)
+					mediaSlider.AdjustTickDensity(
+						(oldRange.rangeEnd - oldRange.rangeStart).CompareTo(newRange.rangeEnd - newRange.rangeStart));
+				mediaSlider.RaiseEvent(
+					new RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)>(
+						oldRange,
+						newRange,
+						VisibleRangeChangedEvent));
 			}
-			else if (e.Property == VisibleRangeEndProperty && !mediaSlider._isVisualRangeChanging)
+			else if (e.Property == VisibleRangeEndProperty && !mediaSlider._isVisibleRangeChanging)
 			{
-				var oldRange = (decimal)e.OldValue - mediaSlider.VisibleRangeStart;
-				var newRange = (decimal)e.NewValue - mediaSlider.VisibleRangeStart;
+				(decimal rangeStart, decimal rangeEnd) oldRange = (mediaSlider.VisibleRangeStart, (decimal)e.OldValue);
+				(decimal rangeStart, decimal rangeEnd) newRange = (mediaSlider.VisibleRangeStart, (decimal)e.NewValue);
 
 				mediaSlider.UpdatePositionElement();
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.UpdateVisibleRangeElements();
-				if (!mediaSlider._isVisualRangeDragging)
-					mediaSlider.AdjustTickDensity(oldRange.CompareTo(newRange));
-				mediaSlider.RaiseEvent(new RoutedEventArgs(VisibleRangeChangedEvent, d));
+				if (!mediaSlider._isVisibleRangeDragging)
+					mediaSlider.AdjustTickDensity(
+						(oldRange.rangeEnd - oldRange.rangeStart).CompareTo(newRange.rangeEnd - newRange.rangeStart));
+				mediaSlider.RaiseEvent(
+					new RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)>(
+						oldRange,
+						newRange,
+						VisibleRangeChangedEvent));
 			}
 		}
 
@@ -643,7 +784,7 @@ namespace JLR.Utility.WPF.Controls
 			if (visibleRangeStart < mediaSlider.Minimum)
 				return mediaSlider.Minimum;
 
-			var offset = mediaSlider.VisibleRangeEnd - Math.Min(mediaSlider.Maximum - mediaSlider.Minimum, 1);
+			var offset = mediaSlider.VisibleRangeEnd - Math.Min(mediaSlider.Maximum - mediaSlider.Minimum, MinVisibleRange);
 			if (visibleRangeStart > offset)
 				return offset > mediaSlider.Minimum ? offset : mediaSlider.Minimum;
 
@@ -658,7 +799,7 @@ namespace JLR.Utility.WPF.Controls
 			if (visibleRangeEnd > mediaSlider.Maximum)
 				return mediaSlider.Maximum;
 
-			var offset = mediaSlider.VisibleRangeStart + Math.Min(mediaSlider.Maximum - mediaSlider.Minimum, 1);
+			var offset = mediaSlider.VisibleRangeStart + Math.Min(mediaSlider.Maximum - mediaSlider.Minimum, MinVisibleRange);
 			if (visibleRangeEnd < offset)
 				return offset < mediaSlider.Maximum ? offset : mediaSlider.Maximum;
 
@@ -763,10 +904,11 @@ namespace JLR.Utility.WPF.Controls
 				_visibleRange.MouseMove           += VisibleRange_MouseMove;
 			}
 
-			var binding = new Binding { Path = new PropertyPath("Minimum"), Source = this };
+			// TODO: Investigate different ways to achieve the effect of the binding below. SetCurrentValue() perhaps?
+			/*var binding = new Binding { Path = new PropertyPath("Minimum"), Source = this };
 			SetBinding(VisibleRangeStartProperty, binding);
 			binding = new Binding { Path = new PropertyPath("Maximum"), Source = this };
-			SetBinding(VisibleRangeEndProperty, binding);
+			SetBinding(VisibleRangeEndProperty, binding);*/
 
 			Loaded += MediaSlider_Loaded;
 		}
@@ -1114,7 +1256,9 @@ namespace JLR.Utility.WPF.Controls
 			var closest = (from tick in _tickBar.MajorTickPositions.Concat(_tickBar.MinorTickPositions)
 						   orderby Math.Abs(tick.position - pos.X)
 						   select tick).First();
+			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
 			Position = closest.value;
+			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
 		}
 
 		private void Position_MouseEnter(object sender, MouseEventArgs e)
@@ -1148,6 +1292,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_position.CaptureMouse();
 			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
 		}
 
 		private void Position_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -1159,6 +1304,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_position.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
 		}
 
 		private void Position_MouseMove(object sender, MouseEventArgs e)
@@ -1217,6 +1363,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_selectionStart.CaptureMouse();
 			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(SelectionRangeDragStartedEvent, this));
 		}
 
 		private void SelectionStart_MouseLeftButtonUp(object sender, MouseEventArgs e)
@@ -1228,6 +1375,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_selectionStart.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(SelectionRangeDragCompletedEvent, this));
 		}
 
 		private void SelectionStart_MouseMove(object sender, MouseEventArgs e)
@@ -1286,6 +1434,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_selectionEnd.CaptureMouse();
 			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(SelectionRangeDragStartedEvent, this));
 		}
 
 		private void SelectionEnd_MouseLeftButtonUp(object sender, MouseEventArgs e)
@@ -1297,6 +1446,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_selectionEnd.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(SelectionRangeDragCompletedEvent, this));
 		}
 
 		private void SelectionEnd_MouseMove(object sender, MouseEventArgs e)
@@ -1355,6 +1505,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_visibleRangeStart.CaptureMouse();
 			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 		}
 
 		private void VisibleRangeStart_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -1369,6 +1520,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_visibleRangeStart.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(VisibleRangeDragCompletedEvent, this));
 		}
 
 		private void VisibleRangeStart_MouseMove(object sender, MouseEventArgs e)
@@ -1419,6 +1571,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_visibleRangeEnd.CaptureMouse();
 			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 		}
 
 		private void VisibleRangeEnd_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -1430,6 +1583,7 @@ namespace JLR.Utility.WPF.Controls
 
 			_visibleRangeEnd.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(VisibleRangeDragCompletedEvent, this));
 		}
 
 		private void VisibleRangeEnd_MouseMove(object sender, MouseEventArgs e)
@@ -1478,18 +1632,20 @@ namespace JLR.Utility.WPF.Controls
 				VisualStateManager.GoToElementState(visibleRange, "MouseLeftButtonDown", false);
 			}
 
-			_isVisualRangeDragging = true;
+			_isVisibleRangeDragging = true;
 			_visibleRange.CaptureMouse();
 			_prevMouseCoord = e.GetPosition(_visibleRange).X;
+
 			if (e.ClickCount >= 2)
 			{
-				_isVisualRangeChanging = true;
-				VisibleRangeStart      = Minimum;
-				_isVisualRangeChanging = false;
-				VisibleRangeEnd        = Maximum;
+				_isVisibleRangeChanging = true;
+				VisibleRangeStart       = Minimum;
+				_isVisibleRangeChanging = false;
+				VisibleRangeEnd         = Maximum;
 			}
 
 			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 		}
 
 		private void VisibleRange_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -1500,8 +1656,9 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_visibleRange.ReleaseMouseCapture();
-			_isVisualRangeDragging = false;
-			_isMouseLeftButtonDown = false;
+			_isVisibleRangeDragging = false;
+			_isMouseLeftButtonDown  = false;
+			RaiseEvent(new RoutedEventArgs(VisibleRangeDragCompletedEvent, this));
 		}
 
 		private void VisibleRange_MouseMove(object sender, MouseEventArgs e)
@@ -1513,23 +1670,22 @@ namespace JLR.Utility.WPF.Controls
 			if (Math.Abs(pos.X) < 0.5)
 				return;
 
-			var delta = (decimal)(pos.X - _prevMouseCoord) * (Maximum - Minimum) /
-				(decimal)_zoomPanel.ActualWidth;
+			var delta = (decimal)(pos.X - _prevMouseCoord) * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
 			var range = VisibleRangeEnd - VisibleRangeStart;
 
 			if (delta < 0 && VisibleRangeStart > Minimum)
 			{
-				_isVisualRangeChanging = true;
-				VisibleRangeStart = Math.Max(VisibleRangeStart + delta, Minimum);
-				_isVisualRangeChanging = false;
-				VisibleRangeEnd   = VisibleRangeStart + range;
+				_isVisibleRangeChanging = true;
+				VisibleRangeStart       = Math.Max(VisibleRangeStart + delta, Minimum);
+				_isVisibleRangeChanging = false;
+				VisibleRangeEnd         = VisibleRangeStart + range;
 			}
 			else if (delta > 0 && VisibleRangeEnd < Maximum)
 			{
-				_isVisualRangeChanging = true;
-				VisibleRangeEnd   = Math.Min(VisibleRangeEnd + delta, Maximum);
-				_isVisualRangeChanging = false;
-				VisibleRangeStart = VisibleRangeEnd - range;
+				_isVisibleRangeChanging = true;
+				VisibleRangeEnd         = Math.Min(VisibleRangeEnd + delta, Maximum);
+				_isVisibleRangeChanging = false;
+				VisibleRangeStart       = VisibleRangeEnd - range;
 			}
 		}
 		#endregion
