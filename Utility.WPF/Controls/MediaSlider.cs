@@ -469,7 +469,7 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
-		public event RoutedPropertyChangedEventHandler<(decimal rangeStart, decimal rangeEnd)?> SelectionRangeChanged
+		public event RoutedEventHandler SelectionRangeChanged
 		{
 			add => AddHandler(SelectionRangeChangedEvent, value);
 			remove => RemoveHandler(SelectionRangeChangedEvent, value);
@@ -478,7 +478,7 @@ namespace JLR.Utility.WPF.Controls
 		public static readonly RoutedEvent SelectionRangeChangedEvent = EventManager.RegisterRoutedEvent(
 			"SelectionRangeChanged",
 			RoutingStrategy.Bubble,
-			typeof(RoutedPropertyChangedEventHandler<(decimal rangeStart, decimal rangeEnd)?>),
+			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
 		public event RoutedEventHandler VisibleRangeDragStarted
@@ -505,7 +505,7 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
-		public event RoutedPropertyChangedEventHandler<(decimal rangeStart, decimal rangeEnd)> VisibleRangeChanged
+		public event RoutedEventHandler VisibleRangeChanged
 		{
 			add => AddHandler(VisibleRangeChangedEvent, value);
 			remove => RemoveHandler(VisibleRangeChangedEvent, value);
@@ -514,7 +514,7 @@ namespace JLR.Utility.WPF.Controls
 		public static readonly RoutedEvent VisibleRangeChangedEvent = EventManager.RegisterRoutedEvent(
 			"VisibleRangeChanged",
 			RoutingStrategy.Bubble,
-			typeof(RoutedPropertyChangedEventHandler<(decimal rangeStart, decimal rangeEnd)>),
+			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 		#endregion
 
@@ -592,23 +592,10 @@ namespace JLR.Utility.WPF.Controls
 			}
 			else if (e.Property == SelectionStartProperty)
 			{
-				(decimal rangeStart, decimal rangeEnd)? oldRange = null;
-				(decimal rangeStart, decimal rangeEnd)? newRange = null;
-
-				if (e.OldValue is decimal oldStart && mediaSlider.SelectionEnd != null)
+				if (e.NewValue is decimal newStart && newStart > mediaSlider.SelectionEnd)
 				{
-					oldRange = (oldStart, (decimal)mediaSlider.SelectionEnd);
-				}
-
-				if (e.NewValue is decimal newStart && mediaSlider.SelectionEnd != null)
-				{
-					if (newStart > mediaSlider.SelectionEnd)
-					{
-						mediaSlider._isSelectionRangeChanging = true;
-						mediaSlider.SelectionEnd              = newStart;
-					}
-
-					newRange = (newStart, (decimal)mediaSlider.SelectionEnd);
+					mediaSlider._isSelectionRangeChanging = true;
+					mediaSlider.SelectionEnd              = newStart;
 				}
 				else if (e.NewValue == null)
 				{
@@ -619,34 +606,17 @@ namespace JLR.Utility.WPF.Controls
 				if (!mediaSlider._isSelectionRangeChanging)
 				{
 					mediaSlider.UpdateSelectionRangeElements();
-					mediaSlider.RaiseEvent(
-						new RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)?>(
-							oldRange,
-							newRange,
-							SelectionRangeChangedEvent));
+					mediaSlider.RaiseEvent(new RoutedEventArgs(SelectionRangeChangedEvent, d));
 				}
 
 				mediaSlider._isSelectionRangeChanging = false;
 			}
 			else if (e.Property == SelectionEndProperty)
 			{
-				(decimal rangeStart, decimal rangeEnd)? oldRange = null;
-				(decimal rangeStart, decimal rangeEnd)? newRange = null;
-
-				if (e.OldValue is decimal oldEnd && mediaSlider.SelectionStart != null)
+				if (e.NewValue is decimal newEnd && newEnd < mediaSlider.SelectionStart)
 				{
-					oldRange = ((decimal)mediaSlider.SelectionStart, oldEnd);
-				}
-
-				if (e.NewValue is decimal newEnd && mediaSlider.SelectionStart != null)
-				{
-					if (newEnd < mediaSlider.SelectionStart)
-					{
-						mediaSlider._isSelectionRangeChanging = true;
-						mediaSlider.SelectionStart            = newEnd;
-					}
-
-					newRange = ((decimal)mediaSlider.SelectionStart, newEnd);
+					mediaSlider._isSelectionRangeChanging = true;
+					mediaSlider.SelectionStart            = newEnd;
 				}
 				else if (e.NewValue == null)
 				{
@@ -657,48 +627,34 @@ namespace JLR.Utility.WPF.Controls
 				if (!mediaSlider._isSelectionRangeChanging)
 				{
 					mediaSlider.UpdateSelectionRangeElements();
-					mediaSlider.RaiseEvent(
-						new RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)?>(
-							oldRange,
-							newRange,
-							SelectionRangeChangedEvent));
+					mediaSlider.RaiseEvent(new RoutedEventArgs(SelectionRangeChangedEvent, d));
 				}
 
 				mediaSlider._isSelectionRangeChanging = false;
 			}
 			else if (e.Property == VisibleRangeStartProperty && !mediaSlider._isVisibleRangeChanging)
 			{
-				(decimal rangeStart, decimal rangeEnd) oldRange = ((decimal)e.OldValue, mediaSlider.VisibleRangeEnd);
-				(decimal rangeStart, decimal rangeEnd) newRange = ((decimal)e.NewValue, mediaSlider.VisibleRangeEnd);
+				var oldRange = mediaSlider.VisibleRangeEnd - (decimal)e.OldValue;
+				var newRange = mediaSlider.VisibleRangeEnd - (decimal)e.NewValue;
 
 				mediaSlider.UpdatePositionElement();
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.UpdateVisibleRangeElements();
 				if (!mediaSlider._isVisibleRangeDragging)
-					mediaSlider.AdjustTickDensity(
-						(oldRange.rangeEnd - oldRange.rangeStart).CompareTo(newRange.rangeEnd - newRange.rangeStart));
-				mediaSlider.RaiseEvent(
-					new RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)>(
-						oldRange,
-						newRange,
-						VisibleRangeChangedEvent));
+					mediaSlider.AdjustTickDensity(oldRange.CompareTo(newRange));
+				mediaSlider.RaiseEvent(new RoutedEventArgs(VisibleRangeChangedEvent, d));
 			}
 			else if (e.Property == VisibleRangeEndProperty && !mediaSlider._isVisibleRangeChanging)
 			{
-				(decimal rangeStart, decimal rangeEnd) oldRange = (mediaSlider.VisibleRangeStart, (decimal)e.OldValue);
-				(decimal rangeStart, decimal rangeEnd) newRange = (mediaSlider.VisibleRangeStart, (decimal)e.NewValue);
+				var oldRange = (decimal)e.OldValue - mediaSlider.VisibleRangeStart;
+				var newRange = (decimal)e.NewValue - mediaSlider.VisibleRangeStart;
 
 				mediaSlider.UpdatePositionElement();
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.UpdateVisibleRangeElements();
 				if (!mediaSlider._isVisibleRangeDragging)
-					mediaSlider.AdjustTickDensity(
-						(oldRange.rangeEnd - oldRange.rangeStart).CompareTo(newRange.rangeEnd - newRange.rangeStart));
-				mediaSlider.RaiseEvent(
-					new RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)>(
-						oldRange,
-						newRange,
-						VisibleRangeChangedEvent));
+					mediaSlider.AdjustTickDensity(oldRange.CompareTo(newRange));
+				mediaSlider.RaiseEvent(new RoutedEventArgs(VisibleRangeChangedEvent, d));
 			}
 		}
 

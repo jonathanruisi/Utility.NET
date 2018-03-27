@@ -94,18 +94,19 @@ namespace Utility.WPF.Tests
 
 		private void MediaSliderTest_PositionChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e) { }
 
-		private void MediaSliderTest_SelectionRangeChanged(object sender,
-														   RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)?> e)
+		private void MediaSliderTest_SelectionRangeChanged(object sender, RoutedEventArgs e)
 		{
-			TextBoxC1.Text = e.NewValue.HasValue
-				? (e.NewValue.Value.rangeEnd - e.NewValue.Value.rangeStart).ToString("0.###")
-				: "DISABLED";
+			TextBoxC1.Text = MediaSliderTest.SelectionStart == null || MediaSliderTest.SelectionEnd == null
+				? "DISABLED"
+				: $"{(decimal)MediaSliderTest.SelectionEnd - (decimal)MediaSliderTest.SelectionStart:0.###}";
+			MessageBox.Show(
+				$"{MediaSliderTest.SelectionStart?.ToString("0.###") ?? "NULL"}->{MediaSliderTest.SelectionEnd?.ToString("0.###") ?? "NULL"}");
 		}
 
-		private void MediaSliderTest_VisibleRangeChanged(object sender,
-														 RoutedPropertyChangedEventArgs<(decimal rangeStart, decimal rangeEnd)> e)
+		private void MediaSliderTest_VisibleRangeChanged(object sender, RoutedEventArgs e)
 		{
-			TextBoxB1.Text = (e.NewValue.rangeEnd - e.NewValue.rangeStart).ToString("0.###");
+			TextBoxB1.Text = (MediaSliderTest.VisibleRangeEnd - MediaSliderTest.VisibleRangeStart).ToString("0.###");
+			MessageBox.Show($"{MediaSliderTest.VisibleRangeStart:0.###}->{MediaSliderTest.VisibleRangeEnd:0.###}");
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)
