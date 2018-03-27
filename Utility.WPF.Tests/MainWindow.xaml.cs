@@ -99,14 +99,13 @@ namespace Utility.WPF.Tests
 			TextBoxC1.Text = MediaSliderTest.SelectionStart == null || MediaSliderTest.SelectionEnd == null
 				? "DISABLED"
 				: $"{(decimal)MediaSliderTest.SelectionEnd - (decimal)MediaSliderTest.SelectionStart:0.###}";
-			MessageBox.Show(
-				$"{MediaSliderTest.SelectionStart?.ToString("0.###") ?? "NULL"}->{MediaSliderTest.SelectionEnd?.ToString("0.###") ?? "NULL"}");
+			//MessageBox.Show($"{MediaSliderTest.SelectionStart?.ToString("0.###") ?? "NULL"}->{MediaSliderTest.SelectionEnd?.ToString("0.###") ?? "NULL"}");
 		}
 
 		private void MediaSliderTest_VisibleRangeChanged(object sender, RoutedEventArgs e)
 		{
 			TextBoxB1.Text = (MediaSliderTest.VisibleRangeEnd - MediaSliderTest.VisibleRangeStart).ToString("0.###");
-			MessageBox.Show($"{MediaSliderTest.VisibleRangeStart:0.###}->{MediaSliderTest.VisibleRangeEnd:0.###}");
+			//MessageBox.Show($"{MediaSliderTest.VisibleRangeStart:0.###}->{MediaSliderTest.VisibleRangeEnd:0.###}");
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)

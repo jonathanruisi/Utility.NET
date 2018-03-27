@@ -13,6 +13,7 @@
 
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -1247,6 +1248,7 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_position.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_position).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
 		}
@@ -1267,18 +1269,20 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown) return;
 
-			var pos = e.GetPosition(_position);
-			pos.X -= _position.ActualWidth / 2;
-			var dist = Math.Abs(pos.X);
+			// Get mouse position, but only continue if it has moved more than half of the visual snap distance
+			var pos  = e.GetPosition(_position).X - _prevMouseCoord;
+			var dist = Math.Abs(pos);
+			if (dist < _snapDistance.visual / 2)
+				return;
 
-			if (pos.X < 0 && dist > _snapDistance.visual / 2)
+			if (pos < 0)
 			{
 				if (Position - _snapDistance.temporal > VisibleRangeStart)
 					Position -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
 				else
 					Position = VisibleRangeStart;
 			}
-			else if (pos.X > 0 && dist > _snapDistance.visual / 2)
+			else if (pos > 0)
 			{
 				if (Position + _snapDistance.temporal < VisibleRangeEnd)
 					Position += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
@@ -1318,6 +1322,7 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_selectionStart.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_selectionStart).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(SelectionRangeDragStartedEvent, this));
 		}
@@ -1338,18 +1343,20 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown) return;
 
-			var pos = e.GetPosition(_selectionStart);
-			pos.X -= _selectionStart.ActualWidth / 2;
-			var dist = Math.Abs(pos.X);
+			// Get mouse position, but only continue if it has moved more than half of the visual snap distance
+			var pos  = e.GetPosition(_selectionStart).X - _prevMouseCoord;
+			var dist = Math.Abs(pos);
+			if (dist < _snapDistance.visual / 2)
+				return;
 
-			if (pos.X < 0 && dist > _snapDistance.visual / 2)
+			if (pos < 0)
 			{
 				if (SelectionStart - _snapDistance.temporal > VisibleRangeStart)
 					SelectionStart -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
 				else
 					SelectionStart = VisibleRangeStart;
 			}
-			else if (pos.X > 0 && dist > _snapDistance.visual / 2)
+			else if (pos > 0)
 			{
 				if (SelectionStart + _snapDistance.temporal < VisibleRangeEnd)
 					SelectionStart += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
@@ -1389,6 +1396,7 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_selectionEnd.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_selectionEnd).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(SelectionRangeDragStartedEvent, this));
 		}
@@ -1409,18 +1417,20 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown) return;
 
-			var pos = e.GetPosition(_selectionEnd);
-			pos.X -= _selectionEnd.ActualWidth / 2;
-			var dist = Math.Abs(pos.X);
+			// Get mouse position, but only continue if it has moved more than half of the visual snap distance
+			var pos  = e.GetPosition(_selectionEnd).X - _prevMouseCoord;
+			var dist = Math.Abs(pos);
+			if (dist < _snapDistance.visual / 2)
+				return;
 
-			if (pos.X < 0 && dist > _snapDistance.visual / 2)
+			if (pos < 0)
 			{
 				if (SelectionEnd - _snapDistance.temporal > VisibleRangeStart)
 					SelectionEnd -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
 				else
 					SelectionEnd = VisibleRangeStart;
 			}
-			else if (pos.X > 0 && dist > _snapDistance.visual / 2)
+			else if (pos > 0)
 			{
 				if (SelectionEnd + _snapDistance.temporal < VisibleRangeEnd)
 					SelectionEnd += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
@@ -1460,6 +1470,7 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_visibleRangeStart.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_visibleRangeStart).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 		}
@@ -1483,13 +1494,13 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown || !_visibleRangeStart.IsMouseCaptureWithin) return;
 
-			// Get mouse position, but only continue if it has moved more than half of a pixel horizontally
-			var pos = e.GetPosition(_visibleRangeStart);
-			if (Math.Abs(pos.X) < 0.5)
+			// Get mouse position, but only continue if it has moved more than 0.1 pixels horizontally
+			var pos = e.GetPosition(_visibleRangeStart).X - _prevMouseCoord;
+			if (Math.Abs(pos) < 0.1)
 				return;
 
-			var delta = (decimal)pos.X * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
-			if ((pos.X < 0 && VisibleRangeStart > Minimum) || (pos.X > 0 && VisibleRangeStart < Maximum))
+			var delta = (decimal)pos * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
+			if ((pos < 0 && VisibleRangeStart > Minimum) || (pos > 0 && VisibleRangeStart < Maximum))
 			{
 				VisibleRangeStart += delta;
 			}
@@ -1526,6 +1537,7 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_visibleRangeEnd.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_visibleRangeEnd).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 		}
@@ -1546,13 +1558,13 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown || !_visibleRangeEnd.IsMouseCaptureWithin) return;
 
-			// Get mouse position, but only continue if it has moved more than half of a pixel horizontally
-			var pos = e.GetPosition(_visibleRangeEnd);
-			if (Math.Abs(pos.X) < 0.5)
+			// Get mouse position, but only continue if it has moved more than 0.1 pixels horizontally
+			var pos = e.GetPosition(_visibleRangeEnd).X - _prevMouseCoord;
+			if (Math.Abs(pos) < 0.1)
 				return;
 
-			var delta = (decimal)pos.X * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
-			if ((delta < 0 && VisibleRangeEnd > Minimum) || (delta > 0 && VisibleRangeEnd < Maximum))
+			var delta = (decimal)pos * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
+			if ((pos < 0 && VisibleRangeEnd > Minimum) || (pos > 0 && VisibleRangeEnd < Maximum))
 			{
 				VisibleRangeEnd += delta;
 			}
@@ -1588,10 +1600,6 @@ namespace JLR.Utility.WPF.Controls
 				VisualStateManager.GoToElementState(visibleRange, "MouseLeftButtonDown", false);
 			}
 
-			_isVisibleRangeDragging = true;
-			_visibleRange.CaptureMouse();
-			_prevMouseCoord = e.GetPosition(_visibleRange).X;
-
 			if (e.ClickCount >= 2)
 			{
 				_isVisibleRangeChanging = true;
@@ -1599,9 +1607,13 @@ namespace JLR.Utility.WPF.Controls
 				_isVisibleRangeChanging = false;
 				VisibleRangeEnd         = Maximum;
 			}
-
-			_isMouseLeftButtonDown = true;
-			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
+			else
+			{
+				_visibleRange.CaptureMouse();
+				_prevMouseCoord        = e.GetPosition(_visibleRange).X;
+				_isMouseLeftButtonDown = true;
+				RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
+			}
 		}
 
 		private void VisibleRange_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
@@ -1621,22 +1633,23 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (!_isMouseLeftButtonDown || !_visibleRange.IsMouseCaptureWithin) return;
 
-			// Get mouse position, but only continue if it has moved more than half of a pixel horizontally
-			var pos = e.GetPosition(_visibleRange);
-			if (Math.Abs(pos.X) < 0.5)
+			// Get mouse position, but only continue if it has moved more than 0.1 pixels horizontally
+			var pos = e.GetPosition(_visibleRangeStart).X - _prevMouseCoord;
+			if (Math.Abs(pos) < 0.1)
 				return;
 
-			var delta = (decimal)(pos.X - _prevMouseCoord) * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
+			_isVisibleRangeDragging = true;
+			var delta = (decimal)pos * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
 			var range = VisibleRangeEnd - VisibleRangeStart;
 
-			if (delta < 0 && VisibleRangeStart > Minimum)
+			if (pos < 0 && VisibleRangeStart > Minimum)
 			{
 				_isVisibleRangeChanging = true;
 				VisibleRangeStart       = Math.Max(VisibleRangeStart + delta, Minimum);
 				_isVisibleRangeChanging = false;
 				VisibleRangeEnd         = VisibleRangeStart + range;
 			}
-			else if (delta > 0 && VisibleRangeEnd < Maximum)
+			else if (pos > 0 && VisibleRangeEnd < Maximum)
 			{
 				_isVisibleRangeChanging = true;
 				VisibleRangeEnd         = Math.Min(VisibleRangeEnd + delta, Maximum);
