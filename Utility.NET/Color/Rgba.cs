@@ -28,7 +28,7 @@ namespace JLR.Utility.NET.Color
 
 		#region Properties
 		public                 double        A { get; set; }
-		public static readonly Range<double> RangeA = new Range<double>(0.0, 255.0);
+		public static readonly DiscreteRange<double> RangeA = new DiscreteRange<double>(0.0, 255.0);
 		#endregion
 
 		#region Indexers
@@ -65,10 +65,10 @@ namespace JLR.Utility.NET.Color
 		public new static Rgba Random()
 		{
 			return Random<Rgba>(
-				new Range<double>(RangeR.Minimum, RangeR.Maximum, 0.255),
-				new Range<double>(RangeG.Minimum, RangeG.Maximum, 0.255),
-				new Range<double>(RangeB.Minimum, RangeB.Maximum, 0.255),
-				new Range<double>(RangeA.Minimum, RangeA.Maximum, 0.255));
+				new DiscreteRange<double>(RangeR.Minimum, RangeR.Maximum, 0.255),
+				new DiscreteRange<double>(RangeG.Minimum, RangeG.Maximum, 0.255),
+				new DiscreteRange<double>(RangeB.Minimum, RangeB.Maximum, 0.255),
+				new DiscreteRange<double>(RangeA.Minimum, RangeA.Maximum, 0.255));
 		}
 		#endregion
 

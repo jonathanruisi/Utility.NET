@@ -358,7 +358,7 @@ namespace JLR.Utility.NET.Color
 			}
 		}
 
-		public static T Random<T>(params Range<double>[] values) where T : ColorSpace, new()
+		public static T Random<T>(params DiscreteRange<double>[] values) where T : ColorSpace, new()
 		{
 			if (values == null)
 				throw new ArgumentNullException(nameof(values), "The property list cannot be null");
@@ -372,7 +372,7 @@ namespace JLR.Utility.NET.Color
 			var properties = new decimal[values.Length];
 			for (var i = 0; i < values.Length; i++)
 			{
-				var range = new Range<decimal>(
+				var range = new DiscreteRange<decimal>(
 					(decimal)values[i].Minimum,
 					(decimal)values[i].Maximum,
 					(decimal)values[i].Increment);
@@ -898,7 +898,7 @@ namespace JLR.Utility.NET.Color
 			return value - degreesToSubtract;
 		}
 
-		protected static void ValidateRange(double value, Range<double> range, string name)
+		protected static void ValidateRange(double value, DiscreteRange<double> range, string name)
 		{
 			if (value < range.Minimum || value > range.Maximum)
 				throw new ArgumentOutOfRangeException(

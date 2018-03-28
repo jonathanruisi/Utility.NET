@@ -46,21 +46,52 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Fields
-		private ContentPresenter _position;
-		private ContentPresenter _visibleRangeStart, _visibleRangeEnd, _visibleRange;
-		private ContentPresenter _selectionStart, _selectionEnd, _selectionRange;
+		private ContentPresenter _positionElement;
+		private ContentPresenter _visRngStartElement, _visRngEndElement, _visRngElement;
+		private ContentPresenter _selStartElement, _selEndElement, _selRngElement;
 		private Panel _mainPanel, _zoomPanel;
 		private TickBarAdvanced _tickBar;
 		private bool _isMouseLeftButtonDown;
-		private bool _isVisibleRangeChanging, _isVisibleRangeDragging, _isSelectionRangeChanging;
+		private bool _isSelRngChanging, _isVisRngChanging, _isVisRngDragging;
 		private double _prevMouseCoord;
 		private LinkedList<int> _fpsDivisors;
 		private LinkedListNode<int> _currentFpsDivisor;
+		private Range<decimal>? _selectionRangeOld;
+		private Range<decimal> _visibleRangeOld;
 		private (decimal temporal, double visual) _snapDistance;
 		#endregion
 
 		#region Properties
+		/// <summary>
+		/// Gets the current selection range.
+		/// This value wraps the <see cref="SelectionStart"/> and <see cref="SelectionEnd"/> properties.
+		/// </summary>
+		public Range<decimal>? SelectionRange
+		{
+			get
+			{
+				if (SelectionStart == null || SelectionEnd == null)
+					return null;
+				return new Range<decimal>((decimal)SelectionStart, (decimal)SelectionEnd);
+			}
+		}
+
+		/// <summary>
+		/// Gets the current visible range.
+		/// This value wraps the <see cref="VisibleRangeStart"/> and <see cref="VisibleRangeEnd"/> properties.
+		/// </summary>
+		public Range<decimal> VisibleRange => new Range<decimal>(VisibleRangeStart, VisibleRangeEnd);
+		#endregion
+
+		#region Dependency Properties
 		#region General
+		/// <summary>
+		/// Gets or sets the minimum acceptable amount of space (in pixels) between tick marks.
+		/// This value is used to automatically adjust the density of tick marks (visual snap distance)
+		/// based on the current size of the control and the current visible range.
+		/// When zooming in for example, tick marks will be added until every frame/sample is represented.
+		/// Likewise, tick marks will be removed when zooming out.
+		/// </summary>
 		public double TickDensityThreshold
 		{
 			get => (double)GetValue(TickDensityThresholdProperty);
@@ -75,6 +106,13 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Media
+		/// <summary>
+		/// Gets or sets the number of frames (or samples) into which each second of media is divided.
+		/// This property does not currently support drop-frame timecode,
+		/// therefore it is recommended to set this value to the nearest whole number of frames.
+		/// For example, a video file with an actual framerate of 29.97fps would set this value to 30.
+		/// TODO: This control is currently time-based, and does not support accurate frame/sample selection - add this capability!
+		/// </summary>
 		public int FramesPerSecond
 		{
 			get => (int)GetValue(FramesPerSecondProperty);
@@ -89,6 +127,9 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Range
+		/// <summary>
+		/// Gets or sets the <see cref="Minimum"/> possible <see cref="Position"/> in the <see cref="MediaSlider"/>.
+		/// </summary>
 		public decimal Minimum { get => (decimal)GetValue(MinimumProperty); set => SetValue(MinimumProperty, value); }
 
 		public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register(
@@ -97,6 +138,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(0.0M, OnRangePropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the <see cref="Maximum"/> possible <see cref="Position"/> in the <see cref="MediaSlider"/>.
+		/// </summary>
 		public decimal Maximum { get => (decimal)GetValue(MaximumProperty); set => SetValue(MaximumProperty, value); }
 
 		public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register(
@@ -105,6 +149,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(0.0M, OnRangePropertyChanged, CoerceMaximum));
 
+		/// <summary>
+		/// Gets or sets the current <see cref="Position"/> of the playhead within the <see cref="MediaSlider"/>.
+		/// </summary>
 		public decimal Position { get => (decimal)GetValue(PositionProperty); set => SetValue(PositionProperty, value); }
 
 		public static readonly DependencyProperty PositionProperty = DependencyProperty.Register(
@@ -113,30 +160,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(0.0M, OnRangePropertyChanged, CoercePosition));
 
-		public decimal VisibleRangeStart
-		{
-			get => (decimal)GetValue(VisibleRangeStartProperty);
-			set => SetValue(VisibleRangeStartProperty, value);
-		}
-
-		public static readonly DependencyProperty VisibleRangeStartProperty = DependencyProperty.Register(
-			"VisibleRangeStart",
-			typeof(decimal),
-			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(0.0M, OnRangePropertyChanged, CoerceVisibleRangeStart));
-
-		public decimal VisibleRangeEnd
-		{
-			get => (decimal)GetValue(VisibleRangeEndProperty);
-			set => SetValue(VisibleRangeEndProperty, value);
-		}
-
-		public static readonly DependencyProperty VisibleRangeEndProperty = DependencyProperty.Register(
-			"VisibleRangeEnd",
-			typeof(decimal),
-			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(0.0M, OnRangePropertyChanged, CoerceVisibleRangeEnd));
-
+		/// <summary>
+		/// Gets or sets the lower bound of the <see cref="SelectionRange"/>.
+		/// Setting this value to <code>null</code> disables the selection and hides the relevant visual elements.
+		/// </summary>
 		public decimal? SelectionStart
 		{
 			get => (decimal?)GetValue(SelectionStartProperty);
@@ -149,6 +176,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(null, OnRangePropertyChanged, CoerceSelectionStart));
 
+		/// <summary>
+		/// Gets or sets the upper bound of the <see cref="SelectionRange"/>.
+		/// Setting this value to <code>null</code> disables the selection and hides the relevant visual elements.
+		/// </summary>
 		public decimal? SelectionEnd
 		{
 			get => (decimal?)GetValue(SelectionEndProperty);
@@ -160,9 +191,43 @@ namespace JLR.Utility.WPF.Controls
 			typeof(decimal?),
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(null, OnRangePropertyChanged, CoerceSelectionEnd));
+
+		/// <summary>
+		/// Gets or sets the lower bound of the <see cref="VisibleRange"/> (zoom).
+		/// </summary>
+		public decimal VisibleRangeStart
+		{
+			get => (decimal)GetValue(VisibleRangeStartProperty);
+			set => SetValue(VisibleRangeStartProperty, value);
+		}
+
+		public static readonly DependencyProperty VisibleRangeStartProperty = DependencyProperty.Register(
+			"VisibleRangeStart",
+			typeof(decimal),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(0.0M, OnRangePropertyChanged, CoerceVisibleRangeStart));
+
+		/// <summary>
+		/// Gets or sets the upper bound of the <see cref="VisibleRange"/> (zoom).
+		/// </summary>
+		public decimal VisibleRangeEnd
+		{
+			get => (decimal)GetValue(VisibleRangeEndProperty);
+			set => SetValue(VisibleRangeEndProperty, value);
+		}
+
+		public static readonly DependencyProperty VisibleRangeEndProperty = DependencyProperty.Register(
+			"VisibleRangeEnd",
+			typeof(decimal),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(0.0M, OnRangePropertyChanged, CoerceVisibleRangeEnd));
 		#endregion
 
 		#region Alignment and Sizing
+		/// <summary>
+		/// Gets or sets the vertical alignment of the tick marks. Possible values include
+		/// <see cref="NET.Position.Top"/>, <see cref="NET.Position.Middle"/>, and <see cref="NET.Position.Bottom"/>.
+		/// </summary>
 		public Position TickAlignment
 		{
 			get => (Position)GetValue(TickAlignmentProperty);
@@ -175,6 +240,11 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Bottom));
 
+		/// <summary>
+		/// Gets or sets the vertical alignment of the playhead.
+		/// A seperate <see cref="DataTemplate"/> can be defined for each possible <see cref="NET.Position"/>:
+		/// (<see cref="NET.Position.Top"/>, <see cref="NET.Position.Middle"/>, <see cref="NET.Position.Bottom"/>).
+		/// </summary>
 		public Position PositionAlignment
 		{
 			get => (Position)GetValue(PositionAlignmentProperty);
@@ -187,6 +257,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Top, OnAlignmentAndSizingPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the vertical alignment of the selection range sliders. Possible values include
+		/// <see cref="NET.Position.Top"/>, <see cref="NET.Position.Middle"/>, and <see cref="NET.Position.Bottom"/>.
+		/// </summary>
 		public Position SelectionRangeAlignment
 		{
 			get => (Position)GetValue(SelectionRangeAlignmentProperty);
@@ -199,6 +273,11 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Top, OnAlignmentAndSizingPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the vertical alignment of the highlight element between the selection range sliders.
+		/// This value is relative to the selection range sliders, and possible values include
+		/// <see cref="NET.Position.Top"/>, <see cref="NET.Position.Middle"/>, and <see cref="NET.Position.Bottom"/>.
+		/// </summary>
 		public Position SelectionRangeHighlightAlignment
 		{
 			get => (Position)GetValue(SelectionRangeHighlightAlignmentProperty);
@@ -211,6 +290,11 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Middle, OnAlignmentAndSizingPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the <see cref="GridLength"/> (calculated height) of the zoom bar,
+		/// which defines the <see cref="VisibleRange"/> of this control.
+		/// A <see cref="GridUnitType.Star"/> value is relative to the size of the main slider area.
+		/// </summary>
 		public GridLength ZoomBarSize
 		{
 			get => (GridLength)GetValue(ZoomBarSizeProperty);
@@ -224,6 +308,11 @@ namespace JLR.Utility.WPF.Controls
 			new FrameworkPropertyMetadata(new GridLength(1, GridUnitType.Star)),
 			IsGridLengthValid);
 
+		/// <summary>
+		/// Gets or sets the <see cref="GridLength"/> (calculated height)
+		/// of the space between the main slider area and the zoom bar.
+		/// A <see cref="GridUnitType.Star"/> value is relative to the size of the main slider area.
+		/// </summary>
 		public GridLength InnerGapSize
 		{
 			get => (GridLength)GetValue(InnerGapSizeProperty);
@@ -237,6 +326,9 @@ namespace JLR.Utility.WPF.Controls
 			new FrameworkPropertyMetadata(new GridLength(1, GridUnitType.Star)),
 			IsGridLengthValid);
 
+		/// <summary>
+		/// Gets or sets the height of the position element relative to the height of the main slider area.
+		/// </summary>
 		public double PositionRelativeSize
 		{
 			get => (double)GetValue(PositionRelativeSizeProperty);
@@ -249,6 +341,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(1.0, OnAlignmentAndSizingPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the height of the selection range elements relative to the height of the main slider area.
+		/// </summary>
 		public double SelectionRangeRelativeSize
 		{
 			get => (double)GetValue(SelectionRangeRelativeSizeProperty);
@@ -261,6 +356,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(1.0, OnAlignmentAndSizingPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the height of the selection range highlight element
+		/// relative to the height of the selection range elements.
+		/// </summary>
 		public double SelectionRangeHighlightRelativeSize
 		{
 			get => (double)GetValue(SelectionRangeHighlightRelativeSizeProperty);
@@ -273,6 +372,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(1.0, OnAlignmentAndSizingPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the height of the origin (<see cref="Position"/>=0) tick mark
+		/// relative to the height of the main slider area.
+		/// </summary>
 		public double OriginTickRelativeSize
 		{
 			get => (double)GetValue(OriginTickRelativeSizeProperty);
@@ -285,6 +388,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(1.0));
 
+		/// <summary>
+		/// Gets or sets the height of all major (1 second interval or greater) tick marks
+		/// relative to the height of the main slider area.
+		/// </summary>
 		public double MajorTickRelativeSize
 		{
 			get => (double)GetValue(MajorTickRelativeSizeProperty);
@@ -297,6 +404,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(1.0));
 
+		/// <summary>
+		/// Gets or sets the height of all minor (frame/sample) tick marks
+		/// relative to the height of the main slider area.
+		/// </summary>
 		public double MinorTickRelativeSize
 		{
 			get => (double)GetValue(MinorTickRelativeSizeProperty);
@@ -309,6 +420,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(1.0));
 
+		/// <summary>
+		/// Gets or sets the thickness of the origin (<see cref="Position"/>=0) tick mark.
+		/// </summary>
 		public double OriginTickThickness
 		{
 			get => (double)GetValue(OriginTickThicknessProperty);
@@ -321,6 +435,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(1.0));
 
+		/// <summary>
+		/// Gets or sets the thickness of all major (1 second interval or greater) tick marks.
+		/// </summary>
 		public double MajorTickThickness
 		{
 			get => (double)GetValue(MajorTickThicknessProperty);
@@ -333,6 +450,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(1.0));
 
+		/// <summary>
+		/// Gets or sets the thickness of all minor (frame/sample) tick marks.
+		/// </summary>
 		public double MinorTickThickness
 		{
 			get => (double)GetValue(MinorTickThicknessProperty);
@@ -347,6 +467,9 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Brushes
+		/// <summary>
+		/// Gets or sets a brush that describes the background of the main slider area.
+		/// </summary>
 		public Brush TickBarBackground
 		{
 			get => (Brush)GetValue(TickBarBackgroundProperty);
@@ -359,6 +482,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(null));
 
+		/// <summary>
+		/// Gets or sets a brush that describes the background of the zoom area.
+		/// </summary>
 		public Brush ZoomBarBackground
 		{
 			get => (Brush)GetValue(ZoomBarBackgroundProperty);
@@ -371,6 +497,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(null));
 
+		/// <summary>
+		/// Gets or sets a brush that describes the color of the origin (<see cref="Position"/>=0) tick mark.
+		/// </summary>
 		public Brush OriginTickBrush
 		{
 			get => (Brush)GetValue(OriginTickBrushProperty);
@@ -383,6 +512,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(null));
 
+		/// <summary>
+		/// Gets or sets a brush that describes the color of all major (1 second interval or greater) tick marks.
+		/// </summary>
 		public Brush MajorTickBrush
 		{
 			get => (Brush)GetValue(MajorTickBrushProperty);
@@ -395,6 +527,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(null));
 
+		/// <summary>
+		/// Gets or sets a brush that describes the color of all minor (frame/sample) tick marks.
+		/// </summary>
 		public Brush MinorTickBrush
 		{
 			get => (Brush)GetValue(MinorTickBrushProperty);
@@ -410,6 +545,9 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Events
+		/// <summary>
+		/// Occurs when the playhead element receives logical focus and mouse capture.
+		/// </summary>
 		public event RoutedEventHandler PositionDragStarted
 		{
 			add => AddHandler(PositionDragStartedEvent, value);
@@ -422,6 +560,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
+		/// <summary>
+		/// Occurs when the playhead element loses mouse capture.
+		/// </summary>
 		public event RoutedEventHandler PositionDragCompleted
 		{
 			add => AddHandler(PositionDragCompletedEvent, value);
@@ -434,6 +575,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
+		/// <summary>
+		/// Occurs when the <see cref="Position"/> changes.
+		/// </summary>
 		public event RoutedPropertyChangedEventHandler<decimal> PositionChanged
 		{
 			add => AddHandler(PositionChangedEvent, value);
@@ -446,6 +590,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedPropertyChangedEventHandler<decimal>),
 			typeof(MediaSlider));
 
+		/// <summary>
+		/// Occurs when either of the selection elements receive logical focus and mouse capture.
+		/// </summary>
 		public event RoutedEventHandler SelectionRangeDragStarted
 		{
 			add => AddHandler(SelectionRangeDragStartedEvent, value);
@@ -458,6 +605,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
+		/// <summary>
+		/// Occurs when either of the selection elements lose mouse capture.
+		/// </summary>
 		public event RoutedEventHandler SelectionRangeDragCompleted
 		{
 			add => AddHandler(SelectionRangeDragCompletedEvent, value);
@@ -470,7 +620,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
-		public event RoutedEventHandler SelectionRangeChanged
+		/// <summary>
+		/// Occurs when the selection range changes.
+		/// </summary>
+		public event RoutedPropertyChangedEventHandler<Range<decimal>?> SelectionRangeChanged
 		{
 			add => AddHandler(SelectionRangeChangedEvent, value);
 			remove => RemoveHandler(SelectionRangeChangedEvent, value);
@@ -479,9 +632,12 @@ namespace JLR.Utility.WPF.Controls
 		public static readonly RoutedEvent SelectionRangeChangedEvent = EventManager.RegisterRoutedEvent(
 			"SelectionRangeChanged",
 			RoutingStrategy.Bubble,
-			typeof(RoutedEventHandler),
+			typeof(RoutedPropertyChangedEventHandler<Range<decimal>?>),
 			typeof(MediaSlider));
 
+		/// <summary>
+		/// Occurs when any of the visible range elements receive logical focus and mouse capture.
+		/// </summary>
 		public event RoutedEventHandler VisibleRangeDragStarted
 		{
 			add => AddHandler(VisibleRangeDragStartedEvent, value);
@@ -494,6 +650,9 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
+		/// <summary>
+		/// Occurs when any of the visible range elements lose mouse capture.
+		/// </summary>
 		public event RoutedEventHandler VisibleRangeDragCompleted
 		{
 			add => AddHandler(VisibleRangeDragCompletedEvent, value);
@@ -506,7 +665,10 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
-		public event RoutedEventHandler VisibleRangeChanged
+		/// <summary>
+		/// Occurs when the visible range changes.
+		/// </summary>
+		public event RoutedPropertyChangedEventHandler<Range<decimal>> VisibleRangeChanged
 		{
 			add => AddHandler(VisibleRangeChangedEvent, value);
 			remove => RemoveHandler(VisibleRangeChangedEvent, value);
@@ -515,7 +677,7 @@ namespace JLR.Utility.WPF.Controls
 		public static readonly RoutedEvent VisibleRangeChangedEvent = EventManager.RegisterRoutedEvent(
 			"VisibleRangeChanged",
 			RoutingStrategy.Bubble,
-			typeof(RoutedEventHandler),
+			typeof(RoutedPropertyChangedEventHandler<Range<decimal>>),
 			typeof(MediaSlider));
 		#endregion
 
@@ -534,12 +696,20 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Public Methods
+		/// <summary>
+		/// Automatically adjusts various padding values to provide empty space needed to accomodate
+		/// the playhead, selection range elements, and visible range elements
+		/// when they are at their respective minimum and maximum positions.
+		/// This method is called automatically by the control when needed,
+		/// but has been made publicly accessible for situations when readjustment is necessary.
+		/// TODO: This functionality should be handled by the layout system
+		/// </summary>
 		public void AdjustPaddingToFit()
 		{
-			var mainLeftSpaceNeeded  = Math.Max(_position.ActualWidth / 2, _selectionStart.ActualWidth) - Padding.Left;
-			var mainRightSpaceNeeded = Math.Max(_position.ActualWidth / 2, _selectionEnd.ActualWidth) - Padding.Right;
-			var zoomLeftSpaceNeeded  = _visibleRangeStart.ActualWidth - Padding.Left;
-			var zoomRightSpaceNeeded = _visibleRangeEnd.ActualWidth - Padding.Right;
+			var mainLeftSpaceNeeded  = Math.Max(_positionElement.ActualWidth / 2, _selStartElement.ActualWidth) - Padding.Left;
+			var mainRightSpaceNeeded = Math.Max(_positionElement.ActualWidth / 2, _selEndElement.ActualWidth) - Padding.Right;
+			var zoomLeftSpaceNeeded  = _visRngStartElement.ActualWidth - Padding.Left;
+			var zoomRightSpaceNeeded = _visRngEndElement.ActualWidth - Padding.Right;
 
 			var newMargin = new Thickness(0, 0, 0, 0);
 			if (mainLeftSpaceNeeded > 0)
@@ -593,69 +763,113 @@ namespace JLR.Utility.WPF.Controls
 			}
 			else if (e.Property == SelectionStartProperty)
 			{
-				if (e.NewValue is decimal newStart && newStart > mediaSlider.SelectionEnd)
+				Range<decimal>? newRange = null;
+
+				if (e.NewValue is decimal newStart && mediaSlider.SelectionEnd != null)
 				{
-					mediaSlider._isSelectionRangeChanging = true;
-					mediaSlider.SelectionEnd              = newStart;
+					if (newStart > mediaSlider.SelectionEnd)
+					{
+						mediaSlider._isSelRngChanging = true;
+						mediaSlider.SelectionEnd      = newStart;
+					}
+
+					newRange = new Range<decimal>(newStart, (decimal)mediaSlider.SelectionEnd);
 				}
 				else if (e.NewValue == null)
 				{
-					mediaSlider._isSelectionRangeChanging = true;
-					mediaSlider.SelectionEnd              = null;
+					mediaSlider._isSelRngChanging = true;
+					mediaSlider.SelectionEnd      = null;
 				}
 
-				if (!mediaSlider._isSelectionRangeChanging)
+				if (mediaSlider._isSelRngChanging)
 				{
-					mediaSlider.UpdateSelectionRangeElements();
-					mediaSlider.RaiseEvent(new RoutedEventArgs(SelectionRangeChangedEvent, d));
+					mediaSlider._isSelRngChanging = false;
+					return;
 				}
 
-				mediaSlider._isSelectionRangeChanging = false;
+				mediaSlider.UpdateSelectionRangeElements();
+				mediaSlider.RaiseEvent(
+					new RoutedPropertyChangedEventArgs<Range<decimal>?>(
+						mediaSlider._selectionRangeOld,
+						newRange,
+						SelectionRangeChangedEvent));
+				mediaSlider._selectionRangeOld = newRange;
 			}
 			else if (e.Property == SelectionEndProperty)
 			{
-				if (e.NewValue is decimal newEnd && newEnd < mediaSlider.SelectionStart)
+				Range<decimal>? newRange = null;
+
+				if (e.NewValue is decimal newEnd && mediaSlider.SelectionStart != null)
 				{
-					mediaSlider._isSelectionRangeChanging = true;
-					mediaSlider.SelectionStart            = newEnd;
+					if (newEnd < mediaSlider.SelectionStart)
+					{
+						mediaSlider._isSelRngChanging = true;
+						mediaSlider.SelectionStart    = newEnd;
+					}
+
+					newRange = new Range<decimal>((decimal)mediaSlider.SelectionStart, newEnd);
 				}
 				else if (e.NewValue == null)
 				{
-					mediaSlider._isSelectionRangeChanging = true;
-					mediaSlider.SelectionStart            = null;
+					mediaSlider._isSelRngChanging = true;
+					mediaSlider.SelectionStart    = null;
 				}
 
-				if (!mediaSlider._isSelectionRangeChanging)
+				if (mediaSlider._isSelRngChanging)
 				{
-					mediaSlider.UpdateSelectionRangeElements();
-					mediaSlider.RaiseEvent(new RoutedEventArgs(SelectionRangeChangedEvent, d));
+					mediaSlider._isSelRngChanging = false;
+					return;
 				}
 
-				mediaSlider._isSelectionRangeChanging = false;
+				mediaSlider.UpdateSelectionRangeElements();
+				mediaSlider.RaiseEvent(
+					new RoutedPropertyChangedEventArgs<Range<decimal>?>(
+						mediaSlider._selectionRangeOld,
+						newRange,
+						SelectionRangeChangedEvent));
+				mediaSlider._selectionRangeOld = newRange;
 			}
-			else if (e.Property == VisibleRangeStartProperty && !mediaSlider._isVisibleRangeChanging)
+			else if (e.Property == VisibleRangeStartProperty)
 			{
-				var oldRange = mediaSlider.VisibleRangeEnd - (decimal)e.OldValue;
-				var newRange = mediaSlider.VisibleRangeEnd - (decimal)e.NewValue;
+				if (mediaSlider._isVisRngChanging)
+				{
+					mediaSlider._isVisRngChanging = false;
+					return;
+				}
 
+				var newRange = new Range<decimal>((decimal)e.NewValue, mediaSlider.VisibleRangeEnd);
 				mediaSlider.UpdatePositionElement();
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.UpdateVisibleRangeElements();
-				if (!mediaSlider._isVisibleRangeDragging)
-					mediaSlider.AdjustTickDensity(oldRange.CompareTo(newRange));
-				mediaSlider.RaiseEvent(new RoutedEventArgs(VisibleRangeChangedEvent, d));
+				if (!mediaSlider._isVisRngDragging)
+					mediaSlider.AdjustTickDensity(mediaSlider._visibleRangeOld.Magnitude().CompareTo(newRange.Magnitude()));
+				mediaSlider.RaiseEvent(
+					new RoutedPropertyChangedEventArgs<Range<decimal>>(
+						mediaSlider._visibleRangeOld,
+						newRange,
+						VisibleRangeChangedEvent));
+				mediaSlider._visibleRangeOld = newRange;
 			}
-			else if (e.Property == VisibleRangeEndProperty && !mediaSlider._isVisibleRangeChanging)
+			else if (e.Property == VisibleRangeEndProperty)
 			{
-				var oldRange = (decimal)e.OldValue - mediaSlider.VisibleRangeStart;
-				var newRange = (decimal)e.NewValue - mediaSlider.VisibleRangeStart;
+				if (mediaSlider._isVisRngChanging)
+				{
+					mediaSlider._isVisRngChanging = false;
+					return;
+				}
 
+				var newRange = new Range<decimal>(mediaSlider.VisibleRangeStart, (decimal)e.NewValue);
 				mediaSlider.UpdatePositionElement();
 				mediaSlider.UpdateSelectionRangeElements();
 				mediaSlider.UpdateVisibleRangeElements();
-				if (!mediaSlider._isVisibleRangeDragging)
-					mediaSlider.AdjustTickDensity(oldRange.CompareTo(newRange));
-				mediaSlider.RaiseEvent(new RoutedEventArgs(VisibleRangeChangedEvent, d));
+				if (!mediaSlider._isVisRngDragging)
+					mediaSlider.AdjustTickDensity(mediaSlider._visibleRangeOld.Magnitude().CompareTo(newRange.Magnitude()));
+				mediaSlider.RaiseEvent(
+					new RoutedPropertyChangedEventArgs<Range<decimal>>(
+						mediaSlider._visibleRangeOld,
+						newRange,
+						VisibleRangeChangedEvent));
+				mediaSlider._visibleRangeOld = newRange;
 			}
 		}
 
@@ -792,73 +1006,73 @@ namespace JLR.Utility.WPF.Controls
 
 			if (GetTemplateChild("PART_Position") is ContentPresenter position)
 			{
-				_position                     =  position;
-				_position.MouseEnter          += Position_MouseEnter;
-				_position.MouseLeave          += Position_MouseLeave;
-				_position.MouseLeftButtonDown += Position_MouseLeftButtonDown;
-				_position.MouseLeftButtonUp   += Position_MouseLeftButtonUp;
-				_position.MouseMove           += Position_MouseMove;
+				_positionElement                     =  position;
+				_positionElement.MouseEnter          += Position_MouseEnter;
+				_positionElement.MouseLeave          += Position_MouseLeave;
+				_positionElement.MouseLeftButtonDown += Position_MouseLeftButtonDown;
+				_positionElement.MouseLeftButtonUp   += Position_MouseLeftButtonUp;
+				_positionElement.MouseMove           += Position_MouseMove;
 			}
 
 			if (GetTemplateChild("PART_SelectionStart") is ContentPresenter selectionStart)
 			{
-				_selectionStart                     =  selectionStart;
-				_selectionStart.MouseEnter          += SelectionStart_MouseEnter;
-				_selectionStart.MouseLeave          += SelectionStart_MouseLeave;
-				_selectionStart.MouseLeftButtonDown += SelectionStart_MouseLeftButtonDown;
-				_selectionStart.MouseLeftButtonUp   += SelectionStart_MouseLeftButtonUp;
-				_selectionStart.MouseMove           += SelectionStart_MouseMove;
+				_selStartElement                     =  selectionStart;
+				_selStartElement.MouseEnter          += SelectionStart_MouseEnter;
+				_selStartElement.MouseLeave          += SelectionStart_MouseLeave;
+				_selStartElement.MouseLeftButtonDown += SelectionStart_MouseLeftButtonDown;
+				_selStartElement.MouseLeftButtonUp   += SelectionStart_MouseLeftButtonUp;
+				_selStartElement.MouseMove           += SelectionStart_MouseMove;
 			}
 
 			if (GetTemplateChild("PART_SelectionEnd") is ContentPresenter selectionEnd)
 			{
-				_selectionEnd                     =  selectionEnd;
-				_selectionEnd.MouseEnter          += SelectionEnd_MouseEnter;
-				_selectionEnd.MouseLeave          += SelectionEnd_MouseLeave;
-				_selectionEnd.MouseLeftButtonDown += SelectionEnd_MouseLeftButtonDown;
-				_selectionEnd.MouseLeftButtonUp   += SelectionEnd_MouseLeftButtonUp;
-				_selectionEnd.MouseMove           += SelectionEnd_MouseMove;
+				_selEndElement                     =  selectionEnd;
+				_selEndElement.MouseEnter          += SelectionEnd_MouseEnter;
+				_selEndElement.MouseLeave          += SelectionEnd_MouseLeave;
+				_selEndElement.MouseLeftButtonDown += SelectionEnd_MouseLeftButtonDown;
+				_selEndElement.MouseLeftButtonUp   += SelectionEnd_MouseLeftButtonUp;
+				_selEndElement.MouseMove           += SelectionEnd_MouseMove;
 			}
 
 			if (GetTemplateChild("PART_SelectionRange") is ContentPresenter selectionRange)
 			{
-				_selectionRange = selectionRange;
+				_selRngElement = selectionRange;
 			}
 
 			if (GetTemplateChild("PART_VisibleRangeStart") is ContentPresenter visibleRangeStart)
 			{
-				_visibleRangeStart                     =  visibleRangeStart;
-				_visibleRangeStart.MouseEnter          += VisibleRangeStart_MouseEnter;
-				_visibleRangeStart.MouseLeave          += VisibleRangeStart_MouseLeave;
-				_visibleRangeStart.MouseLeftButtonDown += VisibleRangeStart_MouseLeftButtonDown;
-				_visibleRangeStart.MouseLeftButtonUp   += VisibleRangeStart_MouseLeftButtonUp;
-				_visibleRangeStart.MouseMove           += VisibleRangeStart_MouseMove;
+				_visRngStartElement                     =  visibleRangeStart;
+				_visRngStartElement.MouseEnter          += VisibleRangeStart_MouseEnter;
+				_visRngStartElement.MouseLeave          += VisibleRangeStart_MouseLeave;
+				_visRngStartElement.MouseLeftButtonDown += VisibleRangeStart_MouseLeftButtonDown;
+				_visRngStartElement.MouseLeftButtonUp   += VisibleRangeStart_MouseLeftButtonUp;
+				_visRngStartElement.MouseMove           += VisibleRangeStart_MouseMove;
 			}
 
 			if (GetTemplateChild("PART_VisibleRangeEnd") is ContentPresenter visibleRangeEnd)
 			{
-				_visibleRangeEnd                     =  visibleRangeEnd;
-				_visibleRangeEnd.MouseEnter          += VisibleRangeEnd_MouseEnter;
-				_visibleRangeEnd.MouseLeave          += VisibleRangeEnd_MouseLeave;
-				_visibleRangeEnd.MouseLeftButtonDown += VisibleRangeEnd_MouseLeftButtonDown;
-				_visibleRangeEnd.MouseLeftButtonUp   += VisibleRangeEnd_MouseLeftButtonUp;
-				_visibleRangeEnd.MouseMove           += VisibleRangeEnd_MouseMove;
+				_visRngEndElement                     =  visibleRangeEnd;
+				_visRngEndElement.MouseEnter          += VisibleRangeEnd_MouseEnter;
+				_visRngEndElement.MouseLeave          += VisibleRangeEnd_MouseLeave;
+				_visRngEndElement.MouseLeftButtonDown += VisibleRangeEnd_MouseLeftButtonDown;
+				_visRngEndElement.MouseLeftButtonUp   += VisibleRangeEnd_MouseLeftButtonUp;
+				_visRngEndElement.MouseMove           += VisibleRangeEnd_MouseMove;
 			}
 
 			if (GetTemplateChild("PART_VisibleRange") is ContentPresenter visibleRange)
 			{
-				_visibleRange = visibleRange;
+				_visRngElement = visibleRange;
 				if (VisualTreeHelper.GetParent(visibleRange) is Panel parent)
 				{
 					_zoomPanel             =  parent;
 					_zoomPanel.SizeChanged += MediaSlider_ZoomPanel_SizeChanged;
 				}
 
-				_visibleRange.MouseEnter          += VisibleRange_MouseEnter;
-				_visibleRange.MouseLeave          += VisibleRange_MouseLeave;
-				_visibleRange.MouseLeftButtonDown += VisibleRange_MouseLeftButtonDown;
-				_visibleRange.MouseLeftButtonUp   += VisibleRange_MouseLeftButtonUp;
-				_visibleRange.MouseMove           += VisibleRange_MouseMove;
+				_visRngElement.MouseEnter          += VisibleRange_MouseEnter;
+				_visRngElement.MouseLeave          += VisibleRange_MouseLeave;
+				_visRngElement.MouseLeftButtonDown += VisibleRange_MouseLeftButtonDown;
+				_visRngElement.MouseLeftButtonUp   += VisibleRange_MouseLeftButtonUp;
+				_visRngElement.MouseMove           += VisibleRange_MouseMove;
 			}
 
 			// TODO: Investigate different ways to achieve the effect of the binding below. SetCurrentValue() perhaps?
@@ -874,66 +1088,66 @@ namespace JLR.Utility.WPF.Controls
 		#region Private Methods
 		private void UpdatePositionElement()
 		{
-			if (_mainPanel == null || _position == null || Math.Abs(_mainPanel.ActualWidth) < double.Epsilon)
+			if (_mainPanel == null || _positionElement == null || Math.Abs(_mainPanel.ActualWidth) < double.Epsilon)
 				return;
 
 			if (Position < VisibleRangeStart || Position > VisibleRangeEnd || VisibleRangeStart == VisibleRangeEnd)
 			{
-				_position.Visibility = Visibility.Collapsed;
+				_positionElement.Visibility = Visibility.Collapsed;
 				return;
 			}
 
-			_position.Visibility = Visibility.Visible;
+			_positionElement.Visibility = Visibility.Visible;
 			Canvas.SetLeft(
-				_position,
+				_positionElement,
 				decimal.ToDouble(
 					(Position - VisibleRangeStart) * ((decimal)_mainPanel.ActualWidth / (VisibleRangeEnd - VisibleRangeStart)) -
-					(decimal)_position.ActualWidth / 2));
+					(decimal)_positionElement.ActualWidth / 2));
 		}
 
 		private void UpdateSelectionRangeElements()
 		{
-			if (_mainPanel == null || _selectionStart == null || _selectionEnd == null || _selectionRange == null)
+			if (_mainPanel == null || _selStartElement == null || _selEndElement == null || _selRngElement == null)
 				return;
 
 			// Hide the selection range controls if the selection range feature is disabled
 			if (SelectionStart == null || SelectionEnd == null)
 			{
-				_selectionStart.Visibility = Visibility.Collapsed;
-				_selectionEnd.Visibility   = Visibility.Collapsed;
-				_selectionRange.Visibility = Visibility.Collapsed;
+				_selStartElement.Visibility = Visibility.Collapsed;
+				_selEndElement.Visibility   = Visibility.Collapsed;
+				_selRngElement.Visibility   = Visibility.Collapsed;
 				return;
 			}
 
 			// Move the selection range start control if it is enabled and within the current visible range
 			if (SelectionStart >= VisibleRangeStart && SelectionStart <= VisibleRangeEnd && VisibleRangeStart != VisibleRangeEnd)
 			{
-				_selectionStart.Visibility = Visibility.Visible;
+				_selStartElement.Visibility = Visibility.Visible;
 				Canvas.SetLeft(
-					_selectionStart,
+					_selStartElement,
 					decimal.ToDouble(
 						((decimal)SelectionStart - VisibleRangeStart) *
 						((decimal)_mainPanel.ActualWidth / (VisibleRangeEnd - VisibleRangeStart)) -
-						(decimal)_selectionStart.ActualWidth));
+						(decimal)_selStartElement.ActualWidth));
 			}
 			else
 			{
-				_selectionStart.Visibility = Visibility.Collapsed;
+				_selStartElement.Visibility = Visibility.Collapsed;
 			}
 
 			// Move the selection range end control if it is enabled and within the current visible range
 			if (SelectionEnd >= VisibleRangeStart && SelectionEnd <= VisibleRangeEnd && VisibleRangeStart != VisibleRangeEnd)
 			{
-				_selectionEnd.Visibility = Visibility.Visible;
+				_selEndElement.Visibility = Visibility.Visible;
 				Canvas.SetLeft(
-					_selectionEnd,
+					_selEndElement,
 					decimal.ToDouble(
 						((decimal)SelectionEnd - VisibleRangeStart) *
 						((decimal)_mainPanel.ActualWidth / (VisibleRangeEnd - VisibleRangeStart))));
 			}
 			else
 			{
-				_selectionEnd.Visibility = Visibility.Collapsed;
+				_selEndElement.Visibility = Visibility.Collapsed;
 			}
 
 			// Move the selection range highlight if selection range is enabled and within the current visible range
@@ -941,82 +1155,82 @@ namespace JLR.Utility.WPF.Controls
 			{
 				if (VisibleRangeStart != VisibleRangeEnd)
 				{
-					_selectionRange.Visibility = Visibility.Visible;
+					_selRngElement.Visibility = Visibility.Visible;
 					var adjustedSelectionStart = SelectionStart >= VisibleRangeStart ? (decimal)SelectionStart : VisibleRangeStart;
 					var adjustedSelectionEnd   = SelectionEnd <= VisibleRangeEnd ? (decimal)SelectionEnd : VisibleRangeEnd;
 
 					Canvas.SetLeft(
-						_selectionRange,
+						_selRngElement,
 						decimal.ToDouble(
 							(adjustedSelectionStart - VisibleRangeStart) *
 							((decimal)_mainPanel.ActualWidth / (VisibleRangeEnd - VisibleRangeStart))));
-					_selectionRange.Width = decimal.ToDouble(
+					_selRngElement.Width = decimal.ToDouble(
 						Math.Abs(adjustedSelectionEnd - adjustedSelectionStart) * (decimal)_mainPanel.ActualWidth /
 						(VisibleRangeEnd - VisibleRangeStart));
 				}
 				else
 				{
-					Canvas.SetLeft(_selectionRange, 0);
-					_selectionRange.Width = _mainPanel.ActualWidth;
+					Canvas.SetLeft(_selRngElement, 0);
+					_selRngElement.Width = _mainPanel.ActualWidth;
 				}
 			}
 			else
 			{
-				_selectionRange.Visibility = Visibility.Collapsed;
+				_selRngElement.Visibility = Visibility.Collapsed;
 			}
 		}
 
 		private void UpdateVisibleRangeElements()
 		{
-			if (_zoomPanel == null || _visibleRangeStart == null || _visibleRangeEnd == null || _visibleRange == null)
+			if (_zoomPanel == null || _visRngStartElement == null || _visRngEndElement == null || _visRngElement == null)
 				return;
 
 			// Move the visible range start control
 			Canvas.SetLeft(
-				_visibleRangeStart,
+				_visRngStartElement,
 				decimal.ToDouble(
 					(VisibleRangeStart - Minimum) * ((decimal)_zoomPanel.ActualWidth / (Maximum - Minimum)) -
-					(decimal)_visibleRangeStart.ActualWidth));
+					(decimal)_visRngStartElement.ActualWidth));
 
 			// Move the visible range end control
 			Canvas.SetLeft(
-				_visibleRangeEnd,
+				_visRngEndElement,
 				decimal.ToDouble((VisibleRangeEnd - Minimum) * ((decimal)_zoomPanel.ActualWidth / (Maximum - Minimum))));
 
 			// Move the visible range highlight (collapsed if visible range = 0)
 			if (VisibleRangeEnd - VisibleRangeStart != 0)
 			{
-				_visibleRange.Visibility = Visibility.Visible;
+				_visRngElement.Visibility = Visibility.Visible;
 				Canvas.SetLeft(
-					_visibleRange,
+					_visRngElement,
 					decimal.ToDouble((VisibleRangeStart - Minimum) * ((decimal)_zoomPanel.ActualWidth / (Maximum - Minimum))));
-				_visibleRange.Width = decimal.ToDouble(
+				_visRngElement.Width = decimal.ToDouble(
 					Math.Abs(VisibleRangeEnd - VisibleRangeStart) * (decimal)_zoomPanel.ActualWidth / (Maximum - Minimum));
 			}
 			else
 			{
-				_visibleRange.Visibility = Visibility.Collapsed;
+				_visRngElement.Visibility = Visibility.Collapsed;
 			}
 		}
 
 		private void ArrangePositionElement()
 		{
 			var newHeight = PositionRelativeSize * _mainPanel.ActualHeight;
-			_position.Height = newHeight;
+			_positionElement.Height = newHeight;
 
 			switch (PositionAlignment)
 			{
 				case JLR.Utility.NET.Position.Top:
 				case JLR.Utility.NET.Position.Left:
-					Canvas.SetTop(_position, 0);
+					Canvas.SetTop(_positionElement, 0);
 					break;
 				case JLR.Utility.NET.Position.Middle:
 				case JLR.Utility.NET.Position.Center:
-					Canvas.SetTop(_position, (_mainPanel.ActualHeight - newHeight) / 2);
+					Canvas.SetTop(_positionElement, (_mainPanel.ActualHeight - newHeight) / 2);
 					break;
 				case JLR.Utility.NET.Position.Bottom:
 				case JLR.Utility.NET.Position.Right:
-					Canvas.SetTop(_position, _mainPanel.ActualHeight - newHeight);
+					Canvas.SetTop(_positionElement, _mainPanel.ActualHeight - newHeight);
 					break;
 			}
 		}
@@ -1025,28 +1239,28 @@ namespace JLR.Utility.WPF.Controls
 		{
 			var newRangeHeight     = SelectionRangeRelativeSize * _mainPanel.ActualHeight;
 			var newHighlightHeight = SelectionRangeHighlightRelativeSize * newRangeHeight;
-			_selectionStart.Height = newRangeHeight;
-			_selectionEnd.Height   = newRangeHeight;
-			_selectionRange.Height = newHighlightHeight;
+			_selStartElement.Height = newRangeHeight;
+			_selEndElement.Height   = newRangeHeight;
+			_selRngElement.Height   = newHighlightHeight;
 
 			switch (SelectionRangeAlignment)
 			{
 				case JLR.Utility.NET.Position.Top:
 				case JLR.Utility.NET.Position.Left:
-					Canvas.SetTop(_selectionStart, 0);
-					Canvas.SetTop(_selectionEnd,   0);
+					Canvas.SetTop(_selStartElement, 0);
+					Canvas.SetTop(_selEndElement,   0);
 					break;
 				case JLR.Utility.NET.Position.Middle:
 				case JLR.Utility.NET.Position.Center:
-					Canvas.SetTop(_selectionStart, (_mainPanel.ActualHeight - newRangeHeight) / 2);
-					Canvas.SetTop(_selectionEnd,   (_mainPanel.ActualHeight - newRangeHeight) / 2);
-					Canvas.SetTop(_selectionRange, (_mainPanel.ActualHeight - newHighlightHeight) / 2);
+					Canvas.SetTop(_selStartElement, (_mainPanel.ActualHeight - newRangeHeight) / 2);
+					Canvas.SetTop(_selEndElement,   (_mainPanel.ActualHeight - newRangeHeight) / 2);
+					Canvas.SetTop(_selRngElement,   (_mainPanel.ActualHeight - newHighlightHeight) / 2);
 					break;
 				case JLR.Utility.NET.Position.Bottom:
 				case JLR.Utility.NET.Position.Right:
-					Canvas.SetTop(_selectionStart, _mainPanel.ActualHeight - newRangeHeight);
-					Canvas.SetTop(_selectionEnd,   _mainPanel.ActualHeight - newRangeHeight);
-					Canvas.SetTop(_selectionRange, _mainPanel.ActualHeight - newHighlightHeight);
+					Canvas.SetTop(_selStartElement, _mainPanel.ActualHeight - newRangeHeight);
+					Canvas.SetTop(_selEndElement,   _mainPanel.ActualHeight - newRangeHeight);
+					Canvas.SetTop(_selRngElement,   _mainPanel.ActualHeight - newHighlightHeight);
 					break;
 				default:
 					break;
@@ -1056,27 +1270,27 @@ namespace JLR.Utility.WPF.Controls
 			{
 				case JLR.Utility.NET.Position.Top:
 				case JLR.Utility.NET.Position.Left:
-					Canvas.SetTop(_selectionRange, Canvas.GetTop(_selectionStart));
+					Canvas.SetTop(_selRngElement, Canvas.GetTop(_selStartElement));
 					break;
 				case JLR.Utility.NET.Position.Middle:
 				case JLR.Utility.NET.Position.Center:
-					Canvas.SetTop(_selectionRange, Canvas.GetTop(_selectionStart) + (newRangeHeight - newHighlightHeight) / 2);
+					Canvas.SetTop(_selRngElement, Canvas.GetTop(_selStartElement) + (newRangeHeight - newHighlightHeight) / 2);
 					break;
 				case JLR.Utility.NET.Position.Bottom:
 				case JLR.Utility.NET.Position.Right:
-					Canvas.SetTop(_selectionRange, Canvas.GetTop(_selectionStart) + (newRangeHeight - newHighlightHeight));
+					Canvas.SetTop(_selRngElement, Canvas.GetTop(_selStartElement) + (newRangeHeight - newHighlightHeight));
 					break;
 			}
 		}
 
 		private void ArrangeVisibleRangeElements()
 		{
-			_visibleRangeStart.Height = _zoomPanel.ActualHeight;
-			_visibleRangeEnd.Height   = _zoomPanel.ActualHeight;
-			_visibleRange.Height      = _zoomPanel.ActualHeight;
-			Canvas.SetTop(_visibleRangeStart, 0);
-			Canvas.SetTop(_visibleRangeEnd,   0);
-			Canvas.SetTop(_visibleRange,      0);
+			_visRngStartElement.Height = _zoomPanel.ActualHeight;
+			_visRngEndElement.Height   = _zoomPanel.ActualHeight;
+			_visRngElement.Height      = _zoomPanel.ActualHeight;
+			Canvas.SetTop(_visRngStartElement, 0);
+			Canvas.SetTop(_visRngEndElement,   0);
+			Canvas.SetTop(_visRngElement,      0);
 		}
 
 		/// <summary>
@@ -1206,7 +1420,7 @@ namespace JLR.Utility.WPF.Controls
 
 		private void MediaSlider_MainPanel_MouseLeftButtonDown(object sender, MouseEventArgs e)
 		{
-			if (e.Source.Equals(_selectionStart) || e.Source.Equals(_selectionEnd) || e.Source.Equals(_position))
+			if (e.Source.Equals(_selStartElement) || e.Source.Equals(_selEndElement) || e.Source.Equals(_positionElement))
 				return;
 
 			var pos = e.GetPosition(_mainPanel);
@@ -1223,7 +1437,7 @@ namespace JLR.Utility.WPF.Controls
 			if (_isMouseLeftButtonDown) return;
 
 			e.MouseDevice.OverrideCursor = Cursors.Hand;
-			if (_position.ContentTemplate.FindName("shape", _position) is Shape position)
+			if (_positionElement.ContentTemplate.FindName("shape", _positionElement) is Shape position)
 			{
 				VisualStateManager.GoToElementState(position, "MouseOver", false);
 			}
@@ -1232,7 +1446,8 @@ namespace JLR.Utility.WPF.Controls
 		private void Position_MouseLeave(object sender, MouseEventArgs e)
 		{
 			e.MouseDevice.OverrideCursor = Cursors.Arrow;
-			if (_position.ContentTemplate.FindName("shape", _position) is Shape position && !_position.IsMouseCaptureWithin)
+			if (_positionElement.ContentTemplate.FindName("shape", _positionElement) is Shape position &&
+				!_positionElement.IsMouseCaptureWithin)
 			{
 				VisualStateManager.GoToElementState(position, "Normal", false);
 			}
@@ -1242,25 +1457,25 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (_isMouseLeftButtonDown) return;
 
-			if (_position.ContentTemplate.FindName("shape", _position) is Shape position)
+			if (_positionElement.ContentTemplate.FindName("shape", _positionElement) is Shape position)
 			{
 				VisualStateManager.GoToElementState(position, "MouseLeftButtonDown", false);
 			}
 
-			_position.CaptureMouse();
-			_prevMouseCoord        = e.GetPosition(_position).X;
+			_positionElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_positionElement).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
 		}
 
 		private void Position_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
 		{
-			if (_position.ContentTemplate.FindName("shape", _position) is Shape position)
+			if (_positionElement.ContentTemplate.FindName("shape", _positionElement) is Shape position)
 			{
-				VisualStateManager.GoToElementState(position, _position.IsMouseOver ? "MouseOver" : "Normal", false);
+				VisualStateManager.GoToElementState(position, _positionElement.IsMouseOver ? "MouseOver" : "Normal", false);
 			}
 
-			_position.ReleaseMouseCapture();
+			_positionElement.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
 			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
 		}
@@ -1270,7 +1485,7 @@ namespace JLR.Utility.WPF.Controls
 			if (!_isMouseLeftButtonDown) return;
 
 			// Get mouse position, but only continue if it has moved more than half of the visual snap distance
-			var pos  = e.GetPosition(_position).X - _prevMouseCoord;
+			var pos  = e.GetPosition(_positionElement).X - _prevMouseCoord;
 			var dist = Math.Abs(pos);
 			if (dist < _snapDistance.visual / 2)
 				return;
@@ -1296,7 +1511,7 @@ namespace JLR.Utility.WPF.Controls
 			if (_isMouseLeftButtonDown) return;
 
 			e.MouseDevice.OverrideCursor = Cursors.SizeWE;
-			if (_selectionStart.ContentTemplate.FindName("shape", _selectionStart) is Shape selectionStart)
+			if (_selStartElement.ContentTemplate.FindName("shape", _selStartElement) is Shape selectionStart)
 			{
 				VisualStateManager.GoToElementState(selectionStart, "MouseOver", false);
 			}
@@ -1305,8 +1520,8 @@ namespace JLR.Utility.WPF.Controls
 		private void SelectionStart_MouseLeave(object sender, MouseEventArgs e)
 		{
 			e.MouseDevice.OverrideCursor = Cursors.Arrow;
-			if (_selectionStart.ContentTemplate.FindName("shape", _selectionStart) is Shape selectionStart &&
-				!_selectionStart.IsMouseCaptureWithin)
+			if (_selStartElement.ContentTemplate.FindName("shape", _selStartElement) is Shape selectionStart &&
+				!_selStartElement.IsMouseCaptureWithin)
 			{
 				VisualStateManager.GoToElementState(selectionStart, "Normal", false);
 			}
@@ -1316,25 +1531,25 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (_isMouseLeftButtonDown) return;
 
-			if (_selectionStart.ContentTemplate.FindName("shape", _selectionStart) is Shape selectionStart)
+			if (_selStartElement.ContentTemplate.FindName("shape", _selStartElement) is Shape selectionStart)
 			{
 				VisualStateManager.GoToElementState(selectionStart, "MouseLeftButtonDown", false);
 			}
 
-			_selectionStart.CaptureMouse();
-			_prevMouseCoord        = e.GetPosition(_selectionStart).X;
+			_selStartElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_selStartElement).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(SelectionRangeDragStartedEvent, this));
 		}
 
 		private void SelectionStart_MouseLeftButtonUp(object sender, MouseEventArgs e)
 		{
-			if (_selectionStart.ContentTemplate.FindName("shape", _selectionStart) is Shape selectionStart)
+			if (_selStartElement.ContentTemplate.FindName("shape", _selStartElement) is Shape selectionStart)
 			{
-				VisualStateManager.GoToElementState(selectionStart, _selectionStart.IsMouseOver ? "MouseOver" : "Normal", false);
+				VisualStateManager.GoToElementState(selectionStart, _selStartElement.IsMouseOver ? "MouseOver" : "Normal", false);
 			}
 
-			_selectionStart.ReleaseMouseCapture();
+			_selStartElement.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
 			RaiseEvent(new RoutedEventArgs(SelectionRangeDragCompletedEvent, this));
 		}
@@ -1344,7 +1559,7 @@ namespace JLR.Utility.WPF.Controls
 			if (!_isMouseLeftButtonDown) return;
 
 			// Get mouse position, but only continue if it has moved more than half of the visual snap distance
-			var pos  = e.GetPosition(_selectionStart).X - _prevMouseCoord;
+			var pos  = e.GetPosition(_selStartElement).X - _prevMouseCoord;
 			var dist = Math.Abs(pos);
 			if (dist < _snapDistance.visual / 2)
 				return;
@@ -1370,7 +1585,7 @@ namespace JLR.Utility.WPF.Controls
 			if (_isMouseLeftButtonDown) return;
 
 			e.MouseDevice.OverrideCursor = Cursors.SizeWE;
-			if (_selectionEnd.ContentTemplate.FindName("shape", _selectionEnd) is Shape selectionEnd)
+			if (_selEndElement.ContentTemplate.FindName("shape", _selEndElement) is Shape selectionEnd)
 			{
 				VisualStateManager.GoToElementState(selectionEnd, "MouseOver", false);
 			}
@@ -1379,8 +1594,8 @@ namespace JLR.Utility.WPF.Controls
 		private void SelectionEnd_MouseLeave(object sender, MouseEventArgs e)
 		{
 			e.MouseDevice.OverrideCursor = Cursors.Arrow;
-			if (_selectionEnd.ContentTemplate.FindName("shape", _selectionEnd) is Shape selectionEnd &&
-				!_selectionEnd.IsMouseCaptureWithin)
+			if (_selEndElement.ContentTemplate.FindName("shape", _selEndElement) is Shape selectionEnd &&
+				!_selEndElement.IsMouseCaptureWithin)
 			{
 				VisualStateManager.GoToElementState(selectionEnd, "Normal", false);
 			}
@@ -1390,25 +1605,25 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (_isMouseLeftButtonDown) return;
 
-			if (_selectionEnd.ContentTemplate.FindName("shape", _selectionEnd) is Shape selectionEnd)
+			if (_selEndElement.ContentTemplate.FindName("shape", _selEndElement) is Shape selectionEnd)
 			{
 				VisualStateManager.GoToElementState(selectionEnd, "MouseLeftButtonDown", false);
 			}
 
-			_selectionEnd.CaptureMouse();
-			_prevMouseCoord        = e.GetPosition(_selectionEnd).X;
+			_selEndElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_selEndElement).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(SelectionRangeDragStartedEvent, this));
 		}
 
 		private void SelectionEnd_MouseLeftButtonUp(object sender, MouseEventArgs e)
 		{
-			if (_selectionEnd.ContentTemplate.FindName("shape", _selectionEnd) is Shape selectionEnd)
+			if (_selEndElement.ContentTemplate.FindName("shape", _selEndElement) is Shape selectionEnd)
 			{
-				VisualStateManager.GoToElementState(selectionEnd, _selectionEnd.IsMouseOver ? "MouseOver" : "Normal", false);
+				VisualStateManager.GoToElementState(selectionEnd, _selEndElement.IsMouseOver ? "MouseOver" : "Normal", false);
 			}
 
-			_selectionEnd.ReleaseMouseCapture();
+			_selEndElement.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
 			RaiseEvent(new RoutedEventArgs(SelectionRangeDragCompletedEvent, this));
 		}
@@ -1418,7 +1633,7 @@ namespace JLR.Utility.WPF.Controls
 			if (!_isMouseLeftButtonDown) return;
 
 			// Get mouse position, but only continue if it has moved more than half of the visual snap distance
-			var pos  = e.GetPosition(_selectionEnd).X - _prevMouseCoord;
+			var pos  = e.GetPosition(_selEndElement).X - _prevMouseCoord;
 			var dist = Math.Abs(pos);
 			if (dist < _snapDistance.visual / 2)
 				return;
@@ -1444,7 +1659,7 @@ namespace JLR.Utility.WPF.Controls
 			if (_isMouseLeftButtonDown) return;
 
 			e.MouseDevice.OverrideCursor = Cursors.SizeWE;
-			if (_visibleRangeStart.ContentTemplate.FindName("shape", _visibleRangeStart) is Shape visibleRangeStart)
+			if (_visRngStartElement.ContentTemplate.FindName("shape", _visRngStartElement) is Shape visibleRangeStart)
 			{
 				VisualStateManager.GoToElementState(visibleRangeStart, "MouseOver", false);
 			}
@@ -1453,8 +1668,8 @@ namespace JLR.Utility.WPF.Controls
 		private void VisibleRangeStart_MouseLeave(object sender, MouseEventArgs e)
 		{
 			e.MouseDevice.OverrideCursor = Cursors.Arrow;
-			if (_visibleRangeStart.ContentTemplate.FindName("shape", _visibleRangeStart) is Shape visibleRangeStart &&
-				!_visibleRangeStart.IsMouseCaptureWithin)
+			if (_visRngStartElement.ContentTemplate.FindName("shape", _visRngStartElement) is Shape visibleRangeStart &&
+				!_visRngStartElement.IsMouseCaptureWithin)
 			{
 				VisualStateManager.GoToElementState(visibleRangeStart, "Normal", false);
 			}
@@ -1464,38 +1679,38 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (_isMouseLeftButtonDown) return;
 
-			if (_visibleRangeStart.ContentTemplate.FindName("shape", _visibleRangeStart) is Shape visibleRangeStart)
+			if (_visRngStartElement.ContentTemplate.FindName("shape", _visRngStartElement) is Shape visibleRangeStart)
 			{
 				VisualStateManager.GoToElementState(visibleRangeStart, "MouseLeftButtonDown", false);
 			}
 
-			_visibleRangeStart.CaptureMouse();
-			_prevMouseCoord        = e.GetPosition(_visibleRangeStart).X;
+			_visRngStartElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_visRngStartElement).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 		}
 
 		private void VisibleRangeStart_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
 		{
-			if (_visibleRangeStart.ContentTemplate.FindName("shape", _visibleRangeStart) is Shape visibleRangeStart)
+			if (_visRngStartElement.ContentTemplate.FindName("shape", _visRngStartElement) is Shape visibleRangeStart)
 			{
 				VisualStateManager.GoToElementState(
 					visibleRangeStart,
-					_visibleRangeStart.IsMouseOver ? "MouseOver" : "Normal",
+					_visRngStartElement.IsMouseOver ? "MouseOver" : "Normal",
 					false);
 			}
 
-			_visibleRangeStart.ReleaseMouseCapture();
+			_visRngStartElement.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
 			RaiseEvent(new RoutedEventArgs(VisibleRangeDragCompletedEvent, this));
 		}
 
 		private void VisibleRangeStart_MouseMove(object sender, MouseEventArgs e)
 		{
-			if (!_isMouseLeftButtonDown || !_visibleRangeStart.IsMouseCaptureWithin) return;
+			if (!_isMouseLeftButtonDown || !_visRngStartElement.IsMouseCaptureWithin) return;
 
 			// Get mouse position, but only continue if it has moved more than 0.1 pixels horizontally
-			var pos = e.GetPosition(_visibleRangeStart).X - _prevMouseCoord;
+			var pos = e.GetPosition(_visRngStartElement).X - _prevMouseCoord;
 			if (Math.Abs(pos) < 0.1)
 				return;
 
@@ -1511,7 +1726,7 @@ namespace JLR.Utility.WPF.Controls
 			if (_isMouseLeftButtonDown) return;
 
 			e.MouseDevice.OverrideCursor = Cursors.SizeWE;
-			if (_visibleRangeEnd.ContentTemplate.FindName("shape", _visibleRangeEnd) is Shape visibleRangeEnd)
+			if (_visRngEndElement.ContentTemplate.FindName("shape", _visRngEndElement) is Shape visibleRangeEnd)
 			{
 				VisualStateManager.GoToElementState(visibleRangeEnd, "MouseOver", false);
 			}
@@ -1520,8 +1735,8 @@ namespace JLR.Utility.WPF.Controls
 		private void VisibleRangeEnd_MouseLeave(object sender, MouseEventArgs e)
 		{
 			e.MouseDevice.OverrideCursor = Cursors.Arrow;
-			if (_visibleRangeEnd.ContentTemplate.FindName("shape", _visibleRangeEnd) is Shape visibleRangeEnd &&
-				!_visibleRangeEnd.IsMouseCaptureWithin)
+			if (_visRngEndElement.ContentTemplate.FindName("shape", _visRngEndElement) is Shape visibleRangeEnd &&
+				!_visRngEndElement.IsMouseCaptureWithin)
 			{
 				VisualStateManager.GoToElementState(visibleRangeEnd, "Normal", false);
 			}
@@ -1531,35 +1746,35 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (_isMouseLeftButtonDown) return;
 
-			if (_visibleRangeEnd.ContentTemplate.FindName("shape", _visibleRangeEnd) is Shape visibleRangeEnd)
+			if (_visRngEndElement.ContentTemplate.FindName("shape", _visRngEndElement) is Shape visibleRangeEnd)
 			{
 				VisualStateManager.GoToElementState(visibleRangeEnd, "MouseLeftButtonDown", false);
 			}
 
-			_visibleRangeEnd.CaptureMouse();
-			_prevMouseCoord        = e.GetPosition(_visibleRangeEnd).X;
+			_visRngEndElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_visRngEndElement).X;
 			_isMouseLeftButtonDown = true;
 			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 		}
 
 		private void VisibleRangeEnd_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
 		{
-			if (_visibleRangeEnd.ContentTemplate.FindName("shape", _visibleRangeEnd) is Shape visibleRangeEnd)
+			if (_visRngEndElement.ContentTemplate.FindName("shape", _visRngEndElement) is Shape visibleRangeEnd)
 			{
-				VisualStateManager.GoToElementState(visibleRangeEnd, _visibleRangeEnd.IsMouseOver ? "MouseOver" : "Normal", false);
+				VisualStateManager.GoToElementState(visibleRangeEnd, _visRngEndElement.IsMouseOver ? "MouseOver" : "Normal", false);
 			}
 
-			_visibleRangeEnd.ReleaseMouseCapture();
+			_visRngEndElement.ReleaseMouseCapture();
 			_isMouseLeftButtonDown = false;
 			RaiseEvent(new RoutedEventArgs(VisibleRangeDragCompletedEvent, this));
 		}
 
 		private void VisibleRangeEnd_MouseMove(object sender, MouseEventArgs e)
 		{
-			if (!_isMouseLeftButtonDown || !_visibleRangeEnd.IsMouseCaptureWithin) return;
+			if (!_isMouseLeftButtonDown || !_visRngEndElement.IsMouseCaptureWithin) return;
 
 			// Get mouse position, but only continue if it has moved more than 0.1 pixels horizontally
-			var pos = e.GetPosition(_visibleRangeEnd).X - _prevMouseCoord;
+			var pos = e.GetPosition(_visRngEndElement).X - _prevMouseCoord;
 			if (Math.Abs(pos) < 0.1)
 				return;
 
@@ -1575,7 +1790,7 @@ namespace JLR.Utility.WPF.Controls
 			if (_isMouseLeftButtonDown) return;
 
 			e.MouseDevice.OverrideCursor = Cursors.ScrollWE;
-			if (_visibleRange.ContentTemplate.FindName("shape", _visibleRange) is Shape visibleRange)
+			if (_visRngElement.ContentTemplate.FindName("shape", _visRngElement) is Shape visibleRange)
 			{
 				VisualStateManager.GoToElementState(visibleRange, "MouseOver", false);
 			}
@@ -1584,8 +1799,8 @@ namespace JLR.Utility.WPF.Controls
 		private void VisibleRange_MouseLeave(object sender, MouseEventArgs e)
 		{
 			e.MouseDevice.OverrideCursor = Cursors.Arrow;
-			if (_visibleRange.ContentTemplate.FindName("shape", _visibleRange) is Shape visibleRange &&
-				!_visibleRange.IsMouseCaptureWithin)
+			if (_visRngElement.ContentTemplate.FindName("shape", _visRngElement) is Shape visibleRange &&
+				!_visRngElement.IsMouseCaptureWithin)
 			{
 				VisualStateManager.GoToElementState(visibleRange, "Normal", false);
 			}
@@ -1595,22 +1810,21 @@ namespace JLR.Utility.WPF.Controls
 		{
 			if (_isMouseLeftButtonDown) return;
 
-			if (_visibleRange.ContentTemplate.FindName("shape", _visibleRange) is Shape visibleRange)
+			if (_visRngElement.ContentTemplate.FindName("shape", _visRngElement) is Shape visibleRange)
 			{
 				VisualStateManager.GoToElementState(visibleRange, "MouseLeftButtonDown", false);
 			}
 
 			if (e.ClickCount >= 2)
 			{
-				_isVisibleRangeChanging = true;
-				VisibleRangeStart       = Minimum;
-				_isVisibleRangeChanging = false;
-				VisibleRangeEnd         = Maximum;
+				_isVisRngChanging = true;
+				VisibleRangeStart = Minimum;
+				VisibleRangeEnd   = Maximum;
 			}
 			else
 			{
-				_visibleRange.CaptureMouse();
-				_prevMouseCoord        = e.GetPosition(_visibleRange).X;
+				_visRngElement.CaptureMouse();
+				_prevMouseCoord        = e.GetPosition(_visRngElement).X;
 				_isMouseLeftButtonDown = true;
 				RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 			}
@@ -1618,43 +1832,41 @@ namespace JLR.Utility.WPF.Controls
 
 		private void VisibleRange_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
 		{
-			if (_visibleRange.ContentTemplate.FindName("shape", _visibleRange) is Shape visibleRange)
+			if (_visRngElement.ContentTemplate.FindName("shape", _visRngElement) is Shape visibleRange)
 			{
-				VisualStateManager.GoToElementState(visibleRange, _visibleRange.IsMouseOver ? "MouseOver" : "Normal", false);
+				VisualStateManager.GoToElementState(visibleRange, _visRngElement.IsMouseOver ? "MouseOver" : "Normal", false);
 			}
 
-			_visibleRange.ReleaseMouseCapture();
-			_isVisibleRangeDragging = false;
-			_isMouseLeftButtonDown  = false;
+			_visRngElement.ReleaseMouseCapture();
+			_isVisRngDragging      = false;
+			_isMouseLeftButtonDown = false;
 			RaiseEvent(new RoutedEventArgs(VisibleRangeDragCompletedEvent, this));
 		}
 
 		private void VisibleRange_MouseMove(object sender, MouseEventArgs e)
 		{
-			if (!_isMouseLeftButtonDown || !_visibleRange.IsMouseCaptureWithin) return;
+			if (!_isMouseLeftButtonDown || !_visRngElement.IsMouseCaptureWithin) return;
 
 			// Get mouse position, but only continue if it has moved more than 0.1 pixels horizontally
-			var pos = e.GetPosition(_visibleRangeStart).X - _prevMouseCoord;
+			var pos = e.GetPosition(_visRngElement).X - _prevMouseCoord;
 			if (Math.Abs(pos) < 0.1)
 				return;
 
-			_isVisibleRangeDragging = true;
+			_isVisRngDragging = true;
 			var delta = (decimal)pos * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
-			var range = VisibleRangeEnd - VisibleRangeStart;
+			var range = VisibleRange.Magnitude();
 
 			if (pos < 0 && VisibleRangeStart > Minimum)
 			{
-				_isVisibleRangeChanging = true;
-				VisibleRangeStart       = Math.Max(VisibleRangeStart + delta, Minimum);
-				_isVisibleRangeChanging = false;
-				VisibleRangeEnd         = VisibleRangeStart + range;
+				_isVisRngChanging = true;
+				VisibleRangeStart = Math.Max(VisibleRangeStart + delta, Minimum);
+				VisibleRangeEnd   = VisibleRangeStart + range;
 			}
 			else if (pos > 0 && VisibleRangeEnd < Maximum)
 			{
-				_isVisibleRangeChanging = true;
-				VisibleRangeEnd         = Math.Min(VisibleRangeEnd + delta, Maximum);
-				_isVisibleRangeChanging = false;
-				VisibleRangeStart       = VisibleRangeEnd - range;
+				_isVisRngChanging = true;
+				VisibleRangeEnd   = Math.Min(VisibleRangeEnd + delta, Maximum);
+				VisibleRangeStart = VisibleRangeEnd - range;
 			}
 		}
 		#endregion

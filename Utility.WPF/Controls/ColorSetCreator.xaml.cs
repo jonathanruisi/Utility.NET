@@ -573,19 +573,19 @@ namespace JLR.Utility.WPF.Controls
 			if (typeof(T) == typeof(Cmyk) || typeof(T) == typeof(Rgba))
 			{
 				RandomColor = ColorSpace.Random<T>(
-					new Range<double>(
+					new DiscreteRange<double>(
 						SliderA1.Value,
 						SliderA2.Value,
 						useLargeIncrement ? SliderA1.TickFrequency : SliderA1.SmallChange),
-					new Range<double>(
+					new DiscreteRange<double>(
 						SliderB1.Value,
 						SliderB2.Value,
 						useLargeIncrement ? SliderB1.TickFrequency : SliderB1.SmallChange),
-					new Range<double>(
+					new DiscreteRange<double>(
 						SliderC1.Value,
 						SliderC2.Value,
 						useLargeIncrement ? SliderC1.TickFrequency : SliderC1.SmallChange),
-					new Range<double>(
+					new DiscreteRange<double>(
 						SliderD1.Value,
 						SliderD2.Value,
 						useLargeIncrement ? SliderD1.TickFrequency : SliderD1.SmallChange));
@@ -593,15 +593,15 @@ namespace JLR.Utility.WPF.Controls
 			else
 			{
 				RandomColor = ColorSpace.Random<T>(
-					new Range<double>(
+					new DiscreteRange<double>(
 						SliderA1.Value,
 						SliderA2.Value,
 						useLargeIncrement ? SliderA1.TickFrequency : SliderA1.SmallChange),
-					new Range<double>(
+					new DiscreteRange<double>(
 						SliderB1.Value,
 						SliderB2.Value,
 						useLargeIncrement ? SliderB1.TickFrequency : SliderB1.SmallChange),
-					new Range<double>(
+					new DiscreteRange<double>(
 						SliderC1.Value,
 						SliderC2.Value,
 						useLargeIncrement ? SliderC1.TickFrequency : SliderC1.SmallChange));

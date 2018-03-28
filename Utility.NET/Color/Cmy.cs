@@ -30,9 +30,9 @@ namespace JLR.Utility.NET.Color
 		public                 double        C { get; set; }
 		public                 double        M { get; set; }
 		public                 double        Y { get; set; }
-		public static readonly Range<double> RangeC = new Range<double>(0.0, 1.0);
-		public static readonly Range<double> RangeM = new Range<double>(0.0, 1.0);
-		public static readonly Range<double> RangeY = new Range<double>(0.0, 1.0);
+		public static readonly DiscreteRange<double> RangeC = new DiscreteRange<double>(0.0, 1.0);
+		public static readonly DiscreteRange<double> RangeM = new DiscreteRange<double>(0.0, 1.0);
+		public static readonly DiscreteRange<double> RangeY = new DiscreteRange<double>(0.0, 1.0);
 		#endregion
 
 		#region Indexers
@@ -107,9 +107,9 @@ namespace JLR.Utility.NET.Color
 		public static Cmy Random()
 		{
 			return Random<Cmy>(
-				new Range<double>(RangeC.Minimum, RangeC.Maximum, 0.001),
-				new Range<double>(RangeM.Minimum, RangeM.Maximum, 0.001),
-				new Range<double>(RangeY.Minimum, RangeY.Maximum, 0.001));
+				new DiscreteRange<double>(RangeC.Minimum, RangeC.Maximum, 0.001),
+				new DiscreteRange<double>(RangeM.Minimum, RangeM.Maximum, 0.001),
+				new DiscreteRange<double>(RangeY.Minimum, RangeY.Maximum, 0.001));
 		}
 		#endregion
 

@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
 
+using JLR.Utility.NET;
 using JLR.Utility.NET.Math;
 
 namespace Utility.WPF.Tests
@@ -94,18 +95,23 @@ namespace Utility.WPF.Tests
 
 		private void MediaSliderTest_PositionChanged(object sender, RoutedPropertyChangedEventArgs<decimal> e) { }
 
-		private void MediaSliderTest_SelectionRangeChanged(object sender, RoutedEventArgs e)
+		private void MediaSliderTest_SelectionRangeChanged(object sender, RoutedPropertyChangedEventArgs<Range<decimal>?> e)
 		{
 			TextBoxC1.Text = MediaSliderTest.SelectionStart == null || MediaSliderTest.SelectionEnd == null
 				? "DISABLED"
 				: $"{(decimal)MediaSliderTest.SelectionEnd - (decimal)MediaSliderTest.SelectionStart:0.###}";
-			//MessageBox.Show($"{MediaSliderTest.SelectionStart?.ToString("0.###") ?? "NULL"}->{MediaSliderTest.SelectionEnd?.ToString("0.###") ?? "NULL"}");
+			/*MessageBox.Show(
+				$"OLD: {(e.OldValue == null ? "NULL" : $"{e.OldValue.Value.Minimum}->{e.OldValue.Value.Maximum}")}\n" +
+				$"NEW: {(e.NewValue == null ? "NULL" : $"{e.NewValue.Value.Minimum}->{e.NewValue.Value.Maximum}")}");*/
 		}
 
-		private void MediaSliderTest_VisibleRangeChanged(object sender, RoutedEventArgs e)
+		private void MediaSliderTest_VisibleRangeChanged(object sender, RoutedPropertyChangedEventArgs<Range<decimal>> e)
 		{
-			TextBoxB1.Text = (MediaSliderTest.VisibleRangeEnd - MediaSliderTest.VisibleRangeStart).ToString("0.###");
-			//MessageBox.Show($"{MediaSliderTest.VisibleRangeStart:0.###}->{MediaSliderTest.VisibleRangeEnd:0.###}");
+
+			TextBoxB1.Text = MediaSliderTest.VisibleRange.Magnitude().ToString("0.###");
+			/*MessageBox.Show(
+				$"OLD: {e.OldValue.Minimum:0.###}->{e.OldValue.Maximum:0.###}\n" +
+				$"NEW: {e.NewValue.Minimum:0.###}->{e.NewValue.Maximum:0.###}");*/
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)

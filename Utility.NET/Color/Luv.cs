@@ -30,9 +30,9 @@ namespace JLR.Utility.NET.Color
 		public                 double        L { get; set; }
 		public                 double        U { get; set; }
 		public                 double        V { get; set; }
-		public static readonly Range<double> RangeL = new Range<double>(0.0,    100.0);
-		public static readonly Range<double> RangeU = new Range<double>(-134.0, 224.0);
-		public static readonly Range<double> RangeV = new Range<double>(-140.0, 122.0);
+		public static readonly DiscreteRange<double> RangeL = new DiscreteRange<double>(0.0,    100.0);
+		public static readonly DiscreteRange<double> RangeU = new DiscreteRange<double>(-134.0, 224.0);
+		public static readonly DiscreteRange<double> RangeV = new DiscreteRange<double>(-140.0, 122.0);
 		#endregion
 
 		#region Indexers
@@ -128,9 +128,9 @@ namespace JLR.Utility.NET.Color
 		public static Luv Random()
 		{
 			return Random<Luv>(
-				new Range<double>(RangeL.Minimum, RangeL.Maximum, 0.1),
-				new Range<double>(RangeU.Minimum, RangeU.Maximum, 0.358),
-				new Range<double>(RangeV.Minimum, RangeV.Maximum, 0.262));
+				new DiscreteRange<double>(RangeL.Minimum, RangeL.Maximum, 0.1),
+				new DiscreteRange<double>(RangeU.Minimum, RangeU.Maximum, 0.358),
+				new DiscreteRange<double>(RangeV.Minimum, RangeV.Maximum, 0.262));
 		}
 		#endregion
 

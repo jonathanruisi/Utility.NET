@@ -56,11 +56,11 @@ namespace JLR.Utility.WPF
 		{
 			if (!(value is int))
 				throw new ArgumentException("Value must be an integer", nameof(value));
-			if (!(parameter is Range<int>))
+			if (!(parameter is DiscreteRange<int>))
 				throw new ArgumentException("Parameter must be a Range<int>", nameof(value));
 
 			var intValue = (int)value;
-			var intRange = (Range<int>)parameter;
+			var intRange = (DiscreteRange<int>)parameter;
 			return intValue >= intRange.Minimum && intValue <= intRange.Maximum;
 		}
 

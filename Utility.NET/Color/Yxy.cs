@@ -30,9 +30,9 @@ namespace JLR.Utility.NET.Color
 		public                 double        Y1 { get; set; }
 		public                 double        X  { get; set; }
 		public                 double        Y2 { get; set; }
-		public static readonly Range<double> RangeY1 = new Range<double>(0.0, 100.0);
-		public static readonly Range<double> RangeX  = new Range<double>(0.0, 1.0);
-		public static readonly Range<double> RangeY2 = new Range<double>(0.0, 1.0);
+		public static readonly DiscreteRange<double> RangeY1 = new DiscreteRange<double>(0.0, 100.0);
+		public static readonly DiscreteRange<double> RangeX  = new DiscreteRange<double>(0.0, 1.0);
+		public static readonly DiscreteRange<double> RangeY2 = new DiscreteRange<double>(0.0, 1.0);
 		#endregion
 
 		#region Indexers
@@ -119,9 +119,9 @@ namespace JLR.Utility.NET.Color
 		public static Yxy Random()
 		{
 			return Random<Yxy>(
-				new Range<double>(RangeY1.Minimum, RangeY1.Maximum, 0.1),
-				new Range<double>(RangeX.Minimum,  RangeX.Maximum,  0.001),
-				new Range<double>(RangeY2.Minimum, RangeY2.Maximum, 0.001));
+				new DiscreteRange<double>(RangeY1.Minimum, RangeY1.Maximum, 0.1),
+				new DiscreteRange<double>(RangeX.Minimum,  RangeX.Maximum,  0.001),
+				new DiscreteRange<double>(RangeY2.Minimum, RangeY2.Maximum, 0.001));
 		}
 		#endregion
 

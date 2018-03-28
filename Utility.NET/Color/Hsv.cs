@@ -30,9 +30,9 @@ namespace JLR.Utility.NET.Color
 		public                 double        H { get; set; }
 		public                 double        S { get; set; }
 		public                 double        V { get; set; }
-		public static readonly Range<double> RangeH = new Range<double>(0.0, 360.0);
-		public static readonly Range<double> RangeS = new Range<double>(0.0, 1.0);
-		public static readonly Range<double> RangeV = new Range<double>(0.0, 1.0);
+		public static readonly DiscreteRange<double> RangeH = new DiscreteRange<double>(0.0, 360.0);
+		public static readonly DiscreteRange<double> RangeS = new DiscreteRange<double>(0.0, 1.0);
+		public static readonly DiscreteRange<double> RangeV = new DiscreteRange<double>(0.0, 1.0);
 		#endregion
 
 		#region Indexers
@@ -187,9 +187,9 @@ namespace JLR.Utility.NET.Color
 		public static Hsv Random()
 		{
 			return Random<Hsv>(
-				new Range<double>(RangeH.Minimum, RangeH.Maximum, 0.036),
-				new Range<double>(RangeS.Minimum, RangeS.Maximum, 0.001),
-				new Range<double>(RangeV.Minimum, RangeV.Maximum, 0.001));
+				new DiscreteRange<double>(RangeH.Minimum, RangeH.Maximum, 0.036),
+				new DiscreteRange<double>(RangeS.Minimum, RangeS.Maximum, 0.001),
+				new DiscreteRange<double>(RangeV.Minimum, RangeV.Maximum, 0.001));
 		}
 		#endregion
 
