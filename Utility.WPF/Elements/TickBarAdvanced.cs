@@ -30,6 +30,11 @@ namespace JLR.Utility.WPF.Elements
 
 		#region Properties
 		#region General
+		/// <summary>
+		/// Gets or sets the primary drawing axis as either
+		/// <see cref="System.Windows.Controls.Orientation.Horizontal"/> or
+		/// <see cref="System.Windows.Controls.Orientation.Vertical"/>.
+		/// </summary>
 		public Orientation Orientation
 		{
 			get => (Orientation)GetValue(OrientationProperty);
@@ -42,6 +47,15 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(Orientation.Horizontal, FrameworkPropertyMetadataOptions.AffectsRender));
 
+		/// <summary>
+		/// Gets or sets the alignment of the tick marks.
+		/// When <see cref="Orientation"/> = <see cref="System.Windows.Controls.Orientation.Horizontal"/>,
+		/// possible values include
+		/// <see cref="Position.Left"/>, <see cref="Position.Center"/>, and <see cref="Position.Right"/>.
+		/// When <see cref="Orientation"/> = <see cref="System.Windows.Controls.Orientation.Vertical"/>,
+		/// possible values include
+		/// <see cref="Position.Top"/>, <see cref="Position.Middle"/>, and <see cref="Position.Bottom"/>.
+		/// </summary>
 		public Position TickAlignment
 		{
 			get => (Position)GetValue(TickAlignmentProperty);
@@ -54,6 +68,13 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(Position.Center, FrameworkPropertyMetadataOptions.AffectsRender));
 
+		/// <summary>
+		/// Gets or sets whether or not the primary axis is reversed, thereby drawing the tick marks in reverse order.
+		/// For <see cref="Orientation"/> = <see cref="System.Windows.Controls.Orientation.Horizontal"/>,
+		/// tick marks are positioned right-to-left, whereas
+		/// for <see cref="Orientation"/> = <see cref="System.Windows.Controls.Orientation.Vertical"/>,
+		/// tick marks are positioned bottom-to-top.
+		/// </summary>
 		public bool IsDirectionReversed
 		{
 			get => (bool)GetValue(IsDirectionReversedProperty);
@@ -68,6 +89,9 @@ namespace JLR.Utility.WPF.Elements
 		#endregion
 
 		#region Range
+		/// <summary>
+		/// Gets or sets the <see cref="Minimum"/> value above which tick marks are visible.
+		/// </summary>
 		public decimal Minimum { get => (decimal)GetValue(MinimumProperty); set => SetValue(MinimumProperty, value); }
 
 		public static readonly DependencyProperty MinimumProperty = DependencyProperty.Register(
@@ -76,6 +100,9 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(0.0M, FrameworkPropertyMetadataOptions.AffectsRender, OnDependencyPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the <see cref="Maximum"/> value below which tick marks are visible.
+		/// </summary>
 		public decimal Maximum { get => (decimal)GetValue(MaximumProperty); set => SetValue(MaximumProperty, value); }
 
 		public static readonly DependencyProperty MaximumProperty = DependencyProperty.Register(
@@ -86,6 +113,10 @@ namespace JLR.Utility.WPF.Elements
 		#endregion
 
 		#region Tick Positioning
+		/// <summary>
+		/// Gets or sets the collection of values that each correspond to the position of a major tick mark.
+		/// Setting this property directly overrides <see cref="MajorTickFrequency"/>.
+		/// </summary>
 		public List<decimal> MajorTicks
 		{
 			get => (List<decimal>)GetValue(MajorTicksProperty);
@@ -98,6 +129,10 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
+		/// <summary>
+		/// Gets or sets the collection of values that each correspond to the position of a minor tick mark.
+		/// Setting this property directly overrides <see cref="MinorTickFrequency"/>.
+		/// </summary>
 		public List<decimal> MinorTicks
 		{
 			get => (List<decimal>)GetValue(MinorTicksProperty);
@@ -110,6 +145,10 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender));
 
+		/// <summary>
+		/// Gets or sets the interval between major tick marks.
+		/// Setting this property directly clears (and re-creates) the <see cref="MajorTicks"/> collection.
+		/// </summary>
 		public decimal MajorTickFrequency
 		{
 			get => (decimal)GetValue(MajorTickFrequencyProperty);
@@ -122,6 +161,10 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(1.0M, FrameworkPropertyMetadataOptions.AffectsRender, OnDependencyPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the interval between minor tick marks.
+		/// Setting this property directly clears (and re-creates) the <see cref="MinorTicks"/> collection.
+		/// </summary>
 		public decimal MinorTickFrequency
 		{
 			get => (decimal)GetValue(MinorTickFrequencyProperty);
@@ -136,6 +179,10 @@ namespace JLR.Utility.WPF.Elements
 		#endregion
 
 		#region Tick Size
+		/// <summary>
+		/// Gets or sets the length of the origin tick mark relative to
+		/// the height (or width) of the control's secondary axis.
+		/// </summary>
 		public double OriginTickRelativeSize
 		{
 			get => (double)GetValue(OriginTickRelativeSizeProperty);
@@ -148,6 +195,10 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
+		/// <summary>
+		/// Gets or sets the length of all major tick marks relative to
+		/// the height (or width) of the control's secondary axis.
+		/// </summary>
 		public double MajorTickRelativeSize
 		{
 			get => (double)GetValue(MajorTickRelativeSizeProperty);
@@ -160,6 +211,10 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
+		/// <summary>
+		/// Gets or sets the length of all minor tick marks relative to
+		/// the height (or width) of the control's secondary axis.
+		/// </summary>
 		public double MinorTickRelativeSize
 		{
 			get => (double)GetValue(MinorTickRelativeSizeProperty);
@@ -172,6 +227,9 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(0.5, FrameworkPropertyMetadataOptions.AffectsRender));
 
+		/// <summary>
+		/// Gets or sets the thickness of the origin tick mark.
+		/// </summary>
 		public double OriginTickThickness
 		{
 			get => (double)GetValue(OriginTickThicknessProperty);
@@ -184,6 +242,9 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(2.0, FrameworkPropertyMetadataOptions.AffectsRender, OnDependencyPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the thickness of all major tick marks.
+		/// </summary>
 		public double MajorTickThickness
 		{
 			get => (double)GetValue(MajorTickThicknessProperty);
@@ -196,6 +257,9 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender, OnDependencyPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets the thickness of all minor tick marks.
+		/// </summary>
 		public double MinorTickThickness
 		{
 			get => (double)GetValue(MinorTickThicknessProperty);
@@ -210,6 +274,9 @@ namespace JLR.Utility.WPF.Elements
 		#endregion
 
 		#region Brush
+		/// <summary>
+		/// Gets or sets a brush that describes the background of this control.
+		/// </summary>
 		public Brush Background { get => (Brush)GetValue(BackgroundProperty); set => SetValue(BackgroundProperty, value); }
 
 		public static readonly DependencyProperty BackgroundProperty = DependencyProperty.Register(
@@ -218,6 +285,9 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(Brushes.Transparent, FrameworkPropertyMetadataOptions.AffectsRender));
 
+		/// <summary>
+		/// Gets or sets a brush that describes the color of the origin tick mark.
+		/// </summary>
 		public Brush OriginTickBrush
 		{
 			get => (Brush)GetValue(OriginTickBrushProperty);
@@ -233,6 +303,9 @@ namespace JLR.Utility.WPF.Elements
 				FrameworkPropertyMetadataOptions.AffectsRender,
 				OnDependencyPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets a brush that describes the color of all major tick marks.
+		/// </summary>
 		public Brush MajorTickBrush
 		{
 			get => (Brush)GetValue(MajorTickBrushProperty);
@@ -248,6 +321,9 @@ namespace JLR.Utility.WPF.Elements
 				FrameworkPropertyMetadataOptions.AffectsRender,
 				OnDependencyPropertyChanged));
 
+		/// <summary>
+		/// Gets or sets a brush that describes the color of all minor tick marks.
+		/// </summary>
 		public Brush MinorTickBrush
 		{
 			get => (Brush)GetValue(MinorTickBrushProperty);
@@ -266,6 +342,12 @@ namespace JLR.Utility.WPF.Elements
 		#endregion
 
 		#region Internal Properties
+		/// <summary>
+		/// Calculates the density of tick marks currently visible as a fraction of the available drawing space.
+		/// <see cref="TickDensity"/>=0 indicates that no tick marks are visible,
+		/// whereas <see cref="TickDensity"/>=1 indicates that the entire primary drawing axis
+		/// is saturated with tick marks, and no free space is visible.
+		/// </summary>
 		internal decimal TickDensity
 		{
 			get
@@ -287,6 +369,11 @@ namespace JLR.Utility.WPF.Elements
 			}
 		}
 
+		/// <summary>
+		/// Calculates the position (in pixels) of the origin tick mark on the primary axis.
+		/// This value is used to render the tick mark,
+		/// and knowing its location may be useful to consumers of this element.
+		/// </summary>
 		internal double OriginTickPosition
 		{
 			get
@@ -306,6 +393,11 @@ namespace JLR.Utility.WPF.Elements
 			}
 		}
 
+		/// <summary>
+		/// Calculates the positions (in pixels) of each major tick mark on the primary axis.
+		/// Each position is packaged in a tuple alongside its corresponding value.
+		/// These values are used during rendering, and may be useful to consumers of this element.
+		/// </summary>
 		internal IEnumerable<(decimal value, double position)> MajorTickPositions
 		{
 			get
@@ -328,6 +420,11 @@ namespace JLR.Utility.WPF.Elements
 			}
 		}
 
+		/// <summary>
+		/// Calculates the positions (in pixels) of each minor tick mark on the primary axis.
+		/// Each position is packaged in a tuple alongside its corresponding value.
+		/// These values are used during rendering, and may be useful to consumers of this element.
+		/// </summary>
 		internal IEnumerable<(decimal value, double position)> MinorTickPositions
 		{
 			get
@@ -351,9 +448,6 @@ namespace JLR.Utility.WPF.Elements
 		}
 		#endregion
 
-		#region Events
-		#endregion
-
 		#region Constructors
 		static TickBarAdvanced()
 		{
@@ -366,9 +460,6 @@ namespace JLR.Utility.WPF.Elements
 		{
 			Initialized += TickBarAdvanced_Initialized;
 		}
-		#endregion
-
-		#region Public Methods
 		#endregion
 
 		#region Private Methods
@@ -465,6 +556,7 @@ namespace JLR.Utility.WPF.Elements
 		#endregion
 
 		#region Layout and Render Methods
+		///<inheritdoc cref="UIElement.OnRender"/>
 		protected override void OnRender(DrawingContext drawingContext)
 		{
 			if (Math.Abs(ActualWidth) < double.Epsilon || Math.Abs(ActualHeight) < double.Epsilon || Maximum - Minimum == 0)

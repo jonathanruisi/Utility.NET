@@ -725,6 +725,11 @@ namespace JLR.Utility.WPF.Controls
 				newMargin.Right = zoomRightSpaceNeeded;
 			_zoomPanel.Margin = newMargin;
 		}
+
+		public void FindPlayhead()
+		{
+
+		}
 		#endregion
 
 		#region Property Changed Callbacks, Coerce Value Callbacks, Validate Value Callbacks
@@ -989,6 +994,7 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Layout and Render Overrides
+		/// <inheritdoc cref="FrameworkElement.OnApplyTemplate"/>
 		public override void OnApplyTemplate()
 		{
 			base.OnApplyTemplate();
@@ -1091,12 +1097,14 @@ namespace JLR.Utility.WPF.Controls
 			if (_mainPanel == null || _positionElement == null || Math.Abs(_mainPanel.ActualWidth) < double.Epsilon)
 				return;
 
+			// Hide the playhead if the current position is not within the current visible range
 			if (Position < VisibleRangeStart || Position > VisibleRangeEnd || VisibleRangeStart == VisibleRangeEnd)
 			{
 				_positionElement.Visibility = Visibility.Collapsed;
 				return;
 			}
 
+			// Move the playhead to the current position
 			_positionElement.Visibility = Visibility.Visible;
 			Canvas.SetLeft(
 				_positionElement,
@@ -1308,6 +1316,11 @@ namespace JLR.Utility.WPF.Controls
 		/// <param name="initialize">
 		/// If true, the list of FPS divisors will be (re)initialized and the tick density will be reevaluated.
 		/// </param>
+		/// <remarks>
+		/// This method does not use <see cref="TickBarAdvanced.TickDensity"/> in its calculation
+		/// since in the case of <see cref="MediaSlider"/>, the space between individual major and minor
+		/// tick marks is known. This is a much simpler (and less expensive) calculation.
+		/// </remarks>
 		private void AdjustTickDensity(int zoomChange, bool initialize = false)
 		{
 			if (_mainPanel == null || _tickBar == null || Math.Abs(_mainPanel.ActualWidth) < double.Epsilon)
