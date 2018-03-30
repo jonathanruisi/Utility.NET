@@ -100,18 +100,18 @@ namespace Utility.WPF.Tests
 			TextBoxC1.Text = MediaSliderTest.SelectionStart == null || MediaSliderTest.SelectionEnd == null
 				? "DISABLED"
 				: $"{(decimal)MediaSliderTest.SelectionEnd - (decimal)MediaSliderTest.SelectionStart:0.###}";
-			/*MessageBox.Show(
+			MessageBox.Show(
 				$"OLD: {(e.OldValue == null ? "NULL" : $"{e.OldValue.Value.Minimum}->{e.OldValue.Value.Maximum}")}\n" +
-				$"NEW: {(e.NewValue == null ? "NULL" : $"{e.NewValue.Value.Minimum}->{e.NewValue.Value.Maximum}")}");*/
+				$"NEW: {(e.NewValue == null ? "NULL" : $"{e.NewValue.Value.Minimum}->{e.NewValue.Value.Maximum}")}");
 		}
 
 		private void MediaSliderTest_VisibleRangeChanged(object sender, RoutedPropertyChangedEventArgs<Range<decimal>> e)
 		{
 
 			TextBoxB1.Text = MediaSliderTest.VisibleRange.Magnitude().ToString("0.###");
-			/*MessageBox.Show(
+			MessageBox.Show(
 				$"OLD: {e.OldValue.Minimum:0.###}->{e.OldValue.Maximum:0.###}\n" +
-				$"NEW: {e.NewValue.Minimum:0.###}->{e.NewValue.Maximum:0.###}");*/
+				$"NEW: {e.NewValue.Minimum:0.###}->{e.NewValue.Maximum:0.###}");
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)
@@ -238,8 +238,10 @@ namespace Utility.WPF.Tests
 					Process.Start(filePath);
 					break;
 				case "2":
+					MediaSliderTest.MoveToPlayhead(false);
 					break;
 				case "3":
+					MediaSliderTest.MoveToPlayhead(true);
 					break;
 				case "4":
 					MediaSliderTest.VisibleRangeEnd += (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;
@@ -248,10 +250,38 @@ namespace Utility.WPF.Tests
 					MediaSliderTest.VisibleRangeStart -= (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;
 					break;
 				case "6":
+					var            rnd = new Random(DateTime.Now.Millisecond);
+					decimal        a, b;
+					Range<decimal> range;
+
+					for (var i = 0; i < 3; i++)
+					{
+						GetNewNumbers();
+						range = new Range<decimal>(Math.Min(a, b), Math.Max(a, b));
+						MessageBox.Show($"Expected: {range}");
+						MediaSliderTest.VisibleRange = range;
+					}
+
+					a     = rnd.Next((int)MediaSliderTest.Minimum, (int)MediaSliderTest.Maximum);
+					b     = a + 0.75M;
+					range = new Range<decimal>(a, b);
+					MessageBox.Show($"Expected: {range}");
+					MediaSliderTest.VisibleRange = range;
+
+					void GetNewNumbers()
+					{
+						a = rnd.Next((int)MediaSliderTest.Minimum * 1000, (int)MediaSliderTest.Maximum * 1000) / 1000M;
+						b = rnd.Next((int)MediaSliderTest.Minimum * 1000, (int)MediaSliderTest.Maximum * 1000) / 1000M;
+					}
+
 					break;
 				case "7":
+					var zf = decimal.Parse(TextBoxD0.Text);
+					MediaSliderTest.ZoomFactor = zf;
+					TextBoxD1.Text = MediaSliderTest.ZoomFactor.ToString("0.###");
 					break;
 				case "8":
+					
 					break;
 				case "9":
 					MediaSliderTest.VisibleRangeEnd -= (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;

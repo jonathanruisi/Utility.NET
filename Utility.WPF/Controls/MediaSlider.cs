@@ -13,11 +13,9 @@
 
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
@@ -63,8 +61,10 @@ namespace JLR.Utility.WPF.Controls
 
 		#region Properties
 		/// <summary>
-		/// Gets the current selection range.
+		/// Gets or sets the current selection range.
 		/// This value wraps the <see cref="SelectionStart"/> and <see cref="SelectionEnd"/> properties.
+		/// Avoid setting the selection range via this property if the
+		/// individual selection range bounds are dependent on each other.
 		/// </summary>
 		public Range<decimal>? SelectionRange
 		{
@@ -74,13 +74,73 @@ namespace JLR.Utility.WPF.Controls
 					return null;
 				return new Range<decimal>((decimal)SelectionStart, (decimal)SelectionEnd);
 			}
+			set
+			{
+				if (value.HasValue)
+				{
+					if (value.Value.Minimum <= SelectionEnd)
+					{
+						_isSelRngChanging = true;
+						SelectionStart    = value.Value.Minimum;
+						SelectionEnd      = value.Value.Maximum;
+					}
+					else if (value.Value.Maximum >= SelectionStart)
+					{
+						_isSelRngChanging = true;
+						SelectionEnd      = value.Value.Maximum;
+						SelectionStart    = value.Value.Minimum;
+					}
+				}
+				else
+				{
+					SelectionStart = null; // SelectionEnd will be set to null by the property changed callback
+				}
+			}
 		}
 
 		/// <summary>
-		/// Gets the current visible range.
+		/// Gets or sets the visible range.
 		/// This value wraps the <see cref="VisibleRangeStart"/> and <see cref="VisibleRangeEnd"/> properties.
+		/// Avoid setting the visual range via this property if the
+		/// individual visual range bounds are dependent on each other.
 		/// </summary>
-		public Range<decimal> VisibleRange => new Range<decimal>(VisibleRangeStart, VisibleRangeEnd);
+		public Range<decimal> VisibleRange
+		{
+			get => new Range<decimal>(VisibleRangeStart, VisibleRangeEnd);
+			set
+			{
+				if (value.Minimum <= VisibleRangeEnd)
+				{
+					_isVisRngChanging = true;
+					VisibleRangeStart = value.Minimum;
+					VisibleRangeEnd   = value.Maximum;
+				}
+				else if (value.Maximum >= VisibleRangeStart)
+				{
+					_isVisRngChanging = true;
+					VisibleRangeEnd   = value.Maximum;
+					VisibleRangeStart = value.Minimum;
+				}
+			}
+		}
+
+		/// <summary>
+		/// Gets or sets the zoom factor.
+		/// This is a value between 0 and 1 that represents the
+		/// visual range as a fraction of the total media duration.
+		/// </summary>
+		public decimal ZoomFactor
+		{
+			get => VisibleRange.Magnitude() / (Maximum - Minimum);
+			set
+			{
+				if (value < 0 || value > 1)
+					throw new ArgumentOutOfRangeException(nameof(value), $@"{nameof(value)} must be between 0 and 1");
+				var changeLimit = (MinVisibleRange - VisibleRangeEnd + VisibleRangeStart) / 2;
+				var change      = Math.Max((value * (Maximum - Minimum) - VisibleRange.Magnitude()) / 2, changeLimit);
+				VisibleRange = new Range<decimal>(VisibleRangeStart - change, VisibleRangeEnd + change);
+			}
+		}
 		#endregion
 
 		#region Dependency Properties
@@ -726,9 +786,35 @@ namespace JLR.Utility.WPF.Controls
 			_zoomPanel.Margin = newMargin;
 		}
 
-		public void FindPlayhead()
+		/// <summary>
+		/// Moves the current visible range to the current playhead <see cref="Position"/>.
+		/// </summary>
+		/// <param name="isCentered">
+		/// If <code>true</code>, the visible range will be centered around the playhead.
+		/// If <code>false</code>, the visible range will start at the playhead.
+		/// </param>
+		public void MoveToPlayhead(bool isCentered)
 		{
+			var delta = Position - VisibleRangeStart;
+			var range = VisibleRange.Magnitude();
+			if (isCentered)
+				delta -= range / 2;
 
+			_isVisRngDragging = true;
+			if (delta < 0 && VisibleRangeStart > Minimum)
+			{
+				_isVisRngChanging = true;
+				VisibleRangeStart = Math.Max(VisibleRangeStart + delta, Minimum);
+				VisibleRangeEnd   = VisibleRangeStart + range;
+			}
+			else if (delta > 0 && VisibleRangeEnd < Maximum)
+			{
+				_isVisRngChanging = true;
+				VisibleRangeEnd   = Math.Min(VisibleRangeEnd + delta, Maximum);
+				VisibleRangeStart = VisibleRangeEnd - range;
+			}
+
+			_isVisRngDragging = false;
 		}
 		#endregion
 
