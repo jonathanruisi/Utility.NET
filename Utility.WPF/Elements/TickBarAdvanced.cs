@@ -389,95 +389,8 @@ namespace JLR.Utility.WPF.Elements
 			}
 		}
 
-		/// <summary>
-		/// Calculates the position (in pixels) of the origin tick mark on the primary axis.
-		/// This value is used to render the tick mark,
-		/// and knowing its location may be useful to consumers of this element.
-		/// </summary>
-		internal double OriginTickPosition
-		{
-			get
-			{
-				var primaryAxisLength = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
-				var position          = (double)(0 - Minimum) * primaryAxisLength / (double)(Maximum - Minimum);
-
-				// For any ticks that are equal to the max or min values,
-				// visually shift the tick inwards by half of its thickness.
-				if (IsBoundaryTickInwardShift)
-				{
-					if (Math.Abs(position) < double.Epsilon)
-						position = OriginTickThickness / 2;
-					else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
-						position = primaryAxisLength - OriginTickThickness / 2;
-				}
-
-				if (IsDirectionReversed)
-					position = primaryAxisLength - position;
-				return position;
-			}
-		}
-
-		/// <summary>
-		/// Calculates the positions (in pixels) of each major tick mark on the primary axis.
-		/// Each position is packaged in a tuple alongside its corresponding value.
-		/// These values are used during rendering, and may be useful to consumers of this element.
-		/// </summary>
-		internal IEnumerable<(decimal value, double position)> MajorTickPositions
-		{
-			get
-			{
-				for (var i = 0; i < MajorTicks.Count; i++)
-				{
-					var primaryAxisLength = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
-					var position          = (double)(MajorTicks[i] - Minimum) * primaryAxisLength / (double)(Maximum - Minimum);
-
-					// For any ticks that are equal to the max or min values,
-					// visually shift the tick inwards by half of its thickness.
-					if (IsBoundaryTickInwardShift)
-					{
-						if (Math.Abs(position) < double.Epsilon)
-							position = MajorTickThickness / 2;
-						else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
-							position = primaryAxisLength - MajorTickThickness / 2;
-					}
-
-					if (IsDirectionReversed)
-						position = primaryAxisLength - position;
-					yield return (MajorTicks[i], position);
-				}
-			}
-		}
-
-		/// <summary>
-		/// Calculates the positions (in pixels) of each minor tick mark on the primary axis.
-		/// Each position is packaged in a tuple alongside its corresponding value.
-		/// These values are used during rendering, and may be useful to consumers of this element.
-		/// </summary>
-		internal IEnumerable<(decimal value, double position)> MinorTickPositions
-		{
-			get
-			{
-				for (var i = 0; i < MinorTicks.Count; i++)
-				{
-					var primaryAxisLength = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
-					var position          = (double)(MinorTicks[i] - Minimum) * primaryAxisLength / (double)(Maximum - Minimum);
-
-					// For any ticks that are equal to the max or min values,
-					// visually shift the tick inwards by half of its thickness.
-					if (IsBoundaryTickInwardShift)
-					{
-						if (Math.Abs(position) < double.Epsilon)
-							position = MinorTickThickness / 2;
-						else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
-							position = primaryAxisLength - MinorTickThickness / 2;
-					}
-
-					if (IsDirectionReversed)
-						position = primaryAxisLength - position;
-					yield return (MinorTicks[i], position);
-				}
-			}
-		}
+		internal double PrimaryAxisLength => Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
+		internal double SecondaryAxisLength => Orientation == Orientation.Horizontal ? ActualHeight : ActualWidth;
 		#endregion
 
 		#region Constructors
@@ -491,6 +404,16 @@ namespace JLR.Utility.WPF.Elements
 		public TickBarAdvanced()
 		{
 			Initialized += TickBarAdvanced_Initialized;
+		}
+		#endregion
+
+		#region Internal Methods
+		internal double GetTickRenderPosition(decimal value)
+		{
+			var position = (double)(value - Minimum) * PrimaryAxisLength / (double)(Maximum - Minimum);
+			if (IsDirectionReversed)
+				position = PrimaryAxisLength - position;
+			return position;
 		}
 		#endregion
 
@@ -531,36 +454,8 @@ namespace JLR.Utility.WPF.Elements
 				}
 			}
 
-			// Remove any minor ticks that are also major ticks
-			foreach (var tick in MajorTicks.Intersect(MinorTicks))
-			{
-				MinorTicks.Remove(tick);
-			}
-		}
-
-		private void CalculateSecondaryAxisLineCoordinates(double relativeSize,
-														   double secAxisLength,
-														   ref double startCoord,
-														   ref double endCoord)
-		{
-			switch (TickAlignment)
-			{
-				case Position.Top:
-				case Position.Left:
-					startCoord = 0;
-					endCoord   = relativeSize * secAxisLength;
-					break;
-				case Position.Middle:
-				case Position.Center:
-					startCoord = (secAxisLength - (relativeSize * secAxisLength)) / 2;
-					endCoord   = secAxisLength - startCoord;
-					break;
-				case Position.Bottom:
-				case Position.Right:
-					startCoord = secAxisLength;
-					endCoord   = secAxisLength - relativeSize * secAxisLength;
-					break;
-			}
+			MajorTicks.Sort();
+			MinorTicks.Sort();
 		}
 		#endregion
 
@@ -595,56 +490,90 @@ namespace JLR.Utility.WPF.Elements
 				return;
 
 			// Calculate known pixel coordinates based on orientation and placement
-			double secAxis0      = 0, secAxis1 = 0;
-			var    secAxisLength = Orientation == Orientation.Horizontal ? ActualHeight : ActualWidth;
+			var overlapThreshold = (Maximum - Minimum) / (decimal)PrimaryAxisLength;
+			var secAxisOrg       = CalculateSecondaryAxisLineCoordinates(OriginTickRelativeSize);
+			var secAxisMaj       = CalculateSecondaryAxisLineCoordinates(MajorTickRelativeSize);
+			var secAxisMin       = CalculateSecondaryAxisLineCoordinates(MinorTickRelativeSize);
 
 			// Draw background
 			drawingContext.DrawRectangle(Background, null, new Rect(new Point(0, 0), new Size(ActualWidth, ActualHeight)));
 
-			// Draw minor ticks
-			foreach (var tick in MinorTickPositions)
+			// Draw unique major and minor ticks (ticks that are at least overlapThreshold apart in value)
+			int i = 0, j = 0;
+			while (i < MajorTicks.Count && j < MinorTicks.Count)
 			{
-				if (tick.value == 0)
-					continue;
-
-				CalculateSecondaryAxisLineCoordinates(MinorTickRelativeSize, secAxisLength, ref secAxis0, ref secAxis1);
-
-				if (Orientation == Orientation.Horizontal)
-					drawingContext.DrawLine(_minorTickPen, new Point(tick.position, secAxis0), new Point(tick.position, secAxis1));
-				else
-					drawingContext.DrawLine(_minorTickPen, new Point(secAxis0, tick.position), new Point(secAxis1, tick.position));
+				if (MinorTicks[j] < MajorTicks[i])
+				{
+					if (MajorTicks[i] - MinorTicks[j] > overlapThreshold && MinorTicks[j] != 0)
+						DrawTick(GetTickRenderPosition(MinorTicks[j]), secAxisMin, ref _minorTickPen);
+					j++;
+				}
+				else if (MinorTicks[j] >= MajorTicks[i])
+				{
+					if (MajorTicks[i] != 0)
+						DrawTick(GetTickRenderPosition(MajorTicks[i]), secAxisMaj, ref _majorTickPen);
+					if (MinorTicks[j] - MajorTicks[i] <= overlapThreshold)
+						j++;
+					i++;
+				}
 			}
 
-			// Draw major ticks
-			foreach (var tick in MajorTickPositions)
+			while (i < MajorTicks.Count)
 			{
-				if (tick.value == 0)
-					continue;
+				if (MajorTicks[i] != 0)
+					DrawTick(GetTickRenderPosition(MajorTicks[i]), secAxisMaj, ref _majorTickPen);
+				i++;
+			}
 
-				CalculateSecondaryAxisLineCoordinates(MajorTickRelativeSize, secAxisLength, ref secAxis0, ref secAxis1);
-
-				if (Orientation == Orientation.Horizontal)
-					drawingContext.DrawLine(_majorTickPen, new Point(tick.position, secAxis0), new Point(tick.position, secAxis1));
-				else
-					drawingContext.DrawLine(_majorTickPen, new Point(secAxis0, tick.position), new Point(secAxis1, tick.position));
+			while (j < MinorTicks.Count)
+			{
+				if (MinorTicks[j] != 0)
+					DrawTick(GetTickRenderPosition(MinorTicks[j]), secAxisMin, ref _minorTickPen);
+				j++;
 			}
 
 			// Draw origin tick
 			if (Minimum <= 0 && Maximum >= 0)
 			{
-				var originTickPosition = OriginTickPosition;
-				CalculateSecondaryAxisLineCoordinates(OriginTickRelativeSize, secAxisLength, ref secAxis0, ref secAxis1);
+				DrawTick(GetTickRenderPosition(0), secAxisOrg, ref _originTickPen);
+			}
+
+			(double start, double end) CalculateSecondaryAxisLineCoordinates(double relativeSize)
+			{
+				switch (TickAlignment)
+				{
+					case Position.Top:
+					case Position.Left:
+						return (0, relativeSize * SecondaryAxisLength);
+					case Position.Middle:
+					case Position.Center:
+						var startCoord = (SecondaryAxisLength - (relativeSize * SecondaryAxisLength)) / 2;
+						return (startCoord, SecondaryAxisLength - startCoord);
+					case Position.Bottom:
+					case Position.Right:
+						return (SecondaryAxisLength, SecondaryAxisLength - relativeSize * SecondaryAxisLength);
+					default:
+						return (0, 0);
+				}
+			}
+
+			// Local funtion which draws each tick given its screen coordinates and type-specific pen
+			void DrawTick(double position, (double start, double end) secAxisCoords, ref Pen pen)
+			{
+				// For any ticks that are equal to the max or min values,
+				// visually shift the tick inwards by half of its thickness.
+				if (IsBoundaryTickInwardShift)
+				{
+					if (Math.Abs(position) < double.Epsilon)
+						position = pen.Thickness / 2;
+					else if (Math.Abs(position - PrimaryAxisLength) < double.Epsilon)
+						position = PrimaryAxisLength - pen.Thickness / 2;
+				}
 
 				if (Orientation == Orientation.Horizontal)
-					drawingContext.DrawLine(
-						_originTickPen,
-						new Point(originTickPosition, secAxis0),
-						new Point(originTickPosition, secAxis1));
+					drawingContext.DrawLine(pen, new Point(position, secAxisCoords.start), new Point(position, secAxisCoords.end));
 				else
-					drawingContext.DrawLine(
-						_originTickPen,
-						new Point(secAxis0, originTickPosition),
-						new Point(secAxis1, originTickPosition));
+					drawingContext.DrawLine(pen, new Point(secAxisCoords.start, position), new Point(secAxisCoords.end, position));
 			}
 		}
 		#endregion

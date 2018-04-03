@@ -1625,11 +1625,11 @@ namespace JLR.Utility.WPF.Controls
 				return;
 
 			var pos = e.GetPosition(_mainPanel);
-			var closest = (from tick in _tickBar.MajorTickPositions.Concat(_tickBar.MinorTickPositions)
-						   orderby Math.Abs(tick.position - pos.X)
+			var closest = (from tick in _tickBar.MajorTicks.Concat(_tickBar.MinorTicks)
+						   orderby Math.Abs(_tickBar.GetTickRenderPosition(tick) - pos.X)
 						   select tick).First();
 			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
-			Position = closest.value;
+			Position = closest;
 			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
 		}
 
