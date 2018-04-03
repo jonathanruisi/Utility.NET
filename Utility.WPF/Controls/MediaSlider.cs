@@ -602,6 +602,92 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(null));
 		#endregion
+
+		#region Templates
+		public DataTemplate PositionTemplate
+		{
+			get => (DataTemplate)GetValue(PositionTemplateProperty);
+			set => SetValue(PositionTemplateProperty, value);
+		}
+
+		public static readonly DependencyProperty PositionTemplateProperty = DependencyProperty.Register(
+			"PositionTemplate",
+			typeof(DataTemplate),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+
+		public DataTemplate SelectionStartTemplate
+		{
+			get => (DataTemplate)GetValue(SelectionStartTemplateProperty);
+			set => SetValue(SelectionStartTemplateProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectionStartTemplateProperty = DependencyProperty.Register(
+			"SelectionStartTemplate",
+			typeof(DataTemplate),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+
+		public DataTemplate SelectionEndTemplate
+		{
+			get => (DataTemplate)GetValue(SelectionEndTemplateProperty);
+			set => SetValue(SelectionEndTemplateProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectionEndTemplateProperty = DependencyProperty.Register(
+			"SelectionEndTemplate",
+			typeof(DataTemplate),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+
+		public DataTemplate SelectionRangeTemplate
+		{
+			get => (DataTemplate)GetValue(SelectionRangeTemplateProperty);
+			set => SetValue(SelectionRangeTemplateProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectionRangeTemplateProperty = DependencyProperty.Register(
+			"SelectionRangeTemplate",
+			typeof(DataTemplate),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+
+		public DataTemplate VisibleRangeStartTemplate
+		{
+			get => (DataTemplate)GetValue(VisibleRangeStartTemplateProperty);
+			set => SetValue(VisibleRangeStartTemplateProperty, value);
+		}
+
+		public static readonly DependencyProperty VisibleRangeStartTemplateProperty = DependencyProperty.Register(
+			"VisibleRangeStartTemplate",
+			typeof(DataTemplate),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+
+		public DataTemplate VisibleRangeEndTemplate
+		{
+			get => (DataTemplate)GetValue(VisibleRangeEndTemplateProperty);
+			set => SetValue(VisibleRangeEndTemplateProperty, value);
+		}
+
+		public static readonly DependencyProperty VisibleRangeEndTemplateProperty = DependencyProperty.Register(
+			"VisibleRangeEndTemplate",
+			typeof(DataTemplate),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+
+		public DataTemplate VisibleRangeTemplate
+		{
+			get => (DataTemplate)GetValue(VisibleRangeTemplateProperty);
+			set => SetValue(VisibleRangeTemplateProperty, value);
+		}
+
+		public static readonly DependencyProperty VisibleRangeTemplateProperty = DependencyProperty.Register(
+			"VisibleRangeTemplate",
+			typeof(DataTemplate),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(null));
+		#endregion
 		#endregion
 
 		#region Events
@@ -815,6 +901,22 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			_isVisRngDragging = false;
+		}
+
+		/// <summary>
+		/// Moves the playhead (<see cref="Position"/>) to the beginning or end of the current selection.
+		/// If no selection is defined, this method does nothing.
+		/// </summary>
+		/// <param name="moveToEnd">
+		/// If <code>true</code>, moves the playhead to the end of the selection.
+		/// If <code>false</code>, moves the playhead to the beginning of the selection.
+		/// </param>
+		public void MovePlayheadToSelection(bool moveToEnd)
+		{
+			if (moveToEnd && SelectionEnd.HasValue)
+				Position = SelectionEnd.Value;
+			else if (!moveToEnd && SelectionStart.HasValue)
+				Position = SelectionStart.Value;
 		}
 		#endregion
 

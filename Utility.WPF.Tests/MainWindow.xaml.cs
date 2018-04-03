@@ -100,18 +100,18 @@ namespace Utility.WPF.Tests
 			TextBoxC1.Text = MediaSliderTest.SelectionStart == null || MediaSliderTest.SelectionEnd == null
 				? "DISABLED"
 				: $"{(decimal)MediaSliderTest.SelectionEnd - (decimal)MediaSliderTest.SelectionStart:0.###}";
-			MessageBox.Show(
+			/*MessageBox.Show(
 				$"OLD: {(e.OldValue == null ? "NULL" : $"{e.OldValue.Value.Minimum}->{e.OldValue.Value.Maximum}")}\n" +
-				$"NEW: {(e.NewValue == null ? "NULL" : $"{e.NewValue.Value.Minimum}->{e.NewValue.Value.Maximum}")}");
+				$"NEW: {(e.NewValue == null ? "NULL" : $"{e.NewValue.Value.Minimum}->{e.NewValue.Value.Maximum}")}");*/
 		}
 
 		private void MediaSliderTest_VisibleRangeChanged(object sender, RoutedPropertyChangedEventArgs<Range<decimal>> e)
 		{
 
 			TextBoxB1.Text = MediaSliderTest.VisibleRange.Magnitude().ToString("0.###");
-			MessageBox.Show(
+			/*MessageBox.Show(
 				$"OLD: {e.OldValue.Minimum:0.###}->{e.OldValue.Maximum:0.###}\n" +
-				$"NEW: {e.NewValue.Minimum:0.###}->{e.NewValue.Maximum:0.###}");
+				$"NEW: {e.NewValue.Minimum:0.###}->{e.NewValue.Maximum:0.###}");*/
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)

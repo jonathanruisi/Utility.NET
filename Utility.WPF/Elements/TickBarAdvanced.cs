@@ -86,6 +86,26 @@ namespace JLR.Utility.WPF.Elements
 			typeof(bool),
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.AffectsRender));
+
+		/// <summary>
+		/// Gets or sets whether or not tick marks equal to <see cref="Minimum"/> or <see cref="Maximum"/>
+		/// are shifted inwards so that their full thickness is visible.
+		/// If set to <code>true</code>, tick marks occuring at the boundaries will be shifted inwards
+		/// (visually) by 1/2 their thickness, so they can be rendered at their full thickness.
+		/// If set to <code>false</code>, no tick marks will be adjusted in this way, and may appear
+		/// to be cut off at boundary values.
+		/// </summary>
+		public bool IsBoundaryTickInwardShift
+		{
+			get => (bool)GetValue(IsBoundaryTickInwardShiftProperty);
+			set => SetValue(IsBoundaryTickInwardShiftProperty, value);
+		}
+
+		public static readonly DependencyProperty IsBoundaryTickInwardShiftProperty = DependencyProperty.Register(
+			"IsBoundaryTickInwardShift",
+			typeof(bool),
+			typeof(TickBarAdvanced),
+			new FrameworkPropertyMetadata(true, FrameworkPropertyMetadataOptions.AffectsRender));
 		#endregion
 
 		#region Range
@@ -381,12 +401,16 @@ namespace JLR.Utility.WPF.Elements
 				var primaryAxisLength = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
 				var position          = (double)(0 - Minimum) * primaryAxisLength / (double)(Maximum - Minimum);
 
-				// This commented block will, for any ticks that are equal to the max or min values,
-				// visually shift the tick inwards by half of its thickness
-				/*if (Math.Abs(position) < double.Epsilon)
-					position = OriginTickThickness / 2;
-				else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
-					position = primaryAxisLength - OriginTickThickness / 2;*/
+				// For any ticks that are equal to the max or min values,
+				// visually shift the tick inwards by half of its thickness.
+				if (IsBoundaryTickInwardShift)
+				{
+					if (Math.Abs(position) < double.Epsilon)
+						position = OriginTickThickness / 2;
+					else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
+						position = primaryAxisLength - OriginTickThickness / 2;
+				}
+
 				if (IsDirectionReversed)
 					position = primaryAxisLength - position;
 				return position;
@@ -407,12 +431,16 @@ namespace JLR.Utility.WPF.Elements
 					var primaryAxisLength = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
 					var position          = (double)(MajorTicks[i] - Minimum) * primaryAxisLength / (double)(Maximum - Minimum);
 
-					// This commented block will, for any ticks that are equal to the max or min values,
-					// visually shift the tick inwards by half of its thickness
-					/*if (Math.Abs(position) < double.Epsilon)
-						position = MajorTickThickness / 2;
-					else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
-						position = primaryAxisLength - MajorTickThickness / 2;*/
+					// For any ticks that are equal to the max or min values,
+					// visually shift the tick inwards by half of its thickness.
+					if (IsBoundaryTickInwardShift)
+					{
+						if (Math.Abs(position) < double.Epsilon)
+							position = MajorTickThickness / 2;
+						else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
+							position = primaryAxisLength - MajorTickThickness / 2;
+					}
+
 					if (IsDirectionReversed)
 						position = primaryAxisLength - position;
 					yield return (MajorTicks[i], position);
@@ -434,12 +462,16 @@ namespace JLR.Utility.WPF.Elements
 					var primaryAxisLength = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
 					var position          = (double)(MinorTicks[i] - Minimum) * primaryAxisLength / (double)(Maximum - Minimum);
 
-					// This commented block will, for any ticks that are equal to the max or min values,
-					// visually shift the tick inwards by half of its thickness
-					/*if (Math.Abs(position) < double.Epsilon)
-						position = MinorTickThickness / 2;
-					else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
-						position = primaryAxisLength - MinorTickThickness / 2;*/
+					// For any ticks that are equal to the max or min values,
+					// visually shift the tick inwards by half of its thickness.
+					if (IsBoundaryTickInwardShift)
+					{
+						if (Math.Abs(position) < double.Epsilon)
+							position = MinorTickThickness / 2;
+						else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
+							position = primaryAxisLength - MinorTickThickness / 2;
+					}
+
 					if (IsDirectionReversed)
 						position = primaryAxisLength - position;
 					yield return (MinorTicks[i], position);

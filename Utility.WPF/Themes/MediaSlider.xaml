@@ -5,7 +5,7 @@
 					xmlns:controls="clr-namespace:JLR.Utility.WPF.Controls">
 
 	<!-- Data Templates -->
-	<DataTemplate x:Key="PositionTopAlignDataTemplate">
+	<DataTemplate x:Key="PositionTopAlignedDataTemplateDefault">
 		<Path Name="shape" Stroke="Indigo" StrokeThickness="2" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="Indigo"/>
@@ -46,7 +46,7 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="PositionMiddleAlignDataTemplate">
+	<DataTemplate x:Key="PositionMiddleAlignedDataTemplateDefault">
 		<Path Name="shape" Stroke="Indigo" StrokeThickness="2" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="Indigo"/>
@@ -88,7 +88,7 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="PositionBottomAlignDataTemplate">
+	<DataTemplate x:Key="PositionBottomAlignedDataTemplateDefault">
 		<Path Name="shape" Stroke="Indigo" StrokeThickness="2" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="Indigo"/>
@@ -129,7 +129,7 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="SelectionStartDataTemplate">
+	<DataTemplate x:Key="SelectionStartDataTemplateDefault">
 		<Path Name="shape" Stroke="DarkGreen" StrokeThickness="1" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="DarkGreen"/>
@@ -169,7 +169,7 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="SelectionEndDataTemplate">
+	<DataTemplate x:Key="SelectionEndDataTemplateDefault">
 		<Path Name="shape" Stroke="DarkRed" StrokeThickness="1" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="DarkRed"/>
@@ -209,11 +209,11 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="SelectionRangeDataTemplate">
+	<DataTemplate x:Key="SelectionRangeDataTemplateDefault">
 		<Rectangle Fill="#400080FF" Stroke="Transparent" StrokeThickness="0" Stretch="Fill"/>
 	</DataTemplate>
 
-	<DataTemplate x:Key="VisibleRangeStartDataTemplate">
+	<DataTemplate x:Key="VisibleRangeStartDataTemplateDefault">
 		<Path Name="shape" Stroke="#004080" StrokeThickness="1" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="#004080"/>
@@ -254,7 +254,7 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="VisibleRangeEndDataTemplate">
+	<DataTemplate x:Key="VisibleRangeEndDataTemplateDefault">
 		<Path Name="shape" Stroke="#004080" StrokeThickness="1" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="#004080"/>
@@ -295,7 +295,7 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="VisibleRangeDataTemplate">
+	<DataTemplate x:Key="VisibleRangeDataTemplateDefault">
 		<Rectangle Name="shape" StrokeThickness="0" Stretch="Fill">
 			<Rectangle.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="#004080"/>
@@ -356,38 +356,25 @@
 											  MinorTickThickness="{TemplateBinding MinorTickThickness}"
 											  MinorTickRelativeSize="{TemplateBinding MinorTickRelativeSize}"/>
 					<ContentPresenter x:Name="PART_SelectionRange" Canvas.ZIndex="1"
-									  ContentTemplate="{StaticResource SelectionRangeDataTemplate}"/>
+									  ContentTemplate="{TemplateBinding SelectionRangeTemplate}"/>
 					<ContentPresenter x:Name="PART_SelectionStart" Canvas.ZIndex="2"
-									  ContentTemplate="{StaticResource SelectionStartDataTemplate}"/>
+									  ContentTemplate="{TemplateBinding SelectionStartTemplate}"/>
 					<ContentPresenter x:Name="PART_SelectionEnd" Canvas.ZIndex="2"
-									  ContentTemplate="{StaticResource SelectionEndDataTemplate}"/>
-					<ContentPresenter x:Name="PART_Position" Canvas.ZIndex="3"/>
+									  ContentTemplate="{TemplateBinding SelectionEndTemplate}"/>
+					<ContentPresenter x:Name="PART_Position" Canvas.ZIndex="3"
+									  ContentTemplate="{TemplateBinding PositionTemplate}"/>
 				</Canvas>
 
 				<Canvas Grid.Row="2" ClipToBounds="False" Background="{TemplateBinding ZoomBarBackground}">
 					<ContentPresenter x:Name="PART_VisibleRange" Canvas.ZIndex="0"
-									  ContentTemplate="{StaticResource VisibleRangeDataTemplate}"/>
+									  ContentTemplate="{TemplateBinding VisibleRangeTemplate}"/>
 					<ContentPresenter x:Name="PART_VisibleRangeStart" Canvas.ZIndex="1"
-									  ContentTemplate="{StaticResource VisibleRangeStartDataTemplate}"/>
+									  ContentTemplate="{TemplateBinding VisibleRangeStartTemplate}"/>
 					<ContentPresenter x:Name="PART_VisibleRangeEnd" Canvas.ZIndex="1"
-									  ContentTemplate="{StaticResource VisibleRangeEndDataTemplate}"/>
+									  ContentTemplate="{TemplateBinding VisibleRangeEndTemplate}"/>
 				</Canvas>
 			</Grid>
 		</Border>
-		<ControlTemplate.Triggers>
-			<DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=PositionAlignment}" Value="Top">
-				<Setter TargetName="PART_Position" Property="ContentTemplate"
-						Value="{StaticResource PositionTopAlignDataTemplate}"/>
-			</DataTrigger>
-			<DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=PositionAlignment}" Value="Middle">
-				<Setter TargetName="PART_Position" Property="ContentTemplate"
-						Value="{StaticResource PositionMiddleAlignDataTemplate}"/>
-			</DataTrigger>
-			<DataTrigger Binding="{Binding RelativeSource={RelativeSource Self}, Path=PositionAlignment}" Value="Bottom">
-				<Setter TargetName="PART_Position" Property="ContentTemplate"
-						Value="{StaticResource PositionBottomAlignDataTemplate}"/>
-			</DataTrigger>
-		</ControlTemplate.Triggers>
 	</ControlTemplate>
 
 	<!-- MediaSlider Default Style -->
@@ -425,6 +412,13 @@
 		<Setter Property="MinorTickBrush" Value="#808080"/>
 		<Setter Property="MinorTickThickness" Value="1"/>
 		<Setter Property="MinorTickRelativeSize" Value="0.333333"/>
+		<Setter Property="PositionTemplate" Value="{StaticResource PositionTopAlignedDataTemplateDefault}"/>
+		<Setter Property="SelectionStartTemplate" Value="{StaticResource SelectionStartDataTemplateDefault}"/>
+		<Setter Property="SelectionEndTemplate" Value="{StaticResource SelectionEndDataTemplateDefault}"/>
+		<Setter Property="SelectionRangeTemplate" Value="{StaticResource SelectionRangeDataTemplateDefault}"/>
+		<Setter Property="VisibleRangeStartTemplate" Value="{StaticResource VisibleRangeStartDataTemplateDefault}"/>
+		<Setter Property="VisibleRangeEndTemplate" Value="{StaticResource VisibleRangeEndDataTemplateDefault}"/>
+		<Setter Property="VisibleRangeTemplate" Value="{StaticResource VisibleRangeDataTemplateDefault}"/>
 		<Setter Property="Template" Value="{StaticResource MediaSliderDefaultTemplate}"/>
 	</Style>
 </ResourceDictionary>
