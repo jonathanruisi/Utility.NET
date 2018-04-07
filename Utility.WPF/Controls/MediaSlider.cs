@@ -1696,14 +1696,16 @@ namespace JLR.Utility.WPF.Controls
 				if (Position - _snapDistance.temporal > VisibleRangeStart)
 					Position -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
 				else
-					Position = VisibleRangeStart;
+					Position = Math.Min(_tickBar.MinorTicks[0], _tickBar.MajorTicks[0]);
 			}
 			else if (pos > 0)
 			{
 				if (Position + _snapDistance.temporal < VisibleRangeEnd)
 					Position += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
 				else
-					Position = VisibleRangeEnd;
+					Position = Math.Max(
+						_tickBar.MinorTicks[_tickBar.MinorTicks.Count - 1],
+						_tickBar.MajorTicks[_tickBar.MajorTicks.Count - 1]);
 			}
 		}
 
@@ -2016,19 +2018,10 @@ namespace JLR.Utility.WPF.Controls
 				VisualStateManager.GoToElementState(visibleRange, "MouseLeftButtonDown", false);
 			}
 
-			if (e.ClickCount >= 2)
-			{
-				_isVisRngChanging = true;
-				VisibleRangeStart = Minimum;
-				VisibleRangeEnd   = Maximum;
-			}
-			else
-			{
-				_visRngElement.CaptureMouse();
-				_prevMouseCoord        = e.GetPosition(_visRngElement).X;
-				_isMouseLeftButtonDown = true;
-				RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
-			}
+			_visRngElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_visRngElement).X;
+			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(VisibleRangeDragStartedEvent, this));
 		}
 
 		private void VisibleRange_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)

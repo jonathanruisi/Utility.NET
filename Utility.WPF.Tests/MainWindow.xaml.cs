@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -117,6 +118,10 @@ namespace Utility.WPF.Tests
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
 			if (!(sender is Button btn)) return;
+
+			var rnd = new Random(DateTime.Now.Millisecond);
+			decimal a, b;
+			Range<decimal> range;
 
 			switch (btn.Tag)
 			{
@@ -250,10 +255,6 @@ namespace Utility.WPF.Tests
 					MediaSliderTest.VisibleRangeStart -= (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;
 					break;
 				case "6":
-					var            rnd = new Random(DateTime.Now.Millisecond);
-					decimal        a, b;
-					Range<decimal> range;
-
 					for (var i = 0; i < 3; i++)
 					{
 						GetNewNumbers();
@@ -290,6 +291,57 @@ namespace Utility.WPF.Tests
 					MediaSliderTest.VisibleRangeStart += (MediaSliderTest.Maximum - MediaSliderTest.Minimum) * 0.1M;
 					break;
 				case "11":
+					TickBarTest.Minimum = rnd.Next(-10, -5);
+					TickBarTest.Maximum = rnd.Next(5, 10);
+					var listA = new List<decimal>();
+					var listB = new List<decimal>();
+					var str = new StringBuilder();
+
+					for (var i = 0; i < 5; i++)
+					{
+						a = -1000;
+						b = 1000;
+						while (a < TickBarTest.Minimum || a > TickBarTest.Maximum)
+						{
+							a = (decimal)rnd.NextDouble();
+							if (rnd.NextDouble() > 0.5)
+								a *= -1;
+							a *= rnd.Next((int)TickBarTest.Minimum, (int)TickBarTest.Maximum);
+						}
+
+						while (b < TickBarTest.Minimum || b > TickBarTest.Maximum)
+						{
+							b = (decimal)rnd.NextDouble();
+							if (rnd.NextDouble() > 0.5)
+								b *= -1;
+							b *= rnd.Next((int)TickBarTest.Minimum, (int)TickBarTest.Maximum);
+						}
+
+						listA.Add(a);
+						listB.Add(b);
+					}
+
+					TickBarTest.MajorTicks = listA;
+					TickBarTest.MinorTicks = listB;
+
+					str.Append($"MIN: {TickBarTest.Minimum}  MAX: {TickBarTest.Maximum}");
+					str.Append("\nMAJOR: ");
+					for (var i = 0; i < TickBarTest.MajorTicks.Count; i++)
+					{
+						str.Append(TickBarTest.MajorTicks[i].ToString("0.###"));
+						if (i < TickBarTest.MajorTicks.Count - 1)
+							str.Append(", ");
+					}
+
+					str.Append("\nMINOR: ");
+					for (var i = 0; i < TickBarTest.MinorTicks.Count; i++)
+					{
+						str.Append(TickBarTest.MinorTicks[i].ToString("0.###"));
+						if (i < TickBarTest.MinorTicks.Count - 1)
+							str.Append(", ");
+					}
+
+					MessageBox.Show(str.ToString(), "Results");
 					break;
 				case "12":
 					break;

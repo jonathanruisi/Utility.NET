@@ -491,9 +491,9 @@ namespace JLR.Utility.WPF.Elements
 
 			// Calculate known pixel coordinates based on orientation and placement
 			var overlapThreshold = (Maximum - Minimum) / (decimal)PrimaryAxisLength;
-			var secAxisOrg       = CalculateSecondaryAxisLineCoordinates(OriginTickRelativeSize);
-			var secAxisMaj       = CalculateSecondaryAxisLineCoordinates(MajorTickRelativeSize);
-			var secAxisMin       = CalculateSecondaryAxisLineCoordinates(MinorTickRelativeSize);
+			var secAxisOrigin    = CalculateSecondaryAxisLineCoordinates(OriginTickRelativeSize);
+			var secAxisMajor     = CalculateSecondaryAxisLineCoordinates(MajorTickRelativeSize);
+			var secAxisMinor     = CalculateSecondaryAxisLineCoordinates(MinorTickRelativeSize);
 
 			// Draw background
 			drawingContext.DrawRectangle(Background, null, new Rect(new Point(0, 0), new Size(ActualWidth, ActualHeight)));
@@ -504,40 +504,45 @@ namespace JLR.Utility.WPF.Elements
 			{
 				if (MinorTicks[j] < MajorTicks[i])
 				{
-					if (MajorTicks[i] - MinorTicks[j] > overlapThreshold && MinorTicks[j] != 0)
-						DrawTick(GetTickRenderPosition(MinorTicks[j]), secAxisMin, ref _minorTickPen);
+					if (Math.Abs(MajorTicks[i] - MinorTicks[j]) > overlapThreshold && MinorTicks[j] != 0)
+						DrawTick(GetTickRenderPosition(MinorTicks[j]), secAxisMinor, ref _minorTickPen);
 					j++;
 				}
 				else if (MinorTicks[j] >= MajorTicks[i])
 				{
 					if (MajorTicks[i] != 0)
-						DrawTick(GetTickRenderPosition(MajorTicks[i]), secAxisMaj, ref _majorTickPen);
-					if (MinorTicks[j] - MajorTicks[i] <= overlapThreshold)
+						DrawTick(GetTickRenderPosition(MajorTicks[i]), secAxisMajor, ref _majorTickPen);
+					if (Math.Abs(MinorTicks[j] - MajorTicks[i]) <= overlapThreshold)
 						j++;
 					i++;
 				}
 			}
 
+			// Draw remaining major ticks
 			while (i < MajorTicks.Count)
 			{
 				if (MajorTicks[i] != 0)
-					DrawTick(GetTickRenderPosition(MajorTicks[i]), secAxisMaj, ref _majorTickPen);
+					DrawTick(GetTickRenderPosition(MajorTicks[i]), secAxisMajor, ref _majorTickPen);
 				i++;
 			}
 
+			// Draw remaining minor ticks
 			while (j < MinorTicks.Count)
 			{
 				if (MinorTicks[j] != 0)
-					DrawTick(GetTickRenderPosition(MinorTicks[j]), secAxisMin, ref _minorTickPen);
+					DrawTick(GetTickRenderPosition(MinorTicks[j]), secAxisMinor, ref _minorTickPen);
 				j++;
 			}
 
 			// Draw origin tick
 			if (Minimum <= 0 && Maximum >= 0)
 			{
-				DrawTick(GetTickRenderPosition(0), secAxisOrg, ref _originTickPen);
+				DrawTick(GetTickRenderPosition(0), secAxisOrigin, ref _originTickPen);
 			}
 
+			// Local function which calculates the start and end coordinates (secondary axis) for a line.
+			// When Orientation==Horizontal, the secondary axis is the Y axis.
+			// When Orientation==Vertical, the secondary axis is the X axis.
 			(double start, double end) CalculateSecondaryAxisLineCoordinates(double relativeSize)
 			{
 				switch (TickAlignment)
