@@ -1572,13 +1572,13 @@ namespace JLR.Utility.WPF.Controls
 
 			if (_snapDistance.temporal < 1)
 			{
-				_tickBar.MinorTickFrequency = _snapDistance.temporal;
-				_tickBar.MajorTickFrequency = 1;
+				//_tickBar.MinorTickFrequency = _snapDistance.temporal;
+				//_tickBar.MajorTickFrequency = 1;
 			}
 			else
 			{
-				_tickBar.MinorTickFrequency = 0;
-				_tickBar.MajorTickFrequency = _snapDistance.temporal;
+				//_tickBar.MinorTickFrequency = 0;
+				//_tickBar.MajorTickFrequency = _snapDistance.temporal;
 			}
 
 			#region Local Methods
@@ -1625,12 +1625,12 @@ namespace JLR.Utility.WPF.Controls
 				return;
 
 			var pos = e.GetPosition(_mainPanel);
-			var closest = (from tick in _tickBar.MajorTicks.Concat(_tickBar.MinorTicks)
+			/*var closest = (from tick in _tickBar.MajorTicks.Concat(_tickBar.MinorTicks)
 						   orderby Math.Abs(_tickBar.GetTickRenderPosition(tick) - pos.X)
 						   select tick).First();
 			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
 			Position = closest;
-			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
+			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));*/
 		}
 
 		private void Position_MouseEnter(object sender, MouseEventArgs e)
@@ -1691,7 +1691,7 @@ namespace JLR.Utility.WPF.Controls
 			if (dist < _snapDistance.visual / 2)
 				return;
 
-			if (pos < 0)
+			/*if (pos < 0)
 			{
 				if (Position - _snapDistance.temporal > VisibleRangeStart)
 					Position -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
@@ -1706,7 +1706,7 @@ namespace JLR.Utility.WPF.Controls
 					Position = Math.Max(
 						_tickBar.MinorTicks[_tickBar.MinorTicks.Count - 1],
 						_tickBar.MajorTicks[_tickBar.MajorTicks.Count - 1]);
-			}
+			}*/
 		}
 
 		private void SelectionStart_MouseEnter(object sender, MouseEventArgs e)
