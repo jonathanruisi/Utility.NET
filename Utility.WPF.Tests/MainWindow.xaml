@@ -4,8 +4,8 @@
 		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
 		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
 		xmlns:local="clr-namespace:Utility.WPF.Tests"
-		xmlns:controls="clr-namespace:JLR.Utility.WPF.Controls;assembly=JLR.Utility.WPF"
 		xmlns:elements="clr-namespace:JLR.Utility.WPF.Elements;assembly=JLR.Utility.WPF"
+		xmlns:controls="clr-namespace:JLR.Utility.WPF.Controls;assembly=JLR.Utility.WPF"
 		mc:Ignorable="d"
 		Title="MainWindow" Height="400" Width="800">
 	<Grid>
@@ -47,59 +47,14 @@
 			<Button Grid.Row="2" Grid.Column="4" Margin="10,5" Tag="15" Click="Button_Click">Test 15</Button>
 		</Grid>
 
-		<!--<controls:MediaSlider Name="MediaSliderTest" Grid.Row="1" Maximum="10" Position="5" Background="#1D2731"
-							  SelectionRangeHighlightRelativeSize="0.33" MajorTickRelativeSize="0.53"
-							  MajorTickThickness="2.0">
-			<controls:MediaSlider.TickBarBackground>
-				<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-					<GradientStop Color="#FF000000" Offset="0.0"/>
-					<GradientStop Color="#20000000" Offset="0.15"/>
-					<GradientStop Color="#40000000" Offset="0.85"/>
-					<GradientStop Color="#FF000000" Offset="1.0"/>
-				</LinearGradientBrush>
-			</controls:MediaSlider.TickBarBackground>
-			<controls:MediaSlider.OriginTickBrush>
-				<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-					<GradientStop Color="#00328CC1" Offset="0.0"/>
-					<GradientStop Color="#FF328CC1" Offset="0.15"/>
-					<GradientStop Color="#FF328CC1" Offset="0.85"/>
-					<GradientStop Color="#00328CC1" Offset="1.0"/>
-				</LinearGradientBrush>
-			</controls:MediaSlider.OriginTickBrush>
-			<controls:MediaSlider.MajorTickBrush>
-				<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-					<GradientStop Color="#80328CC1" Offset="0.0"/>
-					<GradientStop Color="#FF328CC1" Offset="0.15"/>
-					<GradientStop Color="#80328CC1" Offset="0.75"/>
-					<GradientStop Color="#00328CC1" Offset="1.0"/>
-				</LinearGradientBrush>
-			</controls:MediaSlider.MajorTickBrush>
-			<controls:MediaSlider.MinorTickBrush>
-				<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-					<GradientStop Color="#B0328CC1" Offset="0.0"/>
-					<GradientStop Color="#20328CC1" Offset="1.0"/>
-				</LinearGradientBrush>
-			</controls:MediaSlider.MinorTickBrush>
-			<controls:MediaSlider.SelectionRangeTemplate>
-				<DataTemplate>
-					<Rectangle Stroke="Transparent" StrokeThickness="0">
-						<Rectangle.Fill>
-							<LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
-								<GradientStop Color="#40D9B310" Offset="0.0"/>
-								<GradientStop Color="#B0D9B310" Offset="0.25"/>
-								<GradientStop Color="#80D9B310" Offset="0.75"/>
-								<GradientStop Color="#20D9B310" Offset="1.0"/>
-							</LinearGradientBrush>
-						</Rectangle.Fill>
-					</Rectangle>
-				</DataTemplate>
-			</controls:MediaSlider.SelectionRangeTemplate>
-		</controls:MediaSlider>-->
-
 		<elements:TickBarAdvanced Name="TickBarTest" Grid.Row="1" Grid.RowSpan="2"
 								  Orientation="Horizontal" Margin="5" Background="#D0D0D0"
-								  Minimum="-2" Maximum="2" DecimalPrecision="4"
-								  Ticks="1,2,3"/>
+								  DecimalPrecision="4" IsDirectionReversed="False" IsShiftBoundaryTicks="True"
+								  MinorTickThickness="8" MajorTickThickness="4" OriginTickThickness="2"
+								  MinorTickRelativeSize="0.33" MajorTickRelativeSize="0.66" OriginTickRelativeSize="1.0"
+								  MinorTickBrush="IndianRed" MajorTickBrush="DodgerBlue" OriginTickBrush="Chartreuse"
+								  MinorTickZIndex="2" MajorTickZIndex="1" OriginTickZIndex="0"
+								  Minimum="-10" Maximum="10" MajorTickFrequency="1" MinorTickFrequency="0.5"/>
 
 		<Grid Grid.Row="3" VerticalAlignment="Bottom">
 			<Grid.RowDefinitions>

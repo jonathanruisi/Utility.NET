@@ -57,7 +57,6 @@
     <Compile Include="Elements\GlyphPixelGrid.cs" />
     <Compile Include="Elements\LineGraph.cs" />
     <Compile Include="Elements\PixelGrid.cs" />
-    <Compile Include="Elements\Tick.cs" />
     <Compile Include="Elements\TickBarAdvanced.cs" />
     <Compile Include="ExtensionMethods.cs" />
     <Compile Include="Properties\AssemblyInfo.cs">

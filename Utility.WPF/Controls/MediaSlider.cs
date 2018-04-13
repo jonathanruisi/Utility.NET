@@ -832,13 +832,6 @@ namespace JLR.Utility.WPF.Controls
 		{
 			DefaultStyleKeyProperty.OverrideMetadata(typeof(MediaSlider), new FrameworkPropertyMetadata(typeof(MediaSlider)));
 		}
-
-		public MediaSlider()
-		{
-			_snapDistance          = (0, 0);
-			_prevMouseCoord        = 0;
-			_isMouseLeftButtonDown = false;
-		}
 		#endregion
 
 		#region Public Methods
@@ -1572,13 +1565,13 @@ namespace JLR.Utility.WPF.Controls
 
 			if (_snapDistance.temporal < 1)
 			{
-				//_tickBar.MinorTickFrequency = _snapDistance.temporal;
-				//_tickBar.MajorTickFrequency = 1;
+				_tickBar.MinorTickFrequency = _snapDistance.temporal;
+				_tickBar.MajorTickFrequency = 1;
 			}
 			else
 			{
-				//_tickBar.MinorTickFrequency = 0;
-				//_tickBar.MajorTickFrequency = _snapDistance.temporal;
+				_tickBar.MinorTickFrequency = 0;
+				_tickBar.MajorTickFrequency = _snapDistance.temporal;
 			}
 
 			#region Local Methods
@@ -1625,12 +1618,12 @@ namespace JLR.Utility.WPF.Controls
 				return;
 
 			var pos = e.GetPosition(_mainPanel);
-			/*var closest = (from tick in _tickBar.MajorTicks.Concat(_tickBar.MinorTicks)
-						   orderby Math.Abs(_tickBar.GetTickRenderPosition(tick) - pos.X)
+			var closest = (from tick in _tickBar.Ticks
+						   orderby Math.Abs(_tickBar.CalculateTickRenderCoordinate(tick.value) - pos.X)
 						   select tick).First();
 			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
-			Position = closest;
-			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));*/
+			Position = closest.value;
+			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
 		}
 
 		private void Position_MouseEnter(object sender, MouseEventArgs e)
@@ -1691,22 +1684,20 @@ namespace JLR.Utility.WPF.Controls
 			if (dist < _snapDistance.visual / 2)
 				return;
 
-			/*if (pos < 0)
+			if (pos < 0)
 			{
 				if (Position - _snapDistance.temporal > VisibleRangeStart)
 					Position -= _snapDistance.temporal * (int)(dist / _snapDistance.visual);
 				else
-					Position = Math.Min(_tickBar.MinorTicks[0], _tickBar.MajorTicks[0]);
+					Position = _tickBar.Ticks[0].value;
 			}
 			else if (pos > 0)
 			{
 				if (Position + _snapDistance.temporal < VisibleRangeEnd)
 					Position += _snapDistance.temporal * (int)(dist / _snapDistance.visual);
 				else
-					Position = Math.Max(
-						_tickBar.MinorTicks[_tickBar.MinorTicks.Count - 1],
-						_tickBar.MajorTicks[_tickBar.MajorTicks.Count - 1]);
-			}*/
+					Position = _tickBar.Ticks[_tickBar.Ticks.Count - 1].value;
+			}
 		}
 
 		private void SelectionStart_MouseEnter(object sender, MouseEventArgs e)

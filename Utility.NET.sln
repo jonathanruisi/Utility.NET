@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility.WinApi", "Utility.W
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility.NET.Tests", "Utility.NET.Tests\Utility.NET.Tests.csproj", "{F7BF6A9D-62F9-43EF-A969-0B17692FA944}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility.WPF.Tests", "Utility.WPF.Tests\Utility.WPF.Tests.csproj", "{1511D3DF-9FD6-4BEC-A72A-3DF192951D7B}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility.WPF.Tests", "Utility.WPF.Tests\Utility.WPF.Tests.csproj", "{FDFC40CC-5D1E-4027-8174-DD6C33CA7FA5}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +35,10 @@ Global
 		{F7BF6A9D-62F9-43EF-A969-0B17692FA944}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F7BF6A9D-62F9-43EF-A969-0B17692FA944}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F7BF6A9D-62F9-43EF-A969-0B17692FA944}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1511D3DF-9FD6-4BEC-A72A-3DF192951D7B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1511D3DF-9FD6-4BEC-A72A-3DF192951D7B}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1511D3DF-9FD6-4BEC-A72A-3DF192951D7B}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1511D3DF-9FD6-4BEC-A72A-3DF192951D7B}.Release|Any CPU.Build.0 = Release|Any CPU
+		{FDFC40CC-5D1E-4027-8174-DD6C33CA7FA5}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{FDFC40CC-5D1E-4027-8174-DD6C33CA7FA5}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{FDFC40CC-5D1E-4027-8174-DD6C33CA7FA5}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{FDFC40CC-5D1E-4027-8174-DD6C33CA7FA5}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

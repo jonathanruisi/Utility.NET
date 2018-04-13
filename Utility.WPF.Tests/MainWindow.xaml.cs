@@ -1,16 +1,17 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Data;
-
-using JLR.Utility.NET;
-using JLR.Utility.NET.Math;
-using JLR.Utility.WPF.Elements;
+using System.Windows.Documents;
+using System.Windows.Input;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows.Navigation;
+using System.Windows.Shapes;
 
 namespace Utility.WPF.Tests
 {
@@ -19,66 +20,17 @@ namespace Utility.WPF.Tests
 		public MainWindow()
 		{
 			InitializeComponent();
-			Loaded      += MainWindow_Loaded;
-			SizeChanged += MainWindow_SizeChanged;
+			Loaded += MainWindow_Loaded;
 		}
 
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
 		{
-			var binding = new Binding
-			{
-				Path         = new PropertyPath("Minimum"),
-				Source       = TickBarTest,
-				Mode         = BindingMode.TwoWay,
-				StringFormat = "0.###"
-			};
-			TextBoxA0.SetBinding(TextBox.TextProperty, binding);
-
-			binding = new Binding
-			{
-				Path         = new PropertyPath("Maximum"),
-				Source       = TickBarTest,
-				Mode         = BindingMode.TwoWay,
-				StringFormat = "0.###"
-			};
-			TextBoxA2.SetBinding(TextBox.TextProperty, binding);
-
-			binding = new Binding
-			{
-				Path         = new PropertyPath("MajorTickFrequency"),
-				Source       = TickBarTest,
-				Mode         = BindingMode.TwoWay,
-				StringFormat = "0.###"
-			};
-			TextBoxD0.SetBinding(TextBox.TextProperty, binding);
-
-			binding = new Binding
-			{
-				Path         = new PropertyPath("MinorTickFrequency"),
-				Source       = TickBarTest,
-				Mode         = BindingMode.TwoWay,
-				StringFormat = "0.###"
-			};
-			TextBoxD1.SetBinding(TextBox.TextProperty, binding);
-
-			binding = new Binding
-			{
-				Path      = new PropertyPath("Ticks"),
-				Source    = TickBarTest,
-				Mode      = BindingMode.TwoWay,
-				Converter = new TickHashSetConverter()
-			};
-			TextBoxD2.SetBinding(TextBox.TextProperty, binding);
+			
 		}
-
-		private void MainWindow_SizeChanged(object sender, SizeChangedEventArgs e) { }
-
 
 		private void Button_Click(object sender, RoutedEventArgs e)
 		{
 			if (!(sender is Button btn)) return;
-
-			var rnd = new Random(DateTime.Now.Millisecond);
 
 			switch (btn.Tag)
 			{

@@ -19,17 +19,29 @@ using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Data;
 using System.Windows.Media;
 
 using JLR.Utility.NET;
 
 namespace JLR.Utility.WPF.Elements
 {
+	#region Enumerated Types
+	[Flags]
+	public enum TickTypes
+	{
+		Origin = 1,
+		Major = 2,
+		Minor = 4
+	};
+	#endregion
+
 	public class TickBarAdvanced : FrameworkElement
 	{
 		#region Fields
 		private Pen _originTickPen, _majorTickPen, _minorTickPen;
 		private bool _ignoreTickValuePropertyChange;
+		private double _smallestTickGap;
 		#endregion
 
 		#region Properties
@@ -116,38 +128,54 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(6, OnRangePropertyChanged));
 
-		public int ZIndexOrigin { get => (int)GetValue(ZIndexOriginProperty); set => SetValue(ZIndexOriginProperty, value); }
+		public int OriginTickZIndex
+		{
+			get => (int)GetValue(OriginTickZIndexProperty);
+			set => SetValue(OriginTickZIndexProperty, value);
+		}
 
-		public static readonly DependencyProperty ZIndexOriginProperty = DependencyProperty.Register(
-			"ZIndexOrigin",
+		public static readonly DependencyProperty OriginTickZIndexProperty = DependencyProperty.Register(
+			"OriginTickZIndex",
 			typeof(int),
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.AffectsRender));
 
-		public int ZIndexMajor { get => (int)GetValue(ZIndexMajorProperty); set => SetValue(ZIndexMajorProperty, value); }
+		public int MajorTickZIndex
+		{
+			get => (int)GetValue(MajorTickZIndexProperty);
+			set => SetValue(MajorTickZIndexProperty, value);
+		}
 
-		public static readonly DependencyProperty ZIndexMajorProperty = DependencyProperty.Register(
-			"ZIndexMajor",
+		public static readonly DependencyProperty MajorTickZIndexProperty = DependencyProperty.Register(
+			"MajorTickZIndex",
 			typeof(int),
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.AffectsRender));
 
-		public int ZIndexMinor { get => (int)GetValue(ZIndexMinorProperty); set => SetValue(ZIndexMinorProperty, value); }
+		public int MinorTickZIndex
+		{
+			get => (int)GetValue(MinorTickZIndexProperty);
+			set => SetValue(MinorTickZIndexProperty, value);
+		}
 
-		public static readonly DependencyProperty ZIndexMinorProperty = DependencyProperty.Register(
-			"ZIndexMinor",
+		public static readonly DependencyProperty MinorTickZIndexProperty = DependencyProperty.Register(
+			"MinorTickZIndex",
 			typeof(int),
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(0, FrameworkPropertyMetadataOptions.AffectsRender));
 		#endregion
 
 		#region Tick Positioning
-		[TypeConverter(typeof(TickHashSetConverter))]
-		public Dictionary<decimal,Tick> Ticks { get => (Dictionary<decimal,Tick>)GetValue(TicksProperty); set => SetValue(TicksProperty, value); }
+		[TypeConverter(typeof(TickListConverter))]
+		public List<(decimal value, TickTypes type)> Ticks
+		{
+			get => (List<(decimal value, TickTypes type)>)GetValue(TicksProperty);
+			set => SetValue(TicksProperty, value);
+		}
 
 		public static readonly DependencyProperty TicksProperty = DependencyProperty.Register(
 			"Ticks",
-			typeof(Dictionary<decimal,Tick>),
+			typeof(List<(decimal value, TickTypes type)>),
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(null, FrameworkPropertyMetadataOptions.AffectsRender, OnTickValuePropertyChanged));
 
@@ -161,7 +189,7 @@ namespace JLR.Utility.WPF.Elements
 			"MajorTickFrequency",
 			typeof(decimal),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(1.0M, FrameworkPropertyMetadataOptions.AffectsRender, OnTickValuePropertyChanged));
+			new FrameworkPropertyMetadata(0M, FrameworkPropertyMetadataOptions.AffectsRender, OnTickValuePropertyChanged));
 
 		public decimal MinorTickFrequency
 		{
@@ -173,7 +201,7 @@ namespace JLR.Utility.WPF.Elements
 			"MinorTickFrequency",
 			typeof(decimal),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(0.25M, FrameworkPropertyMetadataOptions.AffectsRender, OnTickValuePropertyChanged));
+			new FrameworkPropertyMetadata(0M, FrameworkPropertyMetadataOptions.AffectsRender, OnTickValuePropertyChanged));
 		#endregion
 
 		#region Tick Size
@@ -306,9 +334,6 @@ namespace JLR.Utility.WPF.Elements
 		#endregion
 		#endregion
 
-		#region Internal Properties
-		#endregion
-
 		#region Constructor
 		static TickBarAdvanced()
 		{
@@ -318,7 +343,28 @@ namespace JLR.Utility.WPF.Elements
 		}
 		#endregion
 
-		#region Internal Methods
+		#region Internal Properties, Events, and Methods
+		internal event RoutedPropertyChangedEventHandler<double> SmallestTickGapChanged
+		{
+			add => AddHandler(SmallestTickGapChangedEvent, value);
+			remove => RemoveHandler(SmallestTickGapChangedEvent, value);
+		}
+
+		internal static readonly RoutedEvent SmallestTickGapChangedEvent = EventManager.RegisterRoutedEvent(
+			"SmallestTickGapChanged",
+			RoutingStrategy.Direct,
+			typeof(RoutedPropertyChangedEventHandler<double>),
+			typeof(TickBarAdvanced));
+
+		internal double CalculateTickRenderCoordinate(decimal value)
+		{
+			var primaryAxisLength = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
+			var position          = (double)(value - Minimum) * primaryAxisLength / (double)(Maximum - Minimum);
+			if (IsDirectionReversed && Orientation == Orientation.Horizontal ||
+				!IsDirectionReversed && Orientation == Orientation.Vertical)
+				position = primaryAxisLength - position;
+			return position;
+		}
 		#endregion
 
 		#region Private Methods
@@ -340,9 +386,9 @@ namespace JLR.Utility.WPF.Elements
 			_minorTickPen.Freeze();
 		}
 
-		private Dictionary<decimal,Tick> GenerateTicks()
+		private List<(decimal value, TickTypes type)> GenerateTicks()
 		{
-			var ticks = new Dictionary<decimal, Tick>();
+			var ticks = new List<(decimal value, TickTypes type)>();
 
 			decimal major = 0;
 			if (MajorTickFrequency > 0)
@@ -371,13 +417,12 @@ namespace JLR.Utility.WPF.Elements
 					if (adjustedMinor < adjustedMajor)
 					{
 						tickFlags |= TickTypes.Minor;
-						ticks.Add(adjustedMinor, new Tick(tickFlags, 0));
+						ticks.Add((adjustedMinor, tickFlags));
 						minor         += MinorTickFrequency;
 						adjustedMinor =  decimal.Round(minor, DecimalPrecision, MidpointRounding.ToEven);
 					}
 					else
 					{
-
 						if (adjustedMinor == adjustedMajor)
 						{
 							tickFlags     |= TickTypes.Minor;
@@ -386,7 +431,7 @@ namespace JLR.Utility.WPF.Elements
 						}
 
 						tickFlags |= TickTypes.Major;
-						ticks.Add(adjustedMajor, new Tick(tickFlags, 0));
+						ticks.Add((adjustedMajor, tickFlags));
 						major         += MajorTickFrequency;
 						adjustedMajor =  decimal.Round(major, DecimalPrecision, MidpointRounding.ToEven);
 					}
@@ -396,7 +441,7 @@ namespace JLR.Utility.WPF.Elements
 			{
 				while (adjustedMajor <= Maximum)
 				{
-					ticks.Add(adjustedMajor, new Tick(adjustedMajor == 0 ? TickTypes.Origin | TickTypes.Major : TickTypes.Major, 0));
+					ticks.Add((adjustedMajor, adjustedMajor == 0 ? TickTypes.Origin | TickTypes.Major : TickTypes.Major));
 					major         += MajorTickFrequency;
 					adjustedMajor =  decimal.Round(major, DecimalPrecision, MidpointRounding.ToEven);
 				}
@@ -405,22 +450,13 @@ namespace JLR.Utility.WPF.Elements
 			{
 				while (adjustedMinor <= Maximum)
 				{
-					ticks.Add(adjustedMinor, new Tick(adjustedMinor == 0 ? TickTypes.Origin | TickTypes.Minor : TickTypes.Minor, 0));
+					ticks.Add((adjustedMinor, adjustedMinor == 0 ? TickTypes.Origin | TickTypes.Minor : TickTypes.Minor));
 					minor         += MinorTickFrequency;
 					adjustedMinor =  decimal.Round(minor, DecimalPrecision, MidpointRounding.ToEven);
 				}
 			}
 
 			return ticks;
-		}
-
-		private double GetTickRenderCoordinate(decimal value)
-		{
-			var primaryAxisLength = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
-			var position          = (double)(value - Minimum) * primaryAxisLength / (double)(Maximum - Minimum);
-			if (IsDirectionReversed)
-				position = primaryAxisLength - position;
-			return position;
 		}
 		#endregion
 
@@ -449,6 +485,7 @@ namespace JLR.Utility.WPF.Elements
 				tickBar.SetCurrentValue(MajorTickFrequencyProperty, 0M);
 				tickBar.SetCurrentValue(MinorTickFrequencyProperty, 0M);
 				tickBar._ignoreTickValuePropertyChange = false;
+				((List<(decimal, TickTypes)>)e.NewValue).Sort();
 			}
 			else if ((e.Property == MajorTickFrequencyProperty || e.Property == MinorTickFrequencyProperty) &&
 				!tickBar._ignoreTickValuePropertyChange)
@@ -488,40 +525,99 @@ namespace JLR.Utility.WPF.Elements
 			// Calculate render coordinates
 			var primaryAxisLength   = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
 			var secondaryAxisLength = Orientation == Orientation.Horizontal ? ActualHeight : ActualWidth;
-			var secAxisOrigin       = CalculateSecondaryAxisLineCoordinates(OriginTickRelativeSize);
-			var secAxisMajor        = CalculateSecondaryAxisLineCoordinates(MajorTickRelativeSize);
-			var secAxisMinor        = CalculateSecondaryAxisLineCoordinates(MinorTickRelativeSize);
+			var secAxisOrigin       = CalculateSecondaryAxisCoordinates(OriginTickRelativeSize);
+			var secAxisMajor        = CalculateSecondaryAxisCoordinates(MajorTickRelativeSize);
+			var secAxisMinor        = CalculateSecondaryAxisCoordinates(MinorTickRelativeSize);
+
+			// Determine draw order for different tick types
+			var drawOrder = new SortedList<int, TickTypes> { { OriginTickZIndex, TickTypes.Origin } };
+			if (drawOrder.ContainsKey(MajorTickZIndex))
+				drawOrder[MajorTickZIndex] |= TickTypes.Major;
+			else
+				drawOrder.Add(MajorTickZIndex, TickTypes.Major);
+			if (drawOrder.ContainsKey(MinorTickZIndex))
+				drawOrder[MinorTickZIndex] |= TickTypes.Minor;
+			else
+				drawOrder.Add(MinorTickZIndex, TickTypes.Minor);
 
 			// Draw background
 			drawingContext.DrawRectangle(Background, null, new Rect(new Point(0, 0), new Size(ActualWidth, ActualHeight)));
 
 			// Draw ticks
-			foreach (var tick in Ticks)
+			var smallestGap = primaryAxisLength;
+			(double position, double thickness) prevTick = (0, 0);
+			for (var i = 0; i < Ticks.Count; i++)
 			{
-				var position = GetTickRenderCoordinate(tick.Key);
-				switch (tick.Value.TickType)
+				var thickest = 0.0;
+				var position = CalculateTickRenderCoordinate(Ticks[i].value);
+				if (position < 0 || position > primaryAxisLength)
+					continue;
+
+				foreach (var z in drawOrder)
 				{
-					case TickTypes.Origin:
-						DrawTick(ref position, ref secAxisOrigin, ref _originTickPen);
-						break;
-					case TickTypes.Major:
-						DrawTick(ref position, ref secAxisMajor, ref _majorTickPen);
-						break;
-					case TickTypes.Minor:
-						DrawTick(ref position, ref secAxisMinor, ref _minorTickPen);
-						break;
-					default:
-						if (tick.Value.TickType.HasFlag(TickTypes.Origin))
-							DrawTick(ref position, ref secAxisOrigin, ref _originTickPen);
-						else if (tick.Value.TickType.HasFlag(TickTypes.Major))
-							DrawTick(ref position, ref secAxisMajor, ref _majorTickPen);
-						else if (tick.Value.TickType.HasFlag(TickTypes.Minor))
-							DrawTick(ref position, ref secAxisMinor, ref _minorTickPen);
-						break;
+					switch (Ticks[i].type & z.Value)
+					{
+						case TickTypes.Minor:
+							DrawTick(secAxisMinor, ref _minorTickPen);
+							thickest = Math.Max(thickest, MinorTickThickness);
+							break;
+						case TickTypes.Major:
+						case TickTypes.Major | TickTypes.Minor:
+							DrawTick(secAxisMajor, ref _majorTickPen);
+							thickest = Math.Max(thickest, MajorTickThickness);
+							break;
+						case TickTypes.Origin:
+						case TickTypes.Origin | TickTypes.Major:
+						case TickTypes.Origin | TickTypes.Minor:
+						case TickTypes.Origin | TickTypes.Major | TickTypes.Minor:
+							DrawTick(secAxisOrigin, ref _originTickPen);
+							thickest = Math.Max(thickest, OriginTickThickness);
+							break;
+					}
+				}
+
+				if (i > 0)
+				{
+					var gap = position > prevTick.position
+						? position - prevTick.position - thickest / 2 - prevTick.thickness / 2
+						: prevTick.position - position - thickest / 2 - prevTick.thickness / 2;
+					smallestGap = Math.Min(gap, smallestGap);
+				}
+
+				prevTick = (position, thickest);
+
+				void DrawTick(Range<double> secAxisCoords, ref Pen pen)
+				{
+					// For any ticks that are equal to the max or min values,
+					// visually shift the tick inwards by half of its thickness.
+					if (IsShiftBoundaryTicks)
+					{
+						if (position < pen.Thickness / 2)
+							position = pen.Thickness / 2;
+						else if (primaryAxisLength - position < pen.Thickness / 2)
+							position = primaryAxisLength - pen.Thickness / 2;
+					}
+
+					if (Orientation == Orientation.Horizontal)
+						drawingContext.DrawLine(
+							pen,
+							new Point(position, secAxisCoords.Minimum),
+							new Point(position, secAxisCoords.Maximum));
+					else
+						drawingContext.DrawLine(
+							pen,
+							new Point(secAxisCoords.Minimum, position),
+							new Point(secAxisCoords.Maximum, position));
 				}
 			}
 
-			Range<double> CalculateSecondaryAxisLineCoordinates(double relativeSize)
+			if (Math.Abs(smallestGap - _smallestTickGap) > double.Epsilon)
+			{
+				RaiseEvent(new RoutedPropertyChangedEventArgs<double>(_smallestTickGap, smallestGap, SmallestTickGapChangedEvent));
+				_smallestTickGap = smallestGap;
+			}
+
+			Range<double> CalculateSecondaryAxisCoordinates(double relativeSize)
 			{
 				switch (TickAlignment)
 				{
@@ -539,30 +635,6 @@ namespace JLR.Utility.WPF.Elements
 						return new Range<double>(0, 0);
 				}
 			}
-
-			void DrawTick(ref double position, ref Range<double> secAxisCoords, ref Pen pen)
-			{
-				// For any ticks that are equal to the max or min values,
-				// visually shift the tick inwards by half of its thickness.
-				if (IsShiftBoundaryTicks)
-				{
-					if (Math.Abs(position) < double.Epsilon)
-						position = pen.Thickness / 2;
-					else if (Math.Abs(position - primaryAxisLength) < double.Epsilon)
-						position = primaryAxisLength - pen.Thickness / 2;
-				}
-
-				if (Orientation == Orientation.Horizontal)
-					drawingContext.DrawLine(
-						pen,
-						new Point(position, secAxisCoords.Minimum),
-						new Point(position, secAxisCoords.Maximum));
-				else
-					drawingContext.DrawLine(
-						pen,
-						new Point(secAxisCoords.Minimum, position),
-						new Point(secAxisCoords.Maximum, position));
-			}
 		}
 
 		/// <inheritdoc />
@@ -574,6 +646,101 @@ namespace JLR.Utility.WPF.Elements
 			if (Ticks == null)
 				SetCurrentValue(TicksProperty, GenerateTicks());
 			base.OnInitialized(e);
+		}
+		#endregion
+	}
+
+	public class TickListConverter : TypeConverter, IValueConverter
+	{
+		/// <inheritdoc />
+		public override bool CanConvertFrom(ITypeDescriptorContext context, Type sourceType)
+		{
+			return sourceType == typeof(string);
+		}
+
+		/// <inheritdoc />
+		public override bool CanConvertTo(ITypeDescriptorContext context, Type destinationType)
+		{
+			return destinationType == typeof(string);
+		}
+
+		/// <inheritdoc />
+		public override object ConvertFrom(ITypeDescriptorContext context, CultureInfo culture, object value)
+		{
+			if (!(value is string strValue))
+				return null;
+
+			var result      = new List<(decimal value, TickTypes type)>();
+			var tickStrings = strValue.Split(',', ' ');
+			foreach (var tickString in tickStrings)
+			{
+				var paramStrings = tickString.Split(':');
+				if (!decimal.TryParse(paramStrings[0], out var number))
+					continue;
+
+				TickTypes tickType = 0;
+				if (paramStrings.Length >= 2)
+				{
+					foreach (var ch in paramStrings[1])
+					{
+						switch (ch)
+						{
+							case 'O':
+								tickType |= TickTypes.Origin;
+								break;
+							case 'M':
+								tickType |= TickTypes.Major;
+								break;
+							case 'm':
+								tickType |= TickTypes.Minor;
+								break;
+						}
+					}
+				}
+
+				result.Add((number, tickType == 0 ? TickTypes.Major : tickType));
+			}
+
+			return result;
+		}
+
+		/// <inheritdoc />
+		public override object ConvertTo(ITypeDescriptorContext context,
+										 CultureInfo culture,
+										 object value,
+										 Type destinationType)
+		{
+			if (!(value is List<(decimal value, TickTypes type)> ticks))
+				return null;
+
+			var str = new StringBuilder();
+			foreach (var tick in ticks)
+			{
+				str.Append(tick.value);
+				str.Append(':');
+				if (tick.type.HasFlag(TickTypes.Origin))
+					str.Append('O');
+				if (tick.type.HasFlag(TickTypes.Major))
+					str.Append('M');
+				if (tick.type.HasFlag(TickTypes.Minor))
+					str.Append('m');
+				str.Append(", ");
+			}
+
+			if (ticks.Count > 1)
+				str.Remove(str.Length - 2, 2);
+			return str.ToString();
+		}
+
+		#region IValueConverter Implementation
+		public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			return ConvertTo(null, culture, value, targetType);
+		}
+
+		public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture)
+		{
+			return ConvertFrom(value);
 		}
 		#endregion
 	}
