@@ -365,6 +365,14 @@ namespace JLR.Utility.WPF.Elements
 				position = primaryAxisLength - position;
 			return position;
 		}
+
+		internal void SetTickFrequencies(decimal major, decimal minor)
+		{
+			_ignoreTickValuePropertyChange = true;
+			SetCurrentValue(MajorTickFrequencyProperty, major);
+			_ignoreTickValuePropertyChange = false;
+			SetCurrentValue(MinorTickFrequencyProperty, minor);
+		}
 		#endregion
 
 		#region Private Methods
@@ -514,14 +522,14 @@ namespace JLR.Utility.WPF.Elements
 			return (decimal)value < tickBar.Minimum ? tickBar.Minimum : value;
 		}
 		#endregion
-
+		
 		#region Method Overrides (System.Windows.FrameworkElement)
 		/// <inheritdoc />
 		protected override void OnRender(DrawingContext drawingContext)
 		{
 			if (Math.Abs(ActualWidth) < double.Epsilon || Math.Abs(ActualHeight) < double.Epsilon)
 				return;
-
+			
 			// Calculate render coordinates
 			var primaryAxisLength   = Orientation == Orientation.Horizontal ? ActualWidth : ActualHeight;
 			var secondaryAxisLength = Orientation == Orientation.Horizontal ? ActualHeight : ActualWidth;
@@ -542,7 +550,7 @@ namespace JLR.Utility.WPF.Elements
 
 			// Draw background
 			drawingContext.DrawRectangle(Background, null, new Rect(new Point(0, 0), new Size(ActualWidth, ActualHeight)));
-
+			
 			// Draw ticks
 			var smallestGap = primaryAxisLength;
 			(double position, double thickness) prevTick = (0, 0);
@@ -613,7 +621,8 @@ namespace JLR.Utility.WPF.Elements
 
 			if (Math.Abs(smallestGap - _smallestTickGap) > double.Epsilon)
 			{
-				RaiseEvent(new RoutedPropertyChangedEventArgs<double>(_smallestTickGap, smallestGap, SmallestTickGapChangedEvent));
+				if (IsLoaded && Ticks.Count > 0)
+					RaiseEvent(new RoutedPropertyChangedEventArgs<double>(_smallestTickGap, smallestGap, SmallestTickGapChangedEvent));
 				_smallestTickGap = smallestGap;
 			}
 

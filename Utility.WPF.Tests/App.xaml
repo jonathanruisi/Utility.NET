@@ -4,6 +4,6 @@
              xmlns:local="clr-namespace:Utility.WPF.Tests"
              StartupUri="MainWindow.xaml">
     <Application.Resources>
-         
-    </Application.Resources>
+		<ResourceDictionary Source="/JLR.Utility.WPF;component/Themes/MediaSlider.xaml"/>
+	</Application.Resources>
 </Application>

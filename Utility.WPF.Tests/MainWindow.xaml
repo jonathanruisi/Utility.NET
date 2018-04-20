@@ -47,14 +47,18 @@
 			<Button Grid.Row="2" Grid.Column="4" Margin="10,5" Tag="15" Click="Button_Click">Test 15</Button>
 		</Grid>
 
-		<elements:TickBarAdvanced Name="TickBarTest" Grid.Row="1" Grid.RowSpan="2"
-								  Orientation="Horizontal" Margin="5" Background="#D0D0D0"
-								  DecimalPrecision="4" IsDirectionReversed="False" IsShiftBoundaryTicks="True"
-								  MinorTickThickness="8" MajorTickThickness="4" OriginTickThickness="2"
-								  MinorTickRelativeSize="0.33" MajorTickRelativeSize="0.66" OriginTickRelativeSize="1.0"
-								  MinorTickBrush="IndianRed" MajorTickBrush="DodgerBlue" OriginTickBrush="Chartreuse"
-								  MinorTickZIndex="2" MajorTickZIndex="1" OriginTickZIndex="0"
-								  Minimum="-10" Maximum="10" MajorTickFrequency="1" MinorTickFrequency="0.5"/>
+		<!--<controls:MediaSlider Name="MediaSliderTest" Grid.Row="1" Grid.RowSpan="2"
+							  Minimum="-10" Maximum="10" Position="-1.5"
+							  SelectionStart="-1" SelectionEnd="1"
+							  ZoomStart="-10" ZoomEnd="10"/>-->
+		
+		<elements:TickBarAdvanced Name="TickBarAdvancedTest" Grid.Row="1" Grid.RowSpan="2"
+								  Minimum="-10" Maximum="10" DecimalPrecision="6" IsShiftBoundaryTicks="False"
+								  MajorTickFrequency="0.3" MinorTickFrequency="0.333"
+								  OriginTickThickness="2" MajorTickThickness="4" MinorTickThickness="8"
+								  OriginTickRelativeSize="1.0" MajorTickRelativeSize="0.75" MinorTickRelativeSize="0.5"
+								  OriginTickBrush="Green" MajorTickBrush="IndianRed" MinorTickBrush="DodgerBlue"
+								  OriginTickZIndex="2" MajorTickZIndex="1" MinorTickZIndex="0"/>
 
 		<Grid Grid.Row="3" VerticalAlignment="Bottom">
 			<Grid.RowDefinitions>
@@ -77,9 +81,9 @@
 			<TextBlock Grid.Row="2" Grid.Column="0" TextAlignment="Center" Margin="0,5,0,0">Position</TextBlock>
 			<TextBlock Grid.Row="4" Grid.Column="0" TextAlignment="Center" Margin="0,5,0,0">Maximum</TextBlock>
 
-			<TextBlock Grid.Row="0" Grid.Column="1" TextAlignment="Center" Margin="0,0,0,0">Vis. Range (Start)</TextBlock>
-			<TextBlock Grid.Row="2" Grid.Column="1" TextAlignment="Center" Margin="0,5,0,0">Vis. Range</TextBlock>
-			<TextBlock Grid.Row="4" Grid.Column="1" TextAlignment="Center" Margin="0,5,0,0">Vis. Range (End)</TextBlock>
+			<TextBlock Grid.Row="0" Grid.Column="1" TextAlignment="Center" Margin="0,0,0,0">Zoom (Start)</TextBlock>
+			<TextBlock Grid.Row="2" Grid.Column="1" TextAlignment="Center" Margin="0,5,0,0">Zoom</TextBlock>
+			<TextBlock Grid.Row="4" Grid.Column="1" TextAlignment="Center" Margin="0,5,0,0">Zoom (End)</TextBlock>
 
 			<TextBlock Grid.Row="0" Grid.Column="2" TextAlignment="Center" Margin="0,0,0,0">Selection (Start)</TextBlock>
 			<TextBlock Grid.Row="2" Grid.Column="2" TextAlignment="Center" Margin="0,5,0,0">Selection</TextBlock>

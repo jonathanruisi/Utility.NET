@@ -208,11 +208,11 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="SelectionRangeDataTemplateDefault">
+	<DataTemplate x:Key="SelectionHighlightDataTemplateDefault">
 		<Rectangle Fill="#400080FF" Stroke="Transparent" StrokeThickness="0" Stretch="Fill"/>
 	</DataTemplate>
 
-	<DataTemplate x:Key="VisibleRangeStartDataTemplateDefault">
+	<DataTemplate x:Key="ZoomStartDataTemplateDefault">
 		<Path Name="shape" Stroke="#004080" StrokeThickness="1" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="#004080"/>
@@ -253,7 +253,7 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="VisibleRangeEndDataTemplateDefault">
+	<DataTemplate x:Key="ZoomEndDataTemplateDefault">
 		<Path Name="shape" Stroke="#004080" StrokeThickness="1" Stretch="Fill">
 			<Path.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="#004080"/>
@@ -294,7 +294,7 @@
 		</Path>
 	</DataTemplate>
 
-	<DataTemplate x:Key="VisibleRangeDataTemplateDefault">
+	<DataTemplate x:Key="ZoomThumbDataTemplateDefault">
 		<Rectangle Name="shape" StrokeThickness="0" Stretch="Fill">
 			<Rectangle.Fill>
 				<SolidColorBrush x:Name="shapeFillBrush" Color="#004080"/>
@@ -331,100 +331,100 @@
 				BorderThickness="{TemplateBinding BorderThickness}"
 				Padding="{TemplateBinding Padding}"
 				SnapsToDevicePixels="True">
-			<!--<Grid>
+			<Grid>
 				<Grid.RowDefinitions>
 					<RowDefinition Height="*"/>
-					<RowDefinition Height="{TemplateBinding InnerGapSize}"/>
+					<RowDefinition Height="{TemplateBinding InnerPaddingSize}"/>
 					<RowDefinition Height="{TemplateBinding ZoomBarSize}"/>
 				</Grid.RowDefinitions>
 
 				<Canvas Grid.Row="0" ClipToBounds="False" Background="{TemplateBinding TickBarBackground}">
-					<elements:TickBarAdvanced x:Name="PART_TickBar" Orientation="Horizontal" Canvas.ZIndex="0"
-											  DecimalPrecision="8"
+					<elements:TickBarAdvanced x:Name="PART_TickBar" Canvas.ZIndex="0"
+											  Orientation="Horizontal" DecimalPrecision="8"
 											  Width="{Binding RelativeSource={RelativeSource AncestorType=Panel}, Path=ActualWidth}"
 											  Height="{Binding RelativeSource={RelativeSource AncestorType=Panel}, Path=ActualHeight}"
-											  Minimum="{TemplateBinding VisibleRangeStart}"
-											  Maximum="{TemplateBinding VisibleRangeEnd}"
+											  Minimum="{TemplateBinding ZoomStart}"
+											  Maximum="{TemplateBinding ZoomEnd}"
 											  TickAlignment="{TemplateBinding TickAlignment}"
-											  OriginTickBrush="{TemplateBinding OriginTickBrush}"
-											  OriginTickThickness="{TemplateBinding OriginTickThickness}"
 											  OriginTickRelativeSize="{TemplateBinding OriginTickRelativeSize}"
+											  OriginTickThickness="{TemplateBinding OriginTickThickness}"
 											  OriginTickZIndex="{TemplateBinding OriginTickZIndex}"
-											  MajorTickBrush="{TemplateBinding MajorTickBrush}"
-											  MajorTickThickness="{TemplateBinding MajorTickThickness}"
+											  OriginTickBrush="{TemplateBinding OriginTickBrush}"
 											  MajorTickRelativeSize="{TemplateBinding MajorTickRelativeSize}"
+											  MajorTickThickness="{TemplateBinding MajorTickThickness}"
 											  MajorTickZIndex="{TemplateBinding MajorTickZIndex}"
-											  MinorTickBrush="{TemplateBinding MinorTickBrush}"
-											  MinorTickThickness="{TemplateBinding MinorTickThickness}"
+											  MajorTickBrush="{TemplateBinding MajorTickBrush}"
 											  MinorTickRelativeSize="{TemplateBinding MinorTickRelativeSize}"
-											  MinorTickZIndex="{TemplateBinding MinorTickZIndex}"/>
-					<ContentPresenter x:Name="PART_SelectionRange" Canvas.ZIndex="1"
-									  ContentTemplate="{TemplateBinding SelectionRangeTemplate}"/>
+											  MinorTickThickness="{TemplateBinding MinorTickThickness}"
+											  MinorTickZIndex="{TemplateBinding MinorTickZIndex}"
+											  MinorTickBrush="{TemplateBinding MinorTickBrush}"/>
+					<ContentPresenter x:Name="PART_SelectionHighlight" Canvas.ZIndex="1"
+									  ContentTemplate="{TemplateBinding SelectionHighlightElementTemplate}"/>
 					<ContentPresenter x:Name="PART_SelectionStart" Canvas.ZIndex="2"
-									  ContentTemplate="{TemplateBinding SelectionStartTemplate}"/>
+									  ContentTemplate="{TemplateBinding SelectionStartElementTemplate}"/>
 					<ContentPresenter x:Name="PART_SelectionEnd" Canvas.ZIndex="2"
-									  ContentTemplate="{TemplateBinding SelectionEndTemplate}"/>
+									  ContentTemplate="{TemplateBinding SelectionEndElementTemplate}"/>
 					<ContentPresenter x:Name="PART_Position" Canvas.ZIndex="3"
-									  ContentTemplate="{TemplateBinding PositionTemplate}"/>
+									  ContentTemplate="{TemplateBinding PositionElementTemplate}"/>
 				</Canvas>
 
 				<Canvas Grid.Row="2" ClipToBounds="False" Background="{TemplateBinding ZoomBarBackground}">
-					<ContentPresenter x:Name="PART_VisibleRange" Canvas.ZIndex="0"
-									  ContentTemplate="{TemplateBinding VisibleRangeTemplate}"/>
-					<ContentPresenter x:Name="PART_VisibleRangeStart" Canvas.ZIndex="1"
-									  ContentTemplate="{TemplateBinding VisibleRangeStartTemplate}"/>
-					<ContentPresenter x:Name="PART_VisibleRangeEnd" Canvas.ZIndex="1"
-									  ContentTemplate="{TemplateBinding VisibleRangeEndTemplate}"/>
+					<ContentPresenter x:Name="PART_ZoomThumb" Canvas.ZIndex="0"
+									  ContentTemplate="{TemplateBinding ZoomThumbElementTemplate}"/>
+					<ContentPresenter x:Name="PART_ZoomStart" Canvas.ZIndex="1"
+									  ContentTemplate="{TemplateBinding ZoomStartElementTemplate}"/>
+					<ContentPresenter x:Name="PART_ZoomEnd" Canvas.ZIndex="1"
+									  ContentTemplate="{TemplateBinding ZoomEndElementTemplate}"/>
 				</Canvas>
-			</Grid>-->
+			</Grid>
 		</Border>
 	</ControlTemplate>
 
 	<!-- MediaSlider Default Style -->
-	<!--<Style TargetType="{x:Type controls:MediaSlider}">
+	<Style TargetType="{x:Type controls:MediaSlider}">
+		<Setter Property="BorderBrush" Value="Black"/>
+		<Setter Property="BorderThickness" Value="0"/>
 		<Setter Property="Margin" Value="0"/>
 		<Setter Property="Padding" Value="0"/>
 		<Setter Property="ZoomBarSize" Value="0.5*"/>
-		<Setter Property="InnerGapSize" Value="0.1*"/>
+		<Setter Property="InnerPaddingSize" Value="2"/>
 		<Setter Property="Background" Value="Transparent"/>
 		<Setter Property="TickBarBackground" Value="#20000000"/>
 		<Setter Property="ZoomBarBackground" Value="#400080FF"/>
-		<Setter Property="BorderBrush" Value="Black"/>
-		<Setter Property="BorderThickness" Value="0"/>
 		<Setter Property="FramesPerSecond" Value="30"/>
 		<Setter Property="Minimum" Value="0"/>
-		<Setter Property="Maximum" Value="10"/>
-		<Setter Property="VisibleRangeStart" Value="0"/>
-		<Setter Property="VisibleRangeEnd" Value="10"/>
-		<Setter Property="SelectionStart" Value="0"/>
-		<Setter Property="SelectionEnd" Value="10"/>
+		<Setter Property="Maximum" Value="1"/>
 		<Setter Property="Position" Value="0"/>
-		<Setter Property="PositionAlignment" Value="Top"/>
-		<Setter Property="PositionRelativeSize" Value="1.0"/>
-		<Setter Property="SelectionRangeAlignment" Value="Top"/>
-		<Setter Property="SelectionRangeHighlightAlignment" Value="Middle"/>
-		<Setter Property="SelectionRangeRelativeSize" Value="0.666666"/>
-		<Setter Property="SelectionRangeHighlightRelativeSize" Value="0.5"/>
+		<Setter Property="SelectionStart" Value="{x:Null}"/>
+		<Setter Property="SelectionEnd" Value="{x:Null}"/>
+		<Setter Property="ZoomStart" Value="0"/>
+		<Setter Property="ZoomEnd" Value="1"/>
 		<Setter Property="TickAlignment" Value="Bottom"/>
+		<Setter Property="PositionElementAlignment" Value="Top"/>
+		<Setter Property="SelectionElementAlignment" Value="Top"/>
+		<Setter Property="SelectionHighlightElementAlignment" Value="Middle"/>
+		<Setter Property="PositionElementRelativeSize" Value="1.0"/>
+		<Setter Property="SelectionElementRelativeSize" Value="0.667"/>
+		<Setter Property="SelectionHighlightElementRelativeSize" Value="0.5"/>
 		<Setter Property="OriginTickBrush" Value="Black"/>
-		<Setter Property="OriginTickThickness" Value="2"/>
+		<Setter Property="OriginTickThickness" Value="4"/>
 		<Setter Property="OriginTickRelativeSize" Value="1"/>
 		<Setter Property="OriginTickZIndex" Value="0"/>
 		<Setter Property="MajorTickBrush" Value="Black"/>
-		<Setter Property="MajorTickThickness" Value="1"/>
+		<Setter Property="MajorTickThickness" Value="2"/>
 		<Setter Property="MajorTickRelativeSize" Value="1"/>
 		<Setter Property="MajorTickZIndex" Value="0"/>
-		<Setter Property="MinorTickBrush" Value="#808080"/>
+		<Setter Property="MinorTickBrush" Value="Gray"/>
 		<Setter Property="MinorTickThickness" Value="1"/>
-		<Setter Property="MinorTickRelativeSize" Value="0.333333"/>
+		<Setter Property="MinorTickRelativeSize" Value="0.333"/>
 		<Setter Property="MinorTickZIndex" Value="0"/>
-		<Setter Property="PositionTemplate" Value="{StaticResource PositionTopAlignedDataTemplateDefault}"/>
-		<Setter Property="SelectionStartTemplate" Value="{StaticResource SelectionStartDataTemplateDefault}"/>
-		<Setter Property="SelectionEndTemplate" Value="{StaticResource SelectionEndDataTemplateDefault}"/>
-		<Setter Property="SelectionRangeTemplate" Value="{StaticResource SelectionRangeDataTemplateDefault}"/>
-		<Setter Property="VisibleRangeStartTemplate" Value="{StaticResource VisibleRangeStartDataTemplateDefault}"/>
-		<Setter Property="VisibleRangeEndTemplate" Value="{StaticResource VisibleRangeEndDataTemplateDefault}"/>
-		<Setter Property="VisibleRangeTemplate" Value="{StaticResource VisibleRangeDataTemplateDefault}"/>
+		<Setter Property="PositionElementTemplate" Value="{StaticResource PositionTopAlignedDataTemplateDefault}"/>
+		<Setter Property="SelectionStartElementTemplate" Value="{StaticResource SelectionStartDataTemplateDefault}"/>
+		<Setter Property="SelectionEndElementTemplate" Value="{StaticResource SelectionEndDataTemplateDefault}"/>
+		<Setter Property="SelectionHighlightElementTemplate" Value="{StaticResource SelectionHighlightDataTemplateDefault}"/>
+		<Setter Property="ZoomStartElementTemplate" Value="{StaticResource ZoomStartDataTemplateDefault}"/>
+		<Setter Property="ZoomEndElementTemplate" Value="{StaticResource ZoomEndDataTemplateDefault}"/>
+		<Setter Property="ZoomThumbElementTemplate" Value="{StaticResource ZoomThumbDataTemplateDefault}"/>
 		<Setter Property="Template" Value="{StaticResource MediaSliderDefaultTemplate}"/>
-	</Style>-->
+	</Style>
 </ResourceDictionary>
