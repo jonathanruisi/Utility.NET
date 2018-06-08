@@ -39,7 +39,6 @@ namespace JLR.Utility.WPF.Elements
 	public class TickBarAdvanced : FrameworkElement
 	{
 		#region Fields
-		private Pen _originTickPen, _majorTickPen, _minorTickPen;
 		private bool _ignoreTickValuePropertyChange;
 		private double _smallestTickGap;
 		#endregion
@@ -251,7 +250,7 @@ namespace JLR.Utility.WPF.Elements
 			"OriginTickThickness",
 			typeof(double),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(2.0, FrameworkPropertyMetadataOptions.AffectsRender, OnAppearancePropertyChanged));
+			new FrameworkPropertyMetadata(2.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
 		public double MajorTickThickness
 		{
@@ -263,7 +262,7 @@ namespace JLR.Utility.WPF.Elements
 			"MajorTickThickness",
 			typeof(double),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender, OnAppearancePropertyChanged));
+			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender));
 
 		public double MinorTickThickness
 		{
@@ -275,7 +274,7 @@ namespace JLR.Utility.WPF.Elements
 			"MinorTickThickness",
 			typeof(double),
 			typeof(TickBarAdvanced),
-			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender, OnAppearancePropertyChanged));
+			new FrameworkPropertyMetadata(1.0, FrameworkPropertyMetadataOptions.AffectsRender));
 		#endregion
 
 		#region Brush
@@ -299,8 +298,7 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(
 				Brushes.Black,
-				FrameworkPropertyMetadataOptions.AffectsRender,
-				OnAppearancePropertyChanged));
+				FrameworkPropertyMetadataOptions.AffectsRender));
 
 		public Brush MajorTickBrush
 		{
@@ -314,8 +312,7 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(
 				Brushes.Black,
-				FrameworkPropertyMetadataOptions.AffectsRender,
-				OnAppearancePropertyChanged));
+				FrameworkPropertyMetadataOptions.AffectsRender));
 
 		public Brush MinorTickBrush
 		{
@@ -329,8 +326,7 @@ namespace JLR.Utility.WPF.Elements
 			typeof(TickBarAdvanced),
 			new FrameworkPropertyMetadata(
 				Brushes.DimGray,
-				FrameworkPropertyMetadataOptions.AffectsRender,
-				OnAppearancePropertyChanged));
+				FrameworkPropertyMetadataOptions.AffectsRender));
 		#endregion
 		#endregion
 
@@ -376,24 +372,6 @@ namespace JLR.Utility.WPF.Elements
 		#endregion
 
 		#region Private Methods
-		private void UpdateOriginTickPen()
-		{
-			_originTickPen = new Pen(OriginTickBrush, OriginTickThickness);
-			_originTickPen.Freeze();
-		}
-
-		private void UpdateMajorTickPen()
-		{
-			_majorTickPen = new Pen(MajorTickBrush, MajorTickThickness);
-			_majorTickPen.Freeze();
-		}
-
-		private void UpdateMinorTickPen()
-		{
-			_minorTickPen = new Pen(MinorTickBrush, MinorTickThickness);
-			_minorTickPen.Freeze();
-		}
-
 		private List<(decimal value, TickTypes type)> GenerateTicks()
 		{
 			var ticks = new List<(decimal value, TickTypes type)>();
@@ -418,7 +396,7 @@ namespace JLR.Utility.WPF.Elements
 			var adjustedMajor = decimal.Round(major, DecimalPrecision, MidpointRounding.ToEven);
 			if (MajorTickFrequency > 0 && MinorTickFrequency > 0) // Both major and minor ticks needed
 			{
-				while (adjustedMinor <= Maximum && adjustedMajor <= Maximum)
+				while (adjustedMinor <= Maximum || adjustedMajor <= Maximum)
 				{
 					var tickFlags = adjustedMinor == 0 && adjustedMajor == 0 ? TickTypes.Origin : 0;
 
@@ -504,18 +482,6 @@ namespace JLR.Utility.WPF.Elements
 			}
 		}
 
-		private static void OnAppearancePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-		{
-			if (!(d is TickBarAdvanced tickBar)) return;
-
-			if (e.Property == OriginTickBrushProperty || e.Property == OriginTickThicknessProperty)
-				tickBar.UpdateOriginTickPen();
-			else if (e.Property == MajorTickBrushProperty || e.Property == MajorTickThicknessProperty)
-				tickBar.UpdateMajorTickPen();
-			else if (e.Property == MinorTickBrushProperty || e.Property == MinorTickThicknessProperty)
-				tickBar.UpdateMinorTickPen();
-		}
-
 		private static object CoerceMaximum(DependencyObject d, object value)
 		{
 			var tickBar = (TickBarAdvanced)d;
@@ -566,19 +532,19 @@ namespace JLR.Utility.WPF.Elements
 					switch (Ticks[i].type & z.Value)
 					{
 						case TickTypes.Minor:
-							DrawTick(secAxisMinor, ref _minorTickPen);
+							DrawTick(secAxisMinor, MinorTickBrush, MinorTickThickness);
 							thickest = Math.Max(thickest, MinorTickThickness);
 							break;
 						case TickTypes.Major:
 						case TickTypes.Major | TickTypes.Minor:
-							DrawTick(secAxisMajor, ref _majorTickPen);
+							DrawTick(secAxisMajor, MajorTickBrush, MajorTickThickness);
 							thickest = Math.Max(thickest, MajorTickThickness);
 							break;
 						case TickTypes.Origin:
 						case TickTypes.Origin | TickTypes.Major:
 						case TickTypes.Origin | TickTypes.Minor:
 						case TickTypes.Origin | TickTypes.Major | TickTypes.Minor:
-							DrawTick(secAxisOrigin, ref _originTickPen);
+							DrawTick(secAxisOrigin, OriginTickBrush, OriginTickThickness);
 							thickest = Math.Max(thickest, OriginTickThickness);
 							break;
 					}
@@ -594,28 +560,34 @@ namespace JLR.Utility.WPF.Elements
 
 				prevTick = (position, thickest);
 
-				void DrawTick(Range<double> secAxisCoords, ref Pen pen)
+				void DrawTick(Range<double> secAxisCoords, Brush brush, double thickness)
 				{
+					var adjPosition = position - thickness / 2;
+
 					// For any ticks that are equal to the max or min values,
 					// visually shift the tick inwards by half of its thickness.
 					if (IsShiftBoundaryTicks)
 					{
-						if (position < pen.Thickness / 2)
-							position = pen.Thickness / 2;
-						else if (primaryAxisLength - position < pen.Thickness / 2)
-							position = primaryAxisLength - pen.Thickness / 2;
+						if (adjPosition < 0)
+							adjPosition = 0;
+						else if (primaryAxisLength - adjPosition < thickness)
+							adjPosition = primaryAxisLength - thickness;
 					}
 
 					if (Orientation == Orientation.Horizontal)
-						drawingContext.DrawLine(
-							pen,
-							new Point(position, secAxisCoords.Minimum),
-							new Point(position, secAxisCoords.Maximum));
+						drawingContext.DrawRectangle(
+							brush,
+							null,
+							new Rect(
+								new Point(adjPosition, secAxisCoords.Minimum),
+								new Point(adjPosition + thickness, secAxisCoords.Maximum)));
 					else
-						drawingContext.DrawLine(
-							pen,
-							new Point(secAxisCoords.Minimum, position),
-							new Point(secAxisCoords.Maximum, position));
+						drawingContext.DrawRectangle(
+							brush,
+							null,
+							new Rect(
+								new Point(secAxisCoords.Minimum, adjPosition),
+								new Point(secAxisCoords.Maximum, adjPosition + thickness)));
 				}
 			}
 
@@ -649,9 +621,6 @@ namespace JLR.Utility.WPF.Elements
 		/// <inheritdoc />
 		protected override void OnInitialized(EventArgs e)
 		{
-			UpdateOriginTickPen();
-			UpdateMajorTickPen();
-			UpdateMinorTickPen();
 			if (Ticks == null)
 				SetCurrentValue(TicksProperty, GenerateTicks());
 			base.OnInitialized(e);

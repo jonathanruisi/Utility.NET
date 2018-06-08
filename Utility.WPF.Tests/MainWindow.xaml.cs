@@ -24,13 +24,14 @@ namespace Utility.WPF.Tests
 		{
 			InitializeComponent();
 			Loaded += MainWindow_Loaded;
+			
 		}
 
 		private void MainWindow_Loaded(object sender, RoutedEventArgs e)
 		{
 			var binding = new Binding
 			{
-				Source       = TickBarAdvancedTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("Minimum"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
@@ -39,16 +40,16 @@ namespace Utility.WPF.Tests
 
 			binding = new Binding
 			{
-				Source       = TickBarAdvancedTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("Maximum"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
 			};
 			TextBoxA2.SetBinding(TextBox.TextProperty, binding);
 
-			/*binding = new Binding
+			binding = new Binding
 			{
-				Source       = MediaSliderTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("Position"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
@@ -57,7 +58,7 @@ namespace Utility.WPF.Tests
 
 			binding = new Binding
 			{
-				Source       = MediaSliderTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("SelectionStart"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
@@ -66,7 +67,7 @@ namespace Utility.WPF.Tests
 
 			binding = new Binding
 			{
-				Source       = MediaSliderTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("SelectionEnd"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
@@ -75,7 +76,7 @@ namespace Utility.WPF.Tests
 
 			binding = new Binding
 			{
-				Source       = MediaSliderTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("ZoomStart"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
@@ -84,16 +85,16 @@ namespace Utility.WPF.Tests
 			
 			binding = new Binding
 			{
-				Source       = MediaSliderTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("ZoomEnd"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
 			};
-			TextBoxB2.SetBinding(TextBox.TextProperty, binding);*/
+			TextBoxB2.SetBinding(TextBox.TextProperty, binding);
 
 			binding = new Binding
 			{
-				Source       = TickBarAdvancedTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("MajorTickFrequency"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
@@ -102,7 +103,7 @@ namespace Utility.WPF.Tests
 
 			binding = new Binding
 			{
-				Source       = TickBarAdvancedTest,
+				Source       = TestElement,
 				Path         = new PropertyPath("MinorTickFrequency"),
 				Mode         = BindingMode.TwoWay,
 				StringFormat = "0.###"
@@ -111,12 +112,30 @@ namespace Utility.WPF.Tests
 
 			binding = new Binding
 			{
-				Source    = TickBarAdvancedTest,
+				Source    = TestElement,
 				Path      = new PropertyPath("Ticks"),
 				Mode      = BindingMode.TwoWay,
 				Converter = new TickListConverter()
 			};
 			TextBoxD2.SetBinding(TextBox.TextProperty, binding);
+
+			binding = new Binding
+			{
+				Source       = TestElement,
+				Path         = new PropertyPath("SmallestTickGapPrev"),
+				Mode         = BindingMode.OneWay,
+				StringFormat = "0.###"
+			};
+			TextBoxE0.SetBinding(TextBox.TextProperty, binding);
+
+			binding = new Binding
+			{
+				Source       = TestElement,
+				Path         = new PropertyPath("SmallestTickGap"),
+				Mode         = BindingMode.OneWay,
+				StringFormat = "0.###"
+			};
+			TextBoxE1.SetBinding(TextBox.TextProperty, binding);
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)

@@ -47,18 +47,19 @@
 			<Button Grid.Row="2" Grid.Column="4" Margin="10,5" Tag="15" Click="Button_Click">Test 15</Button>
 		</Grid>
 
-		<!--<controls:MediaSlider Name="MediaSliderTest" Grid.Row="1" Grid.RowSpan="2"
+		<controls:MediaSlider Name="TestElement" Grid.Row="1" Grid.RowSpan="2"
 							  Minimum="-10" Maximum="10" Position="-1.5"
 							  SelectionStart="-1" SelectionEnd="1"
-							  ZoomStart="-10" ZoomEnd="10"/>-->
-		
-		<elements:TickBarAdvanced Name="TickBarAdvancedTest" Grid.Row="1" Grid.RowSpan="2"
+							  ZoomStart="-10" ZoomEnd="10"
+							  MajorTickThickness="1" MinorTickThickness="1" OriginTickThickness="1"/>
+
+		<!--<elements:TickBarAdvanced Name="TestElement" Grid.Row="1" Grid.RowSpan="2"
 								  Minimum="-10" Maximum="10" DecimalPrecision="6" IsShiftBoundaryTicks="False"
 								  MajorTickFrequency="0.3" MinorTickFrequency="0.333"
 								  OriginTickThickness="2" MajorTickThickness="4" MinorTickThickness="8"
 								  OriginTickRelativeSize="1.0" MajorTickRelativeSize="0.75" MinorTickRelativeSize="0.5"
-								  OriginTickBrush="Green" MajorTickBrush="IndianRed" MinorTickBrush="DodgerBlue"
-								  OriginTickZIndex="2" MajorTickZIndex="1" MinorTickZIndex="0"/>
+								  OriginTickZIndex="0" MajorTickZIndex="1" MinorTickZIndex="2"
+								  OriginTickBrush="Black" MajorTickBrush="Red" MinorTickBrush="DodgerBlue"/>-->
 
 		<Grid Grid.Row="3" VerticalAlignment="Bottom">
 			<Grid.RowDefinitions>

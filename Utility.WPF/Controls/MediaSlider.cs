@@ -53,10 +53,35 @@ namespace JLR.Utility.WPF.Controls
 		private LinkedList<int> _fpsDivisors;
 		private LinkedListNode<int> _currentFpsDivisor;
 		private decimal _snap;
-		private bool _isSelectionChanging, _isZoomChanging;
+		private double _prevMouseCoord;
+		private bool _isMouseLeftButtonDown, _isSelectionChanging, _isZoomChanging, _isZoomDragging;
 		#endregion
 
 		#region Properties
+		public double SmallestTickGap
+		{
+			get => (double)GetValue(SmallestTickGapProperty);
+			set => SetValue(SmallestTickGapProperty, value);
+		}
+
+		public static readonly DependencyProperty SmallestTickGapProperty = DependencyProperty.Register(
+			"SmallestTickGap",
+			typeof(double),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(0.0));
+
+		public double SmallestTickGapPrev
+		{
+			get => (double)GetValue(SmallestTickGapPrevProperty);
+			set => SetValue(SmallestTickGapPrevProperty, value);
+		}
+
+		public static readonly DependencyProperty SmallestTickGapPrevProperty = DependencyProperty.Register(
+			"SmallestTickGapPrev",
+			typeof(double),
+			typeof(MediaSlider),
+			new FrameworkPropertyMetadata(0.0));
+
 		#region Media
 		public int FramesPerSecond
 		{
@@ -89,7 +114,11 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(0.0M, OnMaximumPropertyChanged, CoerceMaximum));
 
-		public decimal Position { get => (decimal)GetValue(PositionProperty); set => SetValue(PositionProperty, value); }
+		public decimal Position
+		{
+			get => (decimal)GetValue(PositionProperty);
+			set => SetValue(PositionProperty, value);
+		}
 
 		public static readonly DependencyProperty PositionProperty = DependencyProperty.Register(
 			"Position",
@@ -121,7 +150,11 @@ namespace JLR.Utility.WPF.Controls
 			typeof(MediaSlider),
 			new FrameworkPropertyMetadata(null, OnSelectionEndPropertyChanged, CoerceSelection));
 
-		public decimal ZoomStart { get => (decimal)GetValue(ZoomStartProperty); set => SetValue(ZoomStartProperty, value); }
+		public decimal ZoomStart
+		{
+			get => (decimal)GetValue(ZoomStartProperty);
+			set => SetValue(ZoomStartProperty, value);
+		}
 
 		public static readonly DependencyProperty ZoomStartProperty = DependencyProperty.Register(
 			"ZoomStart",
@@ -181,11 +214,12 @@ namespace JLR.Utility.WPF.Controls
 			set => SetValue(SelectionHighlightElementAlignmentProperty, value);
 		}
 
-		public static readonly DependencyProperty SelectionHighlightElementAlignmentProperty = DependencyProperty.Register(
-			"SelectionHighlightElementAlignment",
-			typeof(JLR.Utility.NET.Position),
-			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Middle, OnSelectionElementPropertyChanged));
+		public static readonly DependencyProperty SelectionHighlightElementAlignmentProperty =
+			DependencyProperty.Register(
+				"SelectionHighlightElementAlignment",
+				typeof(JLR.Utility.NET.Position),
+				typeof(MediaSlider),
+				new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Middle, OnSelectionElementPropertyChanged));
 		#endregion
 
 		#region Sizing
@@ -245,11 +279,12 @@ namespace JLR.Utility.WPF.Controls
 			set => SetValue(SelectionHighlightElementRelativeSizeProperty, value);
 		}
 
-		public static readonly DependencyProperty SelectionHighlightElementRelativeSizeProperty = DependencyProperty.Register(
-			"SelectionHighlightElementRelativeSize",
-			typeof(double),
-			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(1.0, OnSelectionElementPropertyChanged));
+		public static readonly DependencyProperty SelectionHighlightElementRelativeSizeProperty =
+			DependencyProperty.Register(
+				"SelectionHighlightElementRelativeSize",
+				typeof(double),
+				typeof(MediaSlider),
+				new FrameworkPropertyMetadata(1.0, OnSelectionElementPropertyChanged));
 
 		public double OriginTickRelativeSize
 		{
@@ -467,11 +502,12 @@ namespace JLR.Utility.WPF.Controls
 			set => SetValue(SelectionHighlightElementTemplateProperty, value);
 		}
 
-		public static readonly DependencyProperty SelectionHighlightElementTemplateProperty = DependencyProperty.Register(
-			"SelectionHighlightElementTemplate",
-			typeof(DataTemplate),
-			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(null, OnSelectionElementPropertyChanged));
+		public static readonly DependencyProperty SelectionHighlightElementTemplateProperty =
+			DependencyProperty.Register(
+				"SelectionHighlightElementTemplate",
+				typeof(DataTemplate),
+				typeof(MediaSlider),
+				new FrameworkPropertyMetadata(null, OnSelectionElementPropertyChanged));
 
 		public DataTemplate ZoomStartElementTemplate
 		{
@@ -512,12 +548,85 @@ namespace JLR.Utility.WPF.Controls
 		#endregion
 
 		#region Events
+		public event RoutedEventHandler PositionDragStarted
+		{
+			add => AddHandler(PositionDragStartedEvent, value);
+			remove => RemoveHandler(PositionDragStartedEvent, value);
+		}
+
+		public static readonly RoutedEvent PositionDragStartedEvent = EventManager.RegisterRoutedEvent(
+			"PositionDragStarted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler PositionDragCompleted
+		{
+			add => AddHandler(PositionDragCompletedEvent, value);
+			remove => RemoveHandler(PositionDragCompletedEvent, value);
+		}
+
+		public static readonly RoutedEvent PositionDragCompletedEvent = EventManager.RegisterRoutedEvent(
+			"PositionDragCompleted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler SelectionDragStarted
+		{
+			add => AddHandler(SelectionDragStartedEvent, value);
+			remove => RemoveHandler(SelectionDragStartedEvent, value);
+		}
+
+		public static readonly RoutedEvent SelectionDragStartedEvent = EventManager.RegisterRoutedEvent(
+			"SelectionDragStarted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler SelectionDragCompleted
+		{
+			add => AddHandler(SelectionDragCompletedEvent, value);
+			remove => RemoveHandler(SelectionDragCompletedEvent, value);
+		}
+
+		public static readonly RoutedEvent SelectionDragCompletedEvent = EventManager.RegisterRoutedEvent(
+			"SelectionDragCompleted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler ZoomDragStarted
+		{
+			add => AddHandler(ZoomDragStartedEvent, value);
+			remove => RemoveHandler(ZoomDragStartedEvent, value);
+		}
+
+		public static readonly RoutedEvent ZoomDragStartedEvent = EventManager.RegisterRoutedEvent(
+			"ZoomDragStarted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler ZoomDragCompleted
+		{
+			add => AddHandler(ZoomDragCompletedEvent, value);
+			remove => RemoveHandler(ZoomDragCompletedEvent, value);
+		}
+
+		public static readonly RoutedEvent ZoomDragCompletedEvent = EventManager.RegisterRoutedEvent(
+			"ZoomDragCompleted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
 		#endregion
 
 		#region Constructors
 		static MediaSlider()
 		{
-			DefaultStyleKeyProperty.OverrideMetadata(typeof(MediaSlider), new FrameworkPropertyMetadata(typeof(MediaSlider)));
+			DefaultStyleKeyProperty.OverrideMetadata(
+				typeof(MediaSlider),
+				new FrameworkPropertyMetadata(typeof(MediaSlider)));
 		}
 		#endregion
 
@@ -776,6 +885,7 @@ namespace JLR.Utility.WPF.Controls
 				_positionElement.MouseLeftButtonUp   += _positionElement_MouseLeftButtonUp;
 				_positionElement.MouseMove           += _positionElement_MouseMove;
 				_positionElement.SizeChanged         += _namedElement_SizeChanged;
+				_positionElement.Cursor              =  Cursors.Hand;
 			}
 
 			if (GetTemplateChild("PART_SelectionStart") is ContentPresenter selectionStart)
@@ -787,6 +897,7 @@ namespace JLR.Utility.WPF.Controls
 				_selStartElement.MouseLeftButtonUp   += _selStartElement_MouseLeftButtonUp;
 				_selStartElement.MouseMove           += _selStartElement_MouseMove;
 				_selStartElement.SizeChanged         += _namedElement_SizeChanged;
+				_selStartElement.Cursor              =  Cursors.SizeWE;
 			}
 
 			if (GetTemplateChild("PART_SelectionEnd") is ContentPresenter selectionEnd)
@@ -798,6 +909,7 @@ namespace JLR.Utility.WPF.Controls
 				_selEndElement.MouseLeftButtonUp   += _selEndElement_MouseLeftButtonUp;
 				_selEndElement.MouseMove           += _selEndElement_MouseMove;
 				_selEndElement.SizeChanged         += _namedElement_SizeChanged;
+				_selEndElement.Cursor              =  Cursors.SizeWE;
 			}
 
 			if (GetTemplateChild("PART_SelectionHighlight") is ContentPresenter selectionHighlight)
@@ -814,6 +926,7 @@ namespace JLR.Utility.WPF.Controls
 				_zoomStartElement.MouseLeftButtonUp   += _zoomStartElement_MouseLeftButtonUp;
 				_zoomStartElement.MouseMove           += _zoomStartElement_MouseMove;
 				_zoomStartElement.SizeChanged         += _namedElement_SizeChanged;
+				_zoomStartElement.Cursor              =  Cursors.SizeWE;
 			}
 
 			if (GetTemplateChild("PART_ZoomEnd") is ContentPresenter zoomEnd)
@@ -825,6 +938,7 @@ namespace JLR.Utility.WPF.Controls
 				_zoomEndElement.MouseLeftButtonUp   += _zoomEndElement_MouseLeftButtonUp;
 				_zoomEndElement.MouseMove           += _zoomEndElement_MouseMove;
 				_zoomEndElement.SizeChanged         += _namedElement_SizeChanged;
+				_zoomEndElement.Cursor              =  Cursors.SizeWE;
 			}
 
 			if (GetTemplateChild("PART_ZoomThumb") is ContentPresenter zoomThumb)
@@ -841,6 +955,7 @@ namespace JLR.Utility.WPF.Controls
 				_zoomThumbElement.MouseLeftButtonDown += _zoomThumbElement_MouseLeftButtonDown;
 				_zoomThumbElement.MouseLeftButtonUp   += _zoomThumbElement_MouseLeftButtonUp;
 				_zoomThumbElement.MouseMove           += _zoomThumbElement_MouseMove;
+				_zoomThumbElement.Cursor              =  Cursors.ScrollWE;
 			}
 
 			Loaded += MediaSlider_Loaded;
@@ -871,61 +986,460 @@ namespace JLR.Utility.WPF.Controls
 			AdjustPaddingToFit();
 		}
 
-		private void _mainPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { }
+		private void _mainPanel_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (e.Source.Equals(_selStartElement) || e.Source.Equals(_selEndElement) ||
+				e.Source.Equals(_positionElement))
+				return;
+
+			var pos = e.GetPosition(_mainPanel);
+			var closest = (from tick in _tickBar.Ticks
+						   orderby Math.Abs(_tickBar.CalculateTickRenderCoordinate(tick.value) - pos.X)
+						   select tick).First();
+			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
+			Position = closest.value;
+			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
+		}
 
 		private void _tickBar_SmallestTickGapChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
 		{
-			
+			//SetCurrentValue(SmallestTickGapPrevProperty, e.OldValue);
+			//SetCurrentValue(SmallestTickGapProperty, e.NewValue);
+			var delta = e.NewValue - e.OldValue;
+			if (delta < 0 && e.NewValue < 1)
+			{
+				if (_currentFpsDivisor.Next != null)
+				{
+					_currentFpsDivisor = _currentFpsDivisor.Next;
+					_snap              = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
+				}
+				else if (_snap >= 1)
+				{
+					_snap += 1;
+				}
+			}
+			else if (delta > 0 && e.NewValue > 1 && e.OldValue > 1 && _currentFpsDivisor != _fpsDivisors.First)
+			{
+				if (_snap > 1)
+				{
+					_snap -= 1;
+				}
+				else if (_currentFpsDivisor.Previous != null)
+				{
+					_currentFpsDivisor = _currentFpsDivisor.Previous;
+					_snap              = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
+				}
+			}
+			else
+			{
+				return;
+			}
+
+			if (_snap < 1)
+				_tickBar?.SetTickFrequencies(1, _snap);
+			else
+				_tickBar?.SetTickFrequencies(_snap, 0);
 		}
 		#endregion
 
 		#region Position Element
-		private void _positionElement_MouseEnter(object sender, MouseEventArgs e) { }
-		private void _positionElement_MouseLeave(object sender, MouseEventArgs e) { }
-		private void _positionElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { }
-		private void _positionElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { }
-		private void _positionElement_MouseMove(object sender, MouseEventArgs e) { }
+		private void _positionElement_MouseEnter(object sender, MouseEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_positionElement.ContentTemplate.FindName("shape", _positionElement) is Shape position)
+				VisualStateManager.GoToElementState(position, "MouseOver", false);
+		}
+
+		private void _positionElement_MouseLeave(object sender, MouseEventArgs e)
+		{
+			if (_positionElement.ContentTemplate.FindName("shape", _positionElement) is Shape position &&
+				!_positionElement.IsMouseCaptureWithin)
+				VisualStateManager.GoToElementState(position, "Normal", false);
+		}
+
+		private void _positionElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_positionElement.ContentTemplate.FindName("shape", _positionElement) is Shape position)
+				VisualStateManager.GoToElementState(position, "MouseLeftButtonDown", false);
+
+			_positionElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_positionElement).X;
+			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
+		}
+
+		private void _positionElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (_positionElement.ContentTemplate.FindName("shape", _positionElement) is Shape position)
+				VisualStateManager.GoToElementState(
+					position,
+					_positionElement.IsMouseOver ? "MouseOver" : "Normal",
+					false);
+
+			_positionElement.ReleaseMouseCapture();
+			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
+		}
+
+		private void _positionElement_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (!_isMouseLeftButtonDown) return;
+
+			// Get mouse position, but only continue if the position has changed by more than half of the snap distance
+			var snapPixels = SnapDistanceInPixels;
+			var pos        = e.GetPosition(_positionElement).X - _prevMouseCoord;
+			var dist       = Math.Abs(pos);
+			if (dist < snapPixels / 2)
+				return;
+
+			if (pos < 0)
+			{
+				if (Position - _snap > ZoomStart)
+					Position -= _snap * (int)(dist / snapPixels);
+				else
+					Position = _tickBar.Ticks[0].value;
+			}
+			else if (pos > 0)
+			{
+				if (Position + _snap < ZoomEnd)
+					Position += _snap * (int)(dist / snapPixels);
+				else
+					Position = _tickBar.Ticks[_tickBar.Ticks.Count - 1].value;
+			}
+		}
 		#endregion
 
 		#region Selection Start Element
-		private void _selStartElement_MouseEnter(object sender, MouseEventArgs e) { }
-		private void _selStartElement_MouseLeave(object sender, MouseEventArgs e) { }
-		private void _selStartElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { }
-		private void _selStartElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { }
-		private void _selStartElement_MouseMove(object sender, MouseEventArgs e) { }
+		private void _selStartElement_MouseEnter(object sender, MouseEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_selStartElement.ContentTemplate.FindName("shape", _selStartElement) is Shape selectionStart)
+				VisualStateManager.GoToElementState(selectionStart, "MouseOver", false);
+		}
+
+		private void _selStartElement_MouseLeave(object sender, MouseEventArgs e)
+		{
+			if (_selStartElement.ContentTemplate.FindName("shape", _selStartElement) is Shape selectionStart &&
+				!_selStartElement.IsMouseCaptureWithin)
+				VisualStateManager.GoToElementState(selectionStart, "Normal", false);
+		}
+
+		private void _selStartElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_selStartElement.ContentTemplate.FindName("shape", _selStartElement) is Shape selectionStart)
+				VisualStateManager.GoToElementState(selectionStart, "MouseLeftButtonDown", false);
+
+			_selStartElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_selStartElement).X;
+			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(SelectionDragStartedEvent, this));
+		}
+
+		private void _selStartElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (_selStartElement.ContentTemplate.FindName("shape", _selStartElement) is Shape selectionStart)
+				VisualStateManager.GoToElementState(
+					selectionStart,
+					_selStartElement.IsMouseOver ? "MouseOver" : "Normal",
+					false);
+
+			_selStartElement.ReleaseMouseCapture();
+			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(SelectionDragCompletedEvent, this));
+		}
+
+		private void _selStartElement_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (!_isMouseLeftButtonDown) return;
+
+			// Get mouse position, but only continue if the position has changed by more than half of the snap distance
+			var snapPixels = SnapDistanceInPixels;
+			var pos        = e.GetPosition(_selStartElement).X - _prevMouseCoord;
+			var dist       = Math.Abs(pos);
+			if (dist < snapPixels / 2)
+				return;
+
+			if (pos < 0)
+			{
+				if (SelectionStart - _snap > ZoomStart)
+					SelectionStart -= _snap * (int)(dist / snapPixels);
+				else
+					SelectionStart = ZoomStart;
+			}
+			else if (pos > 0)
+			{
+				if (SelectionStart + _snap < ZoomEnd)
+					SelectionStart += _snap * (int)(dist / snapPixels);
+				else
+					SelectionStart = ZoomEnd;
+			}
+		}
 		#endregion
 
 		#region Selection End Element
-		private void _selEndElement_MouseEnter(object sender, MouseEventArgs e) { }
-		private void _selEndElement_MouseLeave(object sender, MouseEventArgs e) { }
-		private void _selEndElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { }
-		private void _selEndElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { }
-		private void _selEndElement_MouseMove(object sender, MouseEventArgs e) { }
+		private void _selEndElement_MouseEnter(object sender, MouseEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_selEndElement.ContentTemplate.FindName("shape", _selEndElement) is Shape selectionEnd)
+				VisualStateManager.GoToElementState(selectionEnd, "MouseOver", false);
+		}
+
+		private void _selEndElement_MouseLeave(object sender, MouseEventArgs e)
+		{
+			if (_selEndElement.ContentTemplate.FindName("shape", _selEndElement) is Shape selectionEnd &&
+				!_selEndElement.IsMouseCaptureWithin)
+				VisualStateManager.GoToElementState(selectionEnd, "Normal", false);
+		}
+
+		private void _selEndElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_selEndElement.ContentTemplate.FindName("shape", _selEndElement) is Shape selectionEnd)
+				VisualStateManager.GoToElementState(selectionEnd, "MouseLeftButtonDown", false);
+
+			_selEndElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_selEndElement).X;
+			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(SelectionDragStartedEvent, this));
+		}
+
+		private void _selEndElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (_selEndElement.ContentTemplate.FindName("shape", _selEndElement) is Shape selectionEnd)
+				VisualStateManager.GoToElementState(
+					selectionEnd,
+					_selEndElement.IsMouseOver ? "MouseOver" : "Normal",
+					false);
+
+			_selEndElement.ReleaseMouseCapture();
+			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(SelectionDragCompletedEvent, this));
+		}
+
+		private void _selEndElement_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (!_isMouseLeftButtonDown) return;
+
+			// Get mouse position, but only continue if the position has changed by more than half of the snap distance
+			var snapPixels = SnapDistanceInPixels;
+			var pos        = e.GetPosition(_selEndElement).X - _prevMouseCoord;
+			var dist       = Math.Abs(pos);
+			if (dist < snapPixels / 2)
+				return;
+
+			if (pos < 0)
+			{
+				if (SelectionEnd - _snap > ZoomStart)
+					SelectionEnd -= _snap * (int)(dist / snapPixels);
+				else
+					SelectionEnd = ZoomStart;
+			}
+			else if (pos > 0)
+			{
+				if (SelectionEnd + _snap < ZoomEnd)
+					SelectionEnd += _snap * (int)(dist / snapPixels);
+				else
+					SelectionEnd = ZoomEnd;
+			}
+		}
 		#endregion
 
 		#region Zoom Start Element
-		private void _zoomStartElement_MouseEnter(object sender, MouseEventArgs e) { }
-		private void _zoomStartElement_MouseLeave(object sender, MouseEventArgs e) { }
-		private void _zoomStartElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { }
-		private void _zoomStartElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { }
-		private void _zoomStartElement_MouseMove(object sender, MouseEventArgs e) { }
+		private void _zoomStartElement_MouseEnter(object sender, MouseEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_zoomStartElement.ContentTemplate.FindName("shape", _zoomStartElement) is Shape zoomStart)
+				VisualStateManager.GoToElementState(zoomStart, "MouseOver", false);
+		}
+
+		private void _zoomStartElement_MouseLeave(object sender, MouseEventArgs e)
+		{
+			if (_zoomStartElement.ContentTemplate.FindName("shape", _zoomStartElement) is Shape zoomStart &&
+				!_zoomStartElement.IsMouseCaptureWithin)
+				VisualStateManager.GoToElementState(zoomStart, "Normal", false);
+		}
+
+		private void _zoomStartElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_zoomStartElement.ContentTemplate.FindName("shape", _zoomStartElement) is Shape zoomStart)
+				VisualStateManager.GoToElementState(zoomStart, "MouseLeftButtonDown", false);
+
+			_zoomStartElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_zoomStartElement).X;
+			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(ZoomDragStartedEvent, this));
+		}
+
+		private void _zoomStartElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (_zoomStartElement.ContentTemplate.FindName("shape", _zoomStartElement) is Shape zoomStart)
+				VisualStateManager.GoToElementState(
+					zoomStart,
+					_zoomStartElement.IsMouseOver ? "MouseOver" : "Normal",
+					false);
+
+			_zoomStartElement.ReleaseMouseCapture();
+			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(ZoomDragCompletedEvent, this));
+		}
+
+		private void _zoomStartElement_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (!_isMouseLeftButtonDown || !_zoomStartElement.IsMouseCaptureWithin) return;
+
+			// Get mouse position, but only continue if the position has changed by more than 0.1 pixels horizontally
+			var pos = e.GetPosition(_zoomStartElement).X - _prevMouseCoord;
+			if (Math.Abs(pos) < 0.1)
+				return;
+
+			var delta = (decimal)pos * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
+			if ((pos < 0 && ZoomStart > Minimum) || (pos > 0 && ZoomStart < Maximum))
+				ZoomStart += delta;
+		}
 		#endregion
 
 		#region Zoom End Element
-		private void _zoomEndElement_MouseEnter(object sender, MouseEventArgs e) { }
-		private void _zoomEndElement_MouseLeave(object sender, MouseEventArgs e) { }
-		private void _zoomEndElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { }
-		private void _zoomEndElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { }
-		private void _zoomEndElement_MouseMove(object sender, MouseEventArgs e) { }
+		private void _zoomEndElement_MouseEnter(object sender, MouseEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_zoomEndElement.ContentTemplate.FindName("shape", _zoomEndElement) is Shape zoomEnd)
+				VisualStateManager.GoToElementState(zoomEnd, "MouseOver", false);
+		}
+
+		private void _zoomEndElement_MouseLeave(object sender, MouseEventArgs e)
+		{
+			if (_zoomEndElement.ContentTemplate.FindName("shape", _zoomEndElement) is Shape zoomEnd &&
+				!_zoomEndElement.IsMouseCaptureWithin)
+				VisualStateManager.GoToElementState(zoomEnd, "Normal", false);
+		}
+
+		private void _zoomEndElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_zoomEndElement.ContentTemplate.FindName("shape", _zoomEndElement) is Shape zoomEnd)
+				VisualStateManager.GoToElementState(zoomEnd, "MouseLeftButtonDown", false);
+
+			_zoomEndElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_zoomEndElement).X;
+			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(ZoomDragStartedEvent, this));
+		}
+
+		private void _zoomEndElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (_zoomEndElement.ContentTemplate.FindName("shape", _zoomEndElement) is Shape zoomEnd)
+				VisualStateManager.GoToElementState(
+					zoomEnd,
+					_zoomEndElement.IsMouseOver ? "MouseOver" : "Normal",
+					false);
+
+			_zoomEndElement.ReleaseMouseCapture();
+			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(ZoomDragCompletedEvent, this));
+		}
+
+		private void _zoomEndElement_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (!_isMouseLeftButtonDown || !_zoomEndElement.IsMouseCaptureWithin) return;
+
+			// Get mouse position, but only continue if the position has changed by more than 0.1 pixels horizontally
+			var pos = e.GetPosition(_zoomEndElement).X - _prevMouseCoord;
+			if (Math.Abs(pos) < 0.1)
+				return;
+
+			var delta = (decimal)pos * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
+			if ((pos < 0 && ZoomEnd > Minimum) || (pos > 0 && ZoomEnd < Maximum))
+				ZoomEnd += delta;
+		}
 		#endregion
 
 		#region Zoom Thumb Element
-		private void _zoomThumbElement_MouseEnter(object sender, MouseEventArgs e) { }
-		private void _zoomThumbElement_MouseLeave(object sender, MouseEventArgs e) { }
-		private void _zoomThumbElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) { }
-		private void _zoomThumbElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e) { }
-		private void _zoomThumbElement_MouseMove(object sender, MouseEventArgs e) { }
+		private void _zoomThumbElement_MouseEnter(object sender, MouseEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_zoomThumbElement.ContentTemplate.FindName("shape", _zoomThumbElement) is Shape zoomThumb)
+				VisualStateManager.GoToElementState(zoomThumb, "MouseOver", false);
+		}
+
+		private void _zoomThumbElement_MouseLeave(object sender, MouseEventArgs e)
+		{
+			if (_zoomThumbElement.ContentTemplate.FindName("shape", _zoomThumbElement) is Shape zoomThumb &&
+				!_zoomThumbElement.IsMouseCaptureWithin)
+				VisualStateManager.GoToElementState(zoomThumb, "Normal", false);
+		}
+
+		private void _zoomThumbElement_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+		{
+			if (_isMouseLeftButtonDown) return;
+
+			if (_zoomThumbElement.ContentTemplate.FindName("shape", _zoomThumbElement) is Shape zoomThumb)
+				VisualStateManager.GoToElementState(zoomThumb, "MouseLeftButtonDown", false);
+
+			_zoomThumbElement.CaptureMouse();
+			_prevMouseCoord        = e.GetPosition(_zoomThumbElement).X;
+			_isMouseLeftButtonDown = true;
+			RaiseEvent(new RoutedEventArgs(ZoomDragStartedEvent, this));
+		}
+
+		private void _zoomThumbElement_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
+		{
+			if (_zoomThumbElement.ContentTemplate.FindName("shape", _zoomThumbElement) is Shape zoomThumb)
+				VisualStateManager.GoToElementState(
+					zoomThumb,
+					_zoomThumbElement.IsMouseOver ? "MouseOver" : "Normal",
+					false);
+
+			_zoomThumbElement.ReleaseMouseCapture();
+			_isZoomDragging        = false;
+			_isMouseLeftButtonDown = false;
+			RaiseEvent(new RoutedEventArgs(ZoomDragCompletedEvent, this));
+		}
+
+		private void _zoomThumbElement_MouseMove(object sender, MouseEventArgs e)
+		{
+			if (!_isMouseLeftButtonDown || !_zoomThumbElement.IsMouseCaptureWithin) return;
+
+			// Get mouse position, but only continue if the position has changed by more than 0.1 pixels horizontally
+			var pos = e.GetPosition(_zoomThumbElement).X - _prevMouseCoord;
+			if (Math.Abs(pos) < 0.1)
+				return;
+
+			_isZoomDragging = true;
+			var range = ZoomEnd - ZoomStart;
+			var delta = (decimal)pos * (Maximum - Minimum) / (decimal)_zoomPanel.ActualWidth;
+			if (pos < 0 && ZoomStart > Minimum)
+			{
+				_isZoomChanging = true;
+				ZoomStart       = Math.Max(ZoomStart + delta, Minimum);
+				ZoomEnd         = ZoomStart + range;
+			}
+			else if (pos > 0 && ZoomEnd < Maximum)
+			{
+				_isZoomChanging = true;
+				ZoomEnd         = Math.Min(ZoomEnd + delta, Maximum);
+				ZoomStart       = ZoomEnd - range;
+			}
+		}
 		#endregion
+		#endregion
+
+		#region Private Properties
+		private double SnapDistanceInPixels =>
+			decimal.ToDouble(_snap * (decimal)_mainPanel.ActualWidth / (ZoomEnd - ZoomStart));
 		#endregion
 
 		#region Private Methods
@@ -985,13 +1499,15 @@ namespace JLR.Utility.WPF.Controls
 				_selEndElement.Height   = newRangeHeight;
 
 				// Position the selection start element on the primary axis
-				if (SelectionStart >= ZoomStart && SelectionStart <= ZoomEnd && ZoomStart != ZoomEnd && SelectionEnd != null)
+				if (SelectionStart >= ZoomStart && SelectionStart <= ZoomEnd && ZoomStart != ZoomEnd &&
+					SelectionEnd != null)
 				{
 					_selStartElement.Visibility = Visibility.Visible;
 					Canvas.SetLeft(
 						_selStartElement,
 						decimal.ToDouble(
-							((decimal)SelectionStart - ZoomStart) * ((decimal)_mainPanel.ActualWidth / (ZoomEnd - ZoomStart)) -
+							((decimal)SelectionStart - ZoomStart) *
+							((decimal)_mainPanel.ActualWidth / (ZoomEnd - ZoomStart)) -
 							(decimal)_selStartElement.ActualWidth));
 				}
 				else
@@ -1000,13 +1516,15 @@ namespace JLR.Utility.WPF.Controls
 				}
 
 				// Position the selection end element on the primary axis
-				if (SelectionEnd >= ZoomStart && SelectionEnd <= ZoomEnd && ZoomStart != ZoomEnd && SelectionStart != null)
+				if (SelectionEnd >= ZoomStart && SelectionEnd <= ZoomEnd && ZoomStart != ZoomEnd &&
+					SelectionStart != null)
 				{
 					_selEndElement.Visibility = Visibility.Visible;
 					Canvas.SetLeft(
 						_selEndElement,
 						decimal.ToDouble(
-							((decimal)SelectionEnd - ZoomStart) * ((decimal)_mainPanel.ActualWidth / (ZoomEnd - ZoomStart))));
+							((decimal)SelectionEnd - ZoomStart) *
+							((decimal)_mainPanel.ActualWidth / (ZoomEnd - ZoomStart))));
 				}
 				else
 				{
@@ -1052,9 +1570,11 @@ namespace JLR.Utility.WPF.Controls
 					var adjustedEnd   = SelectionEnd <= ZoomEnd ? (decimal)SelectionEnd : ZoomEnd;
 					Canvas.SetLeft(
 						_selHighlightElement,
-						decimal.ToDouble((adjustedStart - ZoomStart) * ((decimal)_mainPanel.ActualWidth / (ZoomEnd - ZoomStart))));
+						decimal.ToDouble(
+							(adjustedStart - ZoomStart) * ((decimal)_mainPanel.ActualWidth / (ZoomEnd - ZoomStart))));
 					_selHighlightElement.Width = decimal.ToDouble(
-						Math.Abs(adjustedEnd - adjustedStart) * (decimal)_mainPanel.ActualWidth / (ZoomEnd - ZoomStart));
+						Math.Abs(adjustedEnd - adjustedStart) * (decimal)_mainPanel.ActualWidth /
+						(ZoomEnd - ZoomStart));
 
 					// Position the selection highlight element on the secondary axis
 					switch (SelectionHighlightElementAlignment)
@@ -1065,7 +1585,9 @@ namespace JLR.Utility.WPF.Controls
 							break;
 						case JLR.Utility.NET.Position.Middle:
 						case JLR.Utility.NET.Position.Center:
-							Canvas.SetTop(_selHighlightElement, newRangeTop + (newRangeHeight - newHighlightHeight) / 2);
+							Canvas.SetTop(
+								_selHighlightElement,
+								newRangeTop + (newRangeHeight - newHighlightHeight) / 2);
 							break;
 						case JLR.Utility.NET.Position.Bottom:
 						case JLR.Utility.NET.Position.Right:
@@ -1117,7 +1639,8 @@ namespace JLR.Utility.WPF.Controls
 					Canvas.SetTop(_zoomThumbElement, 0);
 					Canvas.SetLeft(
 						_zoomThumbElement,
-						decimal.ToDouble((ZoomStart - Minimum) * ((decimal)_zoomPanel.ActualWidth / (Maximum - Minimum))));
+						decimal.ToDouble(
+							(ZoomStart - Minimum) * ((decimal)_zoomPanel.ActualWidth / (Maximum - Minimum))));
 					_zoomThumbElement.Width = decimal.ToDouble(
 						Math.Abs(ZoomEnd - ZoomStart) * (decimal)_zoomPanel.ActualWidth / (Maximum - Minimum));
 				}
