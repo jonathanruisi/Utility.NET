@@ -52,7 +52,8 @@ namespace JLR.Utility.WPF.Controls
 		private ContentPresenter _zoomStartElement, _zoomEndElement, _zoomThumbElement;
 		private LinkedList<int> _fpsDivisors;
 		private LinkedListNode<int> _currentFpsDivisor;
-		private decimal _snap;
+		private double _prevGap;
+		private decimal _snap, _snapDelta;
 		private double _prevMouseCoord;
 		private bool _isMouseLeftButtonDown, _isSelectionChanging, _isZoomChanging, _isZoomDragging;
 		#endregion
@@ -572,6 +573,18 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
+		public event RoutedPropertyChangedEventHandler<decimal> PositionChanged
+		{
+			add => AddHandler(PositionChangedEvent, value);
+			remove => RemoveHandler(PositionChangedEvent, value);
+		}
+
+		public static readonly RoutedEvent PositionChangedEvent = EventManager.RegisterRoutedEvent(
+			"PositionChanged",
+			RoutingStrategy.Bubble,
+			typeof(RoutedPropertyChangedEventHandler<decimal>),
+			typeof(MediaSlider));
+
 		public event RoutedEventHandler SelectionDragStarted
 		{
 			add => AddHandler(SelectionDragStartedEvent, value);
@@ -596,6 +609,18 @@ namespace JLR.Utility.WPF.Controls
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
 
+		public event RoutedEventHandler SelectionChanged
+		{
+			add => AddHandler(SelectionChangedEvent, value);
+			remove => RemoveHandler(SelectionChangedEvent, value);
+		}
+
+		public static readonly RoutedEvent SelectionChangedEvent = EventManager.RegisterRoutedEvent(
+			"SelectionChanged",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
 		public event RoutedEventHandler ZoomDragStarted
 		{
 			add => AddHandler(ZoomDragStartedEvent, value);
@@ -616,6 +641,18 @@ namespace JLR.Utility.WPF.Controls
 
 		public static readonly RoutedEvent ZoomDragCompletedEvent = EventManager.RegisterRoutedEvent(
 			"ZoomDragCompleted",
+			RoutingStrategy.Bubble,
+			typeof(RoutedEventHandler),
+			typeof(MediaSlider));
+
+		public event RoutedEventHandler ZoomChanged
+		{
+			add => AddHandler(ZoomChangedEvent, value);
+			remove => RemoveHandler(ZoomChangedEvent, value);
+		}
+
+		public static readonly RoutedEvent ZoomChangedEvent = EventManager.RegisterRoutedEvent(
+			"ZoomChanged",
 			RoutingStrategy.Bubble,
 			typeof(RoutedEventHandler),
 			typeof(MediaSlider));
@@ -679,6 +716,11 @@ namespace JLR.Utility.WPF.Controls
 				return;
 
 			slider.UpdatePositionElementLayout();
+			slider.RaiseEvent(
+				new RoutedPropertyChangedEventArgs<decimal>(
+					(decimal)e.OldValue,
+					(decimal)e.NewValue,
+					PositionChangedEvent));
 		}
 
 		private static void OnSelectionStartPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -705,6 +747,7 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			slider.UpdateSelectionElementLayout();
+			slider.RaiseEvent(new RoutedEventArgs(SelectionChangedEvent));
 		}
 
 		private static void OnSelectionEndPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -731,6 +774,7 @@ namespace JLR.Utility.WPF.Controls
 			}
 
 			slider.UpdateSelectionElementLayout();
+			slider.RaiseEvent(new RoutedEventArgs(SelectionChangedEvent));
 		}
 
 		private static void OnZoomStartPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -747,6 +791,7 @@ namespace JLR.Utility.WPF.Controls
 			slider.UpdatePositionElementLayout();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
+			slider.RaiseEvent(new RoutedEventArgs(ZoomChangedEvent));
 		}
 
 		private static void OnZoomEndPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -763,6 +808,7 @@ namespace JLR.Utility.WPF.Controls
 			slider.UpdatePositionElementLayout();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
+			slider.RaiseEvent(new RoutedEventArgs(ZoomChangedEvent));
 		}
 
 		private static void OnPositionElementPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -872,8 +918,6 @@ namespace JLR.Utility.WPF.Controls
 					_mainPanel.SizeChanged         += _mainPanel_SizeChanged;
 					_mainPanel.MouseLeftButtonDown += _mainPanel_MouseLeftButtonDown;
 				}
-
-				_tickBar.SmallestTickGapChanged += _tickBar_SmallestTickGapChanged;
 			}
 
 			if (GetTemplateChild("PART_Position") is ContentPresenter position)
@@ -999,46 +1043,6 @@ namespace JLR.Utility.WPF.Controls
 			RaiseEvent(new RoutedEventArgs(PositionDragStartedEvent, this));
 			Position = closest.value;
 			RaiseEvent(new RoutedEventArgs(PositionDragCompletedEvent, this));
-		}
-
-		private void _tickBar_SmallestTickGapChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-		{
-			//SetCurrentValue(SmallestTickGapPrevProperty, e.OldValue);
-			//SetCurrentValue(SmallestTickGapProperty, e.NewValue);
-			var delta = e.NewValue - e.OldValue;
-			if (delta < 0 && e.NewValue < 1)
-			{
-				if (_currentFpsDivisor.Next != null)
-				{
-					_currentFpsDivisor = _currentFpsDivisor.Next;
-					_snap              = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
-				}
-				else if (_snap >= 1)
-				{
-					_snap += 1;
-				}
-			}
-			else if (delta > 0 && e.NewValue > 1 && e.OldValue > 1 && _currentFpsDivisor != _fpsDivisors.First)
-			{
-				if (_snap > 1)
-				{
-					_snap -= 1;
-				}
-				else if (_currentFpsDivisor.Previous != null)
-				{
-					_currentFpsDivisor = _currentFpsDivisor.Previous;
-					_snap              = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
-				}
-			}
-			else
-			{
-				return;
-			}
-
-			if (_snap < 1)
-				_tickBar?.SetTickFrequencies(1, _snap);
-			else
-				_tickBar?.SetTickFrequencies(_snap, 0);
 		}
 		#endregion
 
@@ -1696,6 +1700,8 @@ namespace JLR.Utility.WPF.Controls
 				_fpsDivisors.AddLast((int)divisor);
 			}
 
+			_prevGap           = 0;
+			_snapDelta         = 0;
 			_currentFpsDivisor = _fpsDivisors.First;
 			_snap              = (decimal)_currentFpsDivisor.Value / FramesPerSecond;
 			_tickBar?.SetTickFrequencies(1, _snap);

@@ -118,24 +118,6 @@ namespace Utility.WPF.Tests
 				Converter = new TickListConverter()
 			};
 			TextBoxD2.SetBinding(TextBox.TextProperty, binding);
-
-			binding = new Binding
-			{
-				Source       = TestElement,
-				Path         = new PropertyPath("SmallestTickGapPrev"),
-				Mode         = BindingMode.OneWay,
-				StringFormat = "0.###"
-			};
-			TextBoxE0.SetBinding(TextBox.TextProperty, binding);
-
-			binding = new Binding
-			{
-				Source       = TestElement,
-				Path         = new PropertyPath("SmallestTickGap"),
-				Mode         = BindingMode.OneWay,
-				StringFormat = "0.###"
-			};
-			TextBoxE1.SetBinding(TextBox.TextProperty, binding);
 		}
 
 		private void Button_Click(object sender, RoutedEventArgs e)
