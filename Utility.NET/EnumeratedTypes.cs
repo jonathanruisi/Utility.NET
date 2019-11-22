@@ -180,4 +180,21 @@ namespace JLR.Utility.NET
 		/// <summary>Most significant byte is stored at the lowest memory address</summary>
 		Big
 	}
+
+	/// <summary>
+	/// Represents the current list of discrete MIME types registered with the IANA.
+	/// MIME types are used to describe the general category into which a set of data falls.
+	/// </summary>
+	public enum MIMETypes
+	{
+		Unknown,
+		Application,
+		Audio,
+		Example,
+		Font,
+		Image,
+		Model,
+		Text,
+		Video
+	}
 }
