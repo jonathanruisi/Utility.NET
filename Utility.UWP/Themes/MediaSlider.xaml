@@ -1,0 +1,102 @@
+﻿<ResourceDictionary
+	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+	xmlns:controls="using:JLR.Utility.UWP.Controls"
+	xmlns:xaml="using:Microsoft.Graphics.Canvas.UI.Xaml">
+
+	<ControlTemplate x:Key="MediaSliderDefaultTemplate" TargetType="controls:MediaSlider">
+		<Border Background="{TemplateBinding Background}"
+				BorderBrush="{TemplateBinding BorderBrush}"
+				BorderThickness="{TemplateBinding BorderThickness}"
+				CornerRadius="{TemplateBinding CornerRadius}"
+				Margin="{TemplateBinding Padding}">
+			<Grid>
+				<Grid.RowDefinitions>
+					<RowDefinition Height="*"/>
+					<RowDefinition Height="0.05*"/>
+					<RowDefinition Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ZoomBarSize}"/>
+				</Grid.RowDefinitions>
+
+				<Canvas Grid.Row="0" Background="#20FFFFFF">
+					<xaml:CanvasControl x:Name="PART_TickBar"
+										Canvas.ZIndex="0"/>
+					<controls:TransportElement x:Name="PART_SelectionStart"
+											   Canvas.ZIndex="1"
+											   MouseOverCursorType="Hand"
+											   MouseDragCursorType="SizeWestEast"
+											   Template="{TemplateBinding SelectionStartElementTemplate}"/>
+					<controls:TransportElement x:Name="PART_SelectionEnd"
+											   Canvas.ZIndex="1"
+											   MouseOverCursorType="Hand"
+											   MouseDragCursorType="SizeWestEast"
+											   Template="{TemplateBinding SelectionEndElementTemplate}"/>
+					<controls:TransportElement x:Name="PART_Position"
+											   Canvas.ZIndex="2"
+											   MouseOverCursorType="Hand"
+											   MouseDragCursorType="SizeWestEast"
+											   Template="{TemplateBinding PositionElementTemplate}"/>
+				</Canvas>
+
+				<Canvas Grid.Row="2" Background="#10FFFFFF">
+					<controls:TransportElement x:Name="PART_ZoomThumb"
+											   Canvas.ZIndex="0"
+											   MouseOverCursorType="Hand"
+											   MouseDragCursorType="SizeWestEast"
+											   Template="{TemplateBinding ZoomThumbElementTemplate}"/>
+					<controls:TransportElement x:Name="PART_ZoomStart"
+											   Canvas.ZIndex="1"
+											   MouseOverCursorType="Hand"
+											   MouseDragCursorType="SizeWestEast"
+											   Template="{TemplateBinding ZoomStartElementTemplate}"/>
+					<controls:TransportElement x:Name="PART_ZoomEnd"
+											   Canvas.ZIndex="1"
+											   MouseOverCursorType="Hand"
+											   MouseDragCursorType="SizeWestEast"
+											   Template="{TemplateBinding ZoomEndElementTemplate}"/>
+				</Canvas>
+			</Grid>
+		</Border>
+	</ControlTemplate>
+
+	<Style TargetType="controls:MediaSlider">
+		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="BorderBrush" Value="White"/>
+		<Setter Property="BorderThickness" Value="0"/>
+		<Setter Property="CornerRadius" Value="0"/>
+		<Setter Property="Margin" Value="0"/>
+		<Setter Property="Padding" Value="0"/>
+		<Setter Property="ZoomBarSize" Value="0.25*"/>
+		<Setter Property="FramesPerSecond" Value="30"/>
+		<Setter Property="TickAlignment" Value="Bottom"/>
+		<Setter Property="PositionElementAlignment" Value="Top"/>
+		<Setter Property="SelectionElementAlignment" Value="Top"/>
+		<Setter Property="PositionElementRelativeSize" Value="1.0"/>
+		<Setter Property="SelectionElementRelativeSize" Value="0.667"/>
+		<Setter Property="SelectionHighlightBrush">
+			<Setter.Value>
+				<SolidColorBrush Color="#FFC000" Opacity="0.5"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="SelectionHighlightAlignment" Value="Top"/>
+		<Setter Property="SelectionHighlightRelativeSize" Value="0.5"/>
+		<Setter Property="OriginTickBrush" Value="White"/>
+		<Setter Property="OriginTickThickness" Value="4"/>
+		<Setter Property="OriginTickRelativeSize" Value="0.667"/>
+		<Setter Property="OriginTickZIndex" Value="0"/>
+		<Setter Property="MajorTickBrush" Value="White"/>
+		<Setter Property="MajorTickThickness" Value="2"/>
+		<Setter Property="MajorTickRelativeSize" Value="0.333"/>
+		<Setter Property="MajorTickZIndex" Value="0"/>
+		<Setter Property="MinorTickBrush" Value="Gray"/>
+		<Setter Property="MinorTickThickness" Value="1"/>
+		<Setter Property="MinorTickRelativeSize" Value="0.165"/>
+		<Setter Property="MinorTickZIndex" Value="0"/>
+		<Setter Property="PositionElementTemplate" Value="{StaticResource PositionTopAlignedDefaultTemplate}"/>
+		<Setter Property="SelectionStartElementTemplate" Value="{StaticResource SelectionStartDefaultTemplate}"/>
+		<Setter Property="SelectionEndElementTemplate" Value="{StaticResource SelectionEndDefaultTemplate}"/>
+		<Setter Property="ZoomStartElementTemplate" Value="{StaticResource ZoomStartDefaultTemplate}"/>
+		<Setter Property="ZoomEndElementTemplate" Value="{StaticResource ZoomEndDefaultTemplate}"/>
+		<Setter Property="ZoomThumbElementTemplate" Value="{StaticResource ZoomThumbDefaultTemplate}"/>
+		<Setter Property="Template" Value="{StaticResource MediaSliderDefaultTemplate}"/>
+	</Style>
+</ResourceDictionary>

@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility.WPF", "Utility.WPF\
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility.WinApi", "Utility.WinApi\Utility.WinApi.csproj", "{94E95DE0-3310-4B4B-8702-5126954370AC}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Utility.UWP", "Utility.UWP\Utility.UWP.csproj", "{61BB31E5-A551-4B15-A38C-421F3002EDC8}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,6 +29,10 @@ Global
 		{94E95DE0-3310-4B4B-8702-5126954370AC}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{94E95DE0-3310-4B4B-8702-5126954370AC}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{94E95DE0-3310-4B4B-8702-5126954370AC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61BB31E5-A551-4B15-A38C-421F3002EDC8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61BB31E5-A551-4B15-A38C-421F3002EDC8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61BB31E5-A551-4B15-A38C-421F3002EDC8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61BB31E5-A551-4B15-A38C-421F3002EDC8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

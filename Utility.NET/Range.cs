@@ -13,8 +13,6 @@
 
 using System;
 
-using JLR.Utility.NET.Math;
-
 namespace JLR.Utility.NET
 {
 	/// <summary>

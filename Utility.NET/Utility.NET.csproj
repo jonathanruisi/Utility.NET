@@ -11,6 +11,7 @@
     <PackageProjectUrl>https://github.com/jonathanruisi/Utility.NET</PackageProjectUrl>
     <RepositoryUrl>https://github.com/jonathanruisi/Utility.NET</RepositoryUrl>
     <RepositoryType>GIT</RepositoryType>
+    <LangVersion>latest</LangVersion>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
