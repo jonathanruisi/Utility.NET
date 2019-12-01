@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 
 using Windows.Devices.Input;
 using Windows.Foundation;
@@ -30,7 +29,7 @@ namespace JLR.Utility.UWP.Controls
 	public sealed class MediaSlider : Control
 	{
 		#region Constants
-		private const int     DecimalPrecision    = 6;
+		private const int     DecimalPrecision    = 10;
 		private const decimal MinimumVisibleRange = 1.0M;
 		private const int     SecondsPerMinute    = 60;
 		private const int     SecondsPerHour      = 3600;
@@ -56,8 +55,7 @@ namespace JLR.Utility.UWP.Controls
 
 		private bool
 			_isLeftMouseDown,
-			_isBoundaryUpdateInProgress,
-			_isZoomChangeInProgress;
+			_isBoundaryUpdateInProgress;
 
 		private readonly HashSet<decimal>
 			_majorTicks,
@@ -72,17 +70,16 @@ namespace JLR.Utility.UWP.Controls
 		private Panel         _mainPanel, _zoomPanel;
 		private Rect          _selectionRect;
 		private double        _prevMousePosX;
-		private ZoomChange    _lastZoomChange;
 
 		private readonly LinkedList<(int major, int minor, int minorPerMajor)>     _intervals;
 		private          LinkedListNode<(int major, int minor, int minorPerMajor)> _currentInterval;
 		#endregion
 
-		#region Properties (General)
+		#region Properties
 		public TimeSpan Duration
 		{
 			get => TimeSpan.FromSeconds(decimal.ToDouble(End - Start));
-			set => End = Start + (decimal) value.TotalSeconds;
+			set => End = Start + (decimal)value.TotalSeconds;
 		}
 
 		public TimeSpan VisibleDuration
@@ -90,27 +87,27 @@ namespace JLR.Utility.UWP.Controls
 			get => TimeSpan.FromSeconds(decimal.ToDouble(ZoomEnd - ZoomStart));
 			set
 			{
-				var newDuration = (decimal) value.TotalSeconds;
-				if (newDuration < MinimumVisibleRange)
+				var newDuration = (decimal)value.TotalSeconds;
+				if(newDuration < MinimumVisibleRange)
 					newDuration = MinimumVisibleRange;
-				else if (newDuration >= End - Start)
+				else if(newDuration >= End - Start)
 				{
 					SetVisibleWindow(Start, End);
 					return;
 				}
 
 				var currentDuration = ZoomEnd - ZoomStart;
-				var center          = ZoomStart + currentDuration / 2;
+				var center = ZoomStart + currentDuration / 2;
 
 				var start = center - newDuration / 2;
-				if (start <= Start)
+				if(start <= Start)
 				{
 					SetVisibleWindow(Start, newDuration);
 					return;
 				}
 
 				var end = center + newDuration / 2;
-				if (end >= End)
+				if(end >= End)
 				{
 					SetVisibleWindow(End - newDuration, End);
 					return;
@@ -120,6 +117,16 @@ namespace JLR.Utility.UWP.Controls
 			}
 		}
 
+		private decimal MajorTickInterval => _currentInterval.Value.major;
+
+		private decimal MinorTickInterval => (decimal)_currentInterval.Value.minor /
+											 _currentInterval.Value.minorPerMajor *
+											 _currentInterval.Value.major;
+		#endregion
+
+		#region Dependency Properties
+		//goto:#Behavior goto:#Alignment goto:#Sizing goto:#Z_Index goto:#Brushes goto:#Templates
+		// tag:#General
 		public decimal Start
 		{
 			get => (decimal) GetValue(StartProperty);
@@ -128,9 +135,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty StartProperty =
 			DependencyProperty.Register("Start",
-			                            typeof(decimal),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(0.0M, OnStartChanged));
+										typeof(decimal),
+										typeof(MediaSlider),
+										new PropertyMetadata(0.0M, OnStartChanged));
 
 		public decimal End
 		{
@@ -140,9 +147,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty EndProperty =
 			DependencyProperty.Register("End",
-			                            typeof(decimal),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(10.0M, OnEndChanged));
+										typeof(decimal),
+										typeof(MediaSlider),
+										new PropertyMetadata(10.0M, OnEndChanged));
 
 		public decimal? SelectionStart
 		{
@@ -152,9 +159,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionStartProperty =
 			DependencyProperty.Register("SelectionStart",
-			                            typeof(decimal?),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null, OnSelectionStartChanged));
+										typeof(decimal?),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnSelectionStartChanged));
 
 		public decimal? SelectionEnd
 		{
@@ -164,9 +171,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionEndProperty =
 			DependencyProperty.Register("SelectionEnd",
-			                            typeof(decimal?),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null, OnSelectionEndChanged));
+										typeof(decimal?),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnSelectionEndChanged));
 
 		public decimal ZoomStart
 		{
@@ -176,9 +183,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty ZoomStartProperty =
 			DependencyProperty.Register("ZoomStart",
-			                            typeof(decimal),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(0.0M, OnZoomStartChanged));
+										typeof(decimal),
+										typeof(MediaSlider),
+										new PropertyMetadata(0.0M, OnZoomStartChanged));
 
 		public decimal ZoomEnd
 		{
@@ -188,9 +195,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty ZoomEndProperty =
 			DependencyProperty.Register("ZoomEnd",
-			                            typeof(decimal),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(10.0M, OnZoomEndChanged));
+										typeof(decimal),
+										typeof(MediaSlider),
+										new PropertyMetadata(10.0M, OnZoomEndChanged));
 
 		public decimal Position
 		{
@@ -200,9 +207,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty PositionProperty =
 			DependencyProperty.Register("Position",
-			                            typeof(decimal),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(0.0M, OnPositionChanged));
+										typeof(decimal),
+										typeof(MediaSlider),
+										new PropertyMetadata(0.0M, OnPositionChanged));
 
 		public int FramesPerSecond
 		{
@@ -212,12 +219,11 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty FramesPerSecondProperty =
 			DependencyProperty.Register("FramesPerSecond",
-			                            typeof(int),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(30, OnFramesPerSecondChanged));
-		#endregion
+										typeof(int),
+										typeof(MediaSlider),
+										new PropertyMetadata(30, OnFramesPerSecondChanged));
 
-		#region Properties (Behavior)
+		// tag:#Behavior
 		public FollowMode PositionFollowMode
 		{
 			get => (FollowMode) GetValue(PositionFollowModeProperty);
@@ -226,50 +232,35 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty PositionFollowModeProperty =
 			DependencyProperty.Register("PositionFollowMode",
-			                            typeof(FollowMode),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(FollowMode.NoFollow));
-		#endregion
+										typeof(FollowMode),
+										typeof(MediaSlider),
+										new PropertyMetadata(FollowMode.NoFollow));
 
-		#region Properties (Tick Density)
-		public double TickDensity
+		public double MinorTickClutterThreshold
 		{
-			get => (double) GetValue(TickDensityProperty);
-			private set => SetValue(TickDensityProperty, value);
+			get => (double) GetValue(MinorTickClutterThresholdProperty);
+			set => SetValue(MinorTickClutterThresholdProperty, value);
 		}
 
-		public static readonly DependencyProperty TickDensityProperty =
-			DependencyProperty.Register("TickDensity",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(0.0, OnTickDensityChanged));
+		public static readonly DependencyProperty MinorTickClutterThresholdProperty =
+			DependencyProperty.Register("MinorTickClutterThreshold",
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(5.0));
 
-		public double TickDensityIncreaseThreshold
+		public double MajorTickClutterThreshold
 		{
-			get => (double) GetValue(TickDensityIncreaseThresholdProperty);
-			private set => SetValue(TickDensityIncreaseThresholdProperty, value);
+			get => (double) GetValue(MajorTickClutterThresholdProperty);
+			set => SetValue(MajorTickClutterThresholdProperty, value);
 		}
 
-		public static readonly DependencyProperty TickDensityIncreaseThresholdProperty =
-			DependencyProperty.Register("TickDensityIncreaseThreshold",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(10.0));
+		public static readonly DependencyProperty MajorTickClutterThresholdProperty =
+			DependencyProperty.Register("MajorTickClutterThreshold",
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(50.0));
 
-		public double TickDensityDecreaseThreshold
-		{
-			get => (double) GetValue(TickDensityDecreaseThresholdProperty);
-			private set => SetValue(TickDensityDecreaseThresholdProperty, value);
-		}
-
-		public static readonly DependencyProperty TickDensityDecreaseThresholdProperty =
-			DependencyProperty.Register("TickDensityDecreaseThreshold",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(15.0));
-		#endregion
-
-		#region Properties (Alignment)
+		// tag:#Alignment
 		public Position TickAlignment
 		{
 			get => (Position) GetValue(TickAlignmentProperty);
@@ -278,9 +269,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty TickAlignmentProperty =
 			DependencyProperty.Register("TickAlignment",
-			                            typeof(Position),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(NET.Position.Bottom));
+										typeof(Position),
+										typeof(MediaSlider),
+										new PropertyMetadata(NET.Position.Bottom, OnTickCanvasRenderPropertyChanged));
 
 		public Position PositionElementAlignment
 		{
@@ -290,9 +281,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty PositionElementAlignmentProperty =
 			DependencyProperty.Register("PositionElementAlignment",
-			                            typeof(Position),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(NET.Position.Top, OnTransportElementChanged));
+										typeof(Position),
+										typeof(MediaSlider),
+										new PropertyMetadata(NET.Position.Top, OnTransportElementChanged));
 
 		public Position SelectionElementAlignment
 		{
@@ -302,9 +293,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionElementAlignmentProperty =
 			DependencyProperty.Register("SelectionElementAlignment",
-			                            typeof(Position),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(NET.Position.Top, OnTransportElementChanged));
+										typeof(Position),
+										typeof(MediaSlider),
+										new PropertyMetadata(NET.Position.Top, OnTransportElementChanged));
 
 		public Position SelectionHighlightAlignment
 		{
@@ -314,12 +305,11 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionHighlightAlignmentProperty =
 			DependencyProperty.Register("SelectionHighlightAlignment",
-			                            typeof(Position),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(NET.Position.Middle));
-		#endregion
+										typeof(Position),
+										typeof(MediaSlider),
+										new PropertyMetadata(NET.Position.Middle, OnTickCanvasRenderPropertyChanged));
 
-		#region Properties (Sizing)
+		// tag:#Sizing
 		public GridLength ZoomBarSize
 		{
 			get => (GridLength) GetValue(ZoomBarSizeProperty);
@@ -328,9 +318,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty ZoomBarSizeProperty =
 			DependencyProperty.Register("ZoomBarSize",
-			                            typeof(GridLength),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(new GridLength(0.5, GridUnitType.Star)));
+										typeof(GridLength),
+										typeof(MediaSlider),
+										new PropertyMetadata(new GridLength(0.5, GridUnitType.Star)));
 
 		public double PositionElementRelativeSize
 		{
@@ -340,9 +330,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty PositionElementRelativeSizeProperty =
 			DependencyProperty.Register("PositionElementRelativeSize",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0, OnTransportElementChanged));
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTransportElementChanged));
 
 		public double SelectionElementRelativeSize
 		{
@@ -352,9 +342,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionElementRelativeSizeProperty =
 			DependencyProperty.Register("SelectionElementRelativeSize",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0, OnTransportElementChanged));
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTransportElementChanged));
 
 		public double SelectionHighlightRelativeSize
 		{
@@ -364,9 +354,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionHighlightRelativeSizeProperty =
 			DependencyProperty.Register("SelectionHighlightRelativeSize",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0));
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
 
 		public double OriginTickRelativeSize
 		{
@@ -376,9 +366,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty OriginTickRelativeSizeProperty =
 			DependencyProperty.Register("OriginTickRelativeSize",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0));
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
 
 		public double MajorTickRelativeSize
 		{
@@ -388,9 +378,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty MajorTickRelativeSizeProperty =
 			DependencyProperty.Register("MajorTickRelativeSize",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0));
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
 
 		public double MinorTickRelativeSize
 		{
@@ -400,9 +390,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty MinorTickRelativeSizeProperty =
 			DependencyProperty.Register("MinorTickRelativeSize",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0));
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
 
 		public double OriginTickThickness
 		{
@@ -412,9 +402,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty OriginTickThicknessProperty =
 			DependencyProperty.Register("OriginTickThickness",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0));
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
 
 		public double MajorTickThickness
 		{
@@ -424,9 +414,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty MajorTickThicknessProperty =
 			DependencyProperty.Register("MajorTickThickness",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0));
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
 
 		public double MinorTickThickness
 		{
@@ -436,12 +426,11 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty MinorTickThicknessProperty =
 			DependencyProperty.Register("MinorTickThickness",
-			                            typeof(double),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(1.0));
-		#endregion
-
-		#region Properties (Z-Index)
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
+		
+		// tag:#Z_Index
 		public int OriginTickZIndex
 		{
 			get => (int) GetValue(OriginTickZIndexProperty);
@@ -450,9 +439,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty OriginTickZIndexProperty =
 			DependencyProperty.Register("OriginTickZIndex",
-			                            typeof(int),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(0));
+										typeof(int),
+										typeof(MediaSlider),
+										new PropertyMetadata(0, OnTickCanvasRenderPropertyChanged));
 
 		public int MajorTickZIndex
 		{
@@ -462,9 +451,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty MajorTickZIndexProperty =
 			DependencyProperty.Register("MajorTickZIndex",
-			                            typeof(int),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(0));
+										typeof(int),
+										typeof(MediaSlider),
+										new PropertyMetadata(0, OnTickCanvasRenderPropertyChanged));
 
 		public int MinorTickZIndex
 		{
@@ -474,12 +463,11 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty MinorTickZIndexProperty =
 			DependencyProperty.Register("MinorTickZIndex",
-			                            typeof(int),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(0));
-		#endregion
-
-		#region Properties (Brushes)
+										typeof(int),
+										typeof(MediaSlider),
+										new PropertyMetadata(0, OnTickCanvasRenderPropertyChanged));
+		
+		// tag:#Brushes
 		public Brush SelectionHighlightBrush
 		{
 			get => (Brush) GetValue(SelectionHighlightBrushProperty);
@@ -488,9 +476,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionHighlightBrushProperty =
 			DependencyProperty.Register("SelectionHighlightBrush",
-			                            typeof(Brush),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null));
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
 
 		public Brush OriginTickBrush
 		{
@@ -500,9 +488,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty OriginTickBrushProperty =
 			DependencyProperty.Register("OriginTickBrush",
-			                            typeof(Brush),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null));
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
 
 		public Brush MajorTickBrush
 		{
@@ -512,9 +500,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty MajorTickBrushProperty =
 			DependencyProperty.Register("MajorTickBrush",
-			                            typeof(Brush),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null));
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
 
 		public Brush MinorTickBrush
 		{
@@ -524,12 +512,11 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty MinorTickBrushProperty =
 			DependencyProperty.Register("MinorTickBrush",
-			                            typeof(Brush),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null));
-		#endregion
-
-		#region Properties (Data Templates)
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
+		
+		// tag:#Templates
 		public ControlTemplate PositionElementTemplate
 		{
 			get => (ControlTemplate) GetValue(PositionElementTemplateProperty);
@@ -538,9 +525,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty PositionElementTemplateProperty =
 			DependencyProperty.Register("PositionElementTemplate",
-			                            typeof(ControlTemplate),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null, OnTransportElementChanged));
+										typeof(ControlTemplate),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTransportElementChanged));
 
 		public ControlTemplate SelectionStartElementTemplate
 		{
@@ -550,9 +537,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionStartElementTemplateProperty =
 			DependencyProperty.Register("SelectionStartElementTemplate",
-			                            typeof(ControlTemplate),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null, OnTransportElementChanged));
+										typeof(ControlTemplate),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTransportElementChanged));
 
 		public ControlTemplate SelectionEndElementTemplate
 		{
@@ -562,9 +549,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty SelectionEndElementTemplateProperty =
 			DependencyProperty.Register("SelectionEndElementTemplate",
-			                            typeof(ControlTemplate),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null, OnTransportElementChanged));
+										typeof(ControlTemplate),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTransportElementChanged));
 
 		public ControlTemplate ZoomStartElementTemplate
 		{
@@ -574,9 +561,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty ZoomStartElementTemplateProperty =
 			DependencyProperty.Register("ZoomStartElementTemplate",
-			                            typeof(ControlTemplate),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null, OnTransportElementChanged));
+										typeof(ControlTemplate),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTransportElementChanged));
 
 		public ControlTemplate ZoomEndElementTemplate
 		{
@@ -586,9 +573,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty ZoomEndElementTemplateProperty =
 			DependencyProperty.Register("ZoomEndElementTemplate",
-			                            typeof(ControlTemplate),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null, OnTransportElementChanged));
+										typeof(ControlTemplate),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTransportElementChanged));
 
 		public ControlTemplate ZoomThumbElementTemplate
 		{
@@ -598,9 +585,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public static readonly DependencyProperty ZoomThumbElementTemplateProperty =
 			DependencyProperty.Register("ZoomThumbElementTemplate",
-			                            typeof(ControlTemplate),
-			                            typeof(MediaSlider),
-			                            new PropertyMetadata(null, OnTransportElementChanged));
+										typeof(ControlTemplate),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTransportElementChanged));
 		#endregion
 
 		#region Events
@@ -666,7 +653,6 @@ namespace JLR.Utility.UWP.Controls
 			_majorTicks     = new HashSet<decimal>();
 			_minorTicks     = new HashSet<decimal>();
 			_intervals      = new LinkedList<(int major, int minor, int minorPerMajor)>();
-			_lastZoomChange = ZoomChange.Unknown;
 		}
 		#endregion
 
@@ -686,19 +672,13 @@ namespace JLR.Utility.UWP.Controls
 
 			if (offset < 0 && ZoomStart > Start)
 			{
-				_isZoomChangeInProgress = true;
-				ZoomStart               = Math.Max(ZoomStart + offset, Start);
-				ZoomEnd                 = ZoomStart + currentWindow;
-				_isZoomChangeInProgress = false;
-				_lastZoomChange         = ZoomChange.None;
+				ZoomStart = Math.Max(ZoomStart + offset, Start);
+				ZoomEnd   = ZoomStart + currentWindow;
 			}
 			else if (offset > 0 && ZoomEnd < End)
 			{
-				_isZoomChangeInProgress = true;
-				ZoomEnd                 = Math.Min(ZoomEnd + offset, End);
-				ZoomStart               = ZoomEnd - currentWindow;
-				_isZoomChangeInProgress = false;
-				_lastZoomChange         = ZoomChange.None;
+				ZoomEnd   = Math.Min(ZoomEnd + offset, End);
+				ZoomStart = ZoomEnd - currentWindow;
 			}
 		}
 
@@ -709,32 +689,85 @@ namespace JLR.Utility.UWP.Controls
 			if (end > End)
 				throw new ArgumentException("This value must be <= End", nameof(end));
 
-			var currentWindow = ZoomEnd - ZoomStart;
-			var newWindow     = start - end;
-
 			if (ZoomStart > start && ZoomEnd < end ||
-			    ZoomStart < start && ZoomEnd > end ||
-			    ZoomEnd >= start + MinimumVisibleRange)
+				ZoomStart < start && ZoomEnd > end ||
+				ZoomEnd >= start + MinimumVisibleRange)
 			{
-				_isZoomChangeInProgress = true;
-				ZoomStart               = start;
-				ZoomEnd                 = end;
-				_isZoomChangeInProgress = false;
+				ZoomStart = start;
+				ZoomEnd   = end;
 			}
 			else
 			{
-				_isZoomChangeInProgress = true;
-				ZoomEnd                 = end;
-				ZoomStart               = start;
-				_isZoomChangeInProgress = false;
+				ZoomEnd   = end;
+				ZoomStart = start;
+			}
+		}
+
+		public void IncreasePosition(int majorIntervals, int minorIntervals)
+		{
+			var amount = majorIntervals * MajorTickInterval + minorIntervals * MinorTickInterval;
+			Position = amount >= End
+				? End
+				: decimal.Round(Position + amount, DecimalPrecision);
+		}
+
+		public void DecreasePosition(int majorIntervals, int minorIntervals)
+		{
+			var amount = majorIntervals * MajorTickInterval + minorIntervals * MinorTickInterval;
+			Position = amount <= Start
+				? Start
+				: decimal.Round(Position - amount, DecimalPrecision);
+		}
+
+		public decimal GetNearestTick(decimal relativeTo, bool preferVisible)
+		{
+			var value = Math.Abs(relativeTo);
+
+			var offsetMajorToward = decimal.Round(value % MajorTickInterval, DecimalPrecision);
+			var offsetMinorToward = decimal.Round(value % MinorTickInterval, DecimalPrecision);
+
+			if (offsetMajorToward == 0 || offsetMinorToward == 0)
+				return relativeTo;
+
+			var offsetMajorAway = decimal.Round(MajorTickInterval - offsetMajorToward, DecimalPrecision);
+			var offsetMinorAway = decimal.Round(MinorTickInterval - offsetMinorToward, DecimalPrecision);
+
+			var offsetToward = Math.Min(offsetMajorToward, offsetMinorToward);
+			var offsetAway   = Math.Min(offsetMajorAway, offsetMinorAway);
+
+			if (!preferVisible)
+			{
+				return decimal.Round(offsetToward < offsetAway
+					                     ? relativeTo > 0
+						                     ? relativeTo - offsetToward
+						                     : relativeTo + offsetToward
+					                     : relativeTo > 0
+						                     ? relativeTo + offsetAway
+						                     : relativeTo - offsetAway,
+				                     DecimalPrecision);
 			}
 
-			if (currentWindow < newWindow)
-				_lastZoomChange = ZoomChange.Out;
-			else if (currentWindow > newWindow)
-				_lastZoomChange = ZoomChange.In;
-			else
-				_lastZoomChange = ZoomChange.None;
+			if (relativeTo >= 0)
+			{
+				if (relativeTo - offsetToward < ZoomStart)
+					return decimal.Round(relativeTo + offsetAway, DecimalPrecision);
+				if (relativeTo + offsetAway > ZoomEnd)
+					return decimal.Round(relativeTo - offsetToward, DecimalPrecision);
+				return decimal.Round(offsetToward < offsetAway
+					                     ? relativeTo - offsetToward
+					                     : relativeTo + offsetAway
+				                   , DecimalPrecision);
+			}
+
+			if (relativeTo + offsetToward > ZoomEnd)
+				return decimal.Round(relativeTo - offsetAway, DecimalPrecision);
+			if (relativeTo - offsetAway < ZoomStart)
+				return decimal.Round(relativeTo + offsetToward, DecimalPrecision);
+			return decimal.Round(offsetToward < offsetAway
+				                     ? relativeTo + offsetToward
+				                     : relativeTo - offsetAway,
+			                     DecimalPrecision);
+
 		}
 		#endregion
 
@@ -820,9 +853,6 @@ namespace JLR.Utility.UWP.Controls
 			slider.AdjustZoomStart();
 			slider._isBoundaryUpdateInProgress = false;
 
-			if (!slider._isZoomChangeInProgress)
-				slider._lastZoomChange = ZoomChange.Unknown;
-
 			slider._tickCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
@@ -838,9 +868,6 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = true;
 			slider.AdjustZoomEnd();
 			slider._isBoundaryUpdateInProgress = false;
-
-			if (!slider._isZoomChangeInProgress)
-				slider._lastZoomChange = ZoomChange.Unknown;
 
 			slider._tickCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
@@ -869,6 +896,7 @@ namespace JLR.Utility.UWP.Controls
 				return;
 
 			slider.InitializeTimescale();
+			slider._tickCanvas.Invalidate();
 		}
 
 		private static void OnTransportElementChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -877,78 +905,49 @@ namespace JLR.Utility.UWP.Controls
 				return;
 
 			if (e.Property == PositionElementAlignmentProperty ||
-			    e.Property == PositionElementRelativeSizeProperty ||
-			    e.Property == PositionElementTemplateProperty)
+				e.Property == PositionElementRelativeSizeProperty ||
+				e.Property == PositionElementTemplateProperty)
 			{
 				slider.UpdatePositionElementLayout();
 			}
 			else if (e.Property == SelectionElementAlignmentProperty ||
-			         e.Property == SelectionElementRelativeSizeProperty ||
-			         e.Property == SelectionStartElementTemplateProperty ||
-			         e.Property == SelectionEndElementTemplateProperty)
+					 e.Property == SelectionElementRelativeSizeProperty ||
+					 e.Property == SelectionStartElementTemplateProperty ||
+					 e.Property == SelectionEndElementTemplateProperty)
 			{
 				slider.UpdateSelectionElementLayout();
 			}
 			else if (e.Property == ZoomStartElementTemplateProperty ||
-			         e.Property == ZoomEndElementTemplateProperty ||
-			         e.Property == ZoomThumbElementTemplateProperty)
+					 e.Property == ZoomEndElementTemplateProperty ||
+					 e.Property == ZoomThumbElementTemplateProperty)
 			{
 				slider.UpdateZoomElementLayout();
 			}
 
 			if (e.Property == PositionElementTemplateProperty ||
-			    e.Property == SelectionStartElementTemplateProperty ||
-			    e.Property == SelectionEndElementTemplateProperty ||
-			    e.Property == ZoomStartElementTemplateProperty ||
-			    e.Property == ZoomEndElementTemplateProperty)
+				e.Property == SelectionStartElementTemplateProperty ||
+				e.Property == SelectionEndElementTemplateProperty ||
+				e.Property == ZoomStartElementTemplateProperty ||
+				e.Property == ZoomEndElementTemplateProperty)
 			{
 				slider.AdjustPadding();
 			}
 		}
 
-		private static void OnTickDensityChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		private static void OnTickCanvasRenderPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			if (!(d is MediaSlider slider) || slider._tickCanvas == null)
+				return;
+
+			slider._tickCanvas.Invalidate();
+		}
+
+		private static void OnTickCanvasBrushChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
 		{
 			if (!(d is MediaSlider slider))
 				return;
 
-			var newValue = (double) e.NewValue;
-
-			switch (slider._lastZoomChange)
-			{
-				case ZoomChange.Unknown:
-					slider._lastZoomChange = ZoomChange.Out;
-					if (slider.ResetTimescale())
-						slider._tickCanvas.Invalidate();
-					else if (newValue > slider.TickDensityDecreaseThreshold)
-					{
-						slider.IncreaseTimescale();
-						slider._tickCanvas.Invalidate();
-					}
-
-					break;
-
-				case ZoomChange.In:
-					if (newValue < slider.TickDensityIncreaseThreshold)
-					{
-						slider.DecreaseTimescale();
-						slider._tickCanvas.Invalidate();
-					}
-					else
-						slider._lastZoomChange = ZoomChange.None;
-
-					break;
-
-				case ZoomChange.Out:
-					if (newValue > slider.TickDensityDecreaseThreshold)
-					{
-						slider.IncreaseTimescale();
-						slider._tickCanvas.Invalidate();
-					}
-					else
-						slider._lastZoomChange = ZoomChange.None;
-
-					break;
-			}
+			//@@warn TODO: Need to reload resources needed for rendering
 		}
 		#endregion
 
@@ -1084,12 +1083,8 @@ namespace JLR.Utility.UWP.Controls
 				return;
 			}
 
-			var closest = (from tick in _majorTicks.Union(_minorTicks)
-			               orderby Math.Abs(decimal.ToDouble((tick - ZoomStart) *
-			                                                 (decimal) _mainPanel.ActualWidth /
-			                                                 (ZoomEnd - ZoomStart)) -
-			                                point.Position.X)
-			               select tick).First();
+			var pos = ConvertScreenCoordinateToPosition(point.Position.X);
+			var closest = GetNearestTick(pos, true);
 
 			if (point.Properties.IsLeftButtonPressed)
 				Position = closest;
@@ -1104,14 +1099,6 @@ namespace JLR.Utility.UWP.Controls
 
 		private void MainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
-			if (IsLoaded)
-			{
-				if (e.PreviousSize.Width > e.NewSize.Width)
-					_lastZoomChange = ZoomChange.Out;
-				else if (e.PreviousSize.Width < e.NewSize.Width)
-					_lastZoomChange = ZoomChange.In;
-			}
-
 			_tickCanvas.Width  = e.NewSize.Width;
 			_tickCanvas.Height = e.NewSize.Height;
 			UpdatePositionElementLayout();
@@ -1137,7 +1124,8 @@ namespace JLR.Utility.UWP.Controls
 		#region Event Handlers (Transport Elements)
 		private void TransportElement_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
-			AdjustPadding();
+			if (Math.Abs(e.PreviousSize.Width - e.NewSize.Width) > double.Epsilon)
+				AdjustPadding();
 		}
 
 		private void TransportElement_PointerPressed(object sender, PointerRoutedEventArgs e)
@@ -1209,27 +1197,28 @@ namespace JLR.Utility.UWP.Controls
 
 			// Get mouse position, continuing only if the position has changed
 			// by more than half of the snap distance
-			var snapPixels = CalculateSnapDistanceInPixels();
+			var snapPixels = ConvertTimeIntervalToPixels(MinorTickInterval);
 			var pos        = e.GetCurrentPoint(_positionElement).Position.X - _prevMousePosX;
 			var delta      = Math.Abs(pos);
 
 			if (delta < snapPixels / 2)
 				return;
 
-			var newValue = MinorInterval * (int) (delta / snapPixels);
+			var newValue = MinorTickInterval * (int) (delta / snapPixels);
 			if (pos < 0)
 			{
-				if (Position - newValue > ZoomStart)
+				if (Position - newValue >= ZoomStart)
 					Position -= newValue;
 				else
-					Position = GetFirstTickValue();
+					Position = GetNearestTick(ZoomStart, true);
+
 			}
 			else if (pos > 0)
 			{
-				if (Position + newValue < ZoomEnd)
+				if (Position + newValue <= ZoomEnd)
 					Position += newValue;
 				else
-					Position = GetLastTickValue();
+					Position = GetNearestTick(ZoomEnd, true);
 			}
 		}
 
@@ -1240,27 +1229,27 @@ namespace JLR.Utility.UWP.Controls
 
 			// Get mouse position, continuing only if the position has changed
 			// by more than half of the snap distance
-			var snapPixels = CalculateSnapDistanceInPixels();
+			var snapPixels = ConvertTimeIntervalToPixels(MinorTickInterval);
 			var pos        = e.GetCurrentPoint(_selectionStartElement).Position.X - _prevMousePosX;
 			var delta      = Math.Abs(pos);
 
 			if (delta < snapPixels / 2)
 				return;
 
-			var newValue = MinorInterval * (int) (delta / snapPixels);
+			var newValue = MinorTickInterval * (int) (delta / snapPixels);
 			if (pos < 0)
 			{
-				if (SelectionStart - newValue > ZoomStart)
+				if (SelectionStart - newValue >= ZoomStart)
 					SelectionStart -= newValue;
 				else
-					SelectionStart = GetFirstTickValue();
+					Position = GetNearestTick(ZoomStart, true);
 			}
 			else if (pos > 0)
 			{
-				if (SelectionStart + newValue < ZoomEnd)
+				if (SelectionStart + newValue <= ZoomEnd)
 					SelectionStart += newValue;
 				else
-					SelectionStart = GetLastTickValue();
+					Position = GetNearestTick(ZoomEnd, true);
 			}
 		}
 
@@ -1271,27 +1260,27 @@ namespace JLR.Utility.UWP.Controls
 
 			// Get mouse position, continuing only if the position has changed
 			// by more than half of the snap distance
-			var snapPixels = CalculateSnapDistanceInPixels();
+			var snapPixels = ConvertTimeIntervalToPixels(MinorTickInterval);
 			var pos        = e.GetCurrentPoint(_selectionEndElement).Position.X - _prevMousePosX;
 			var delta      = Math.Abs(pos);
 
 			if (delta < snapPixels / 2)
 				return;
 
-			var newValue = MinorInterval * (int) (delta / snapPixels);
+			var newValue = MinorTickInterval * (int) (delta / snapPixels);
 			if (pos < 0)
 			{
-				if (SelectionEnd - newValue > ZoomStart)
+				if (SelectionEnd - newValue >= ZoomStart)
 					SelectionEnd -= newValue;
 				else
-					SelectionEnd = GetFirstTickValue();
+					Position = GetNearestTick(ZoomStart, true);
 			}
 			else if (pos > 0)
 			{
-				if (SelectionEnd + newValue < ZoomEnd)
+				if (SelectionEnd + newValue <= ZoomEnd)
 					SelectionEnd += newValue;
 				else
-					SelectionEnd = GetLastTickValue();
+					Position = GetNearestTick(ZoomEnd, true);
 			}
 		}
 
@@ -1309,16 +1298,7 @@ namespace JLR.Utility.UWP.Controls
 			var delta = (decimal) pos * (End - Start) / (decimal) _zoomPanel.ActualWidth;
 			if (pos < 0 && ZoomStart > Start || pos > 0 && ZoomStart < End)
 			{
-				_isZoomChangeInProgress =  true;
-				ZoomStart               += delta;
-				_isZoomChangeInProgress =  false;
-
-				if (delta > 0)
-					_lastZoomChange = ZoomChange.In;
-				else if (delta < 0)
-					_lastZoomChange = ZoomChange.Out;
-				else
-					_lastZoomChange = ZoomChange.None;
+				ZoomStart += delta;
 			}
 		}
 
@@ -1336,16 +1316,7 @@ namespace JLR.Utility.UWP.Controls
 			var delta = (decimal) pos * (End - Start) / (decimal) _zoomPanel.ActualWidth;
 			if (pos < 0 && ZoomEnd > Start || pos > 0 && ZoomEnd < End)
 			{
-				_isZoomChangeInProgress =  true;
-				ZoomEnd                 += delta;
-				_isZoomChangeInProgress =  false;
-
-				if (delta > 0)
-					_lastZoomChange = ZoomChange.Out;
-				else if (delta < 0)
-					_lastZoomChange = ZoomChange.In;
-				else
-					_lastZoomChange = ZoomChange.None;
+				ZoomEnd += delta;
 			}
 		}
 
@@ -1376,11 +1347,7 @@ namespace JLR.Utility.UWP.Controls
 
 			if (ZoomStart != Start)
 			{
-				_isZoomChangeInProgress = true;
-				ZoomStart               = Start;
-				_isZoomChangeInProgress = false;
-
-				_lastZoomChange = ZoomChange.Out;
+				ZoomStart = Start;
 			}
 		}
 
@@ -1396,11 +1363,7 @@ namespace JLR.Utility.UWP.Controls
 
 			if (ZoomEnd != End)
 			{
-				_isZoomChangeInProgress = true;
-				ZoomEnd                 = End;
-				_isZoomChangeInProgress = false;
-
-				_lastZoomChange = ZoomChange.Out;
+				ZoomEnd = End;
 			}
 		}
 
@@ -1421,17 +1384,13 @@ namespace JLR.Utility.UWP.Controls
 			}
 			else
 			{
-				_isZoomChangeInProgress = true;
-				ZoomStart               = Start;
-				ZoomEnd                 = End;
-				_isZoomChangeInProgress = false;
-
-				_lastZoomChange = ZoomChange.Out;
+				ZoomStart = Start;
+				ZoomEnd   = End;
 			}
 		}
 		#endregion
 
-		#region Event Handlers (Tick Bar)
+		#region Event Handlers (Rendering)
 		private void CreateTickBarResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
 		{
 			_selectionHighlightBrush = SelectionHighlightBrush?.CreateCanvasBrush(sender.Device);
@@ -1451,29 +1410,42 @@ namespace JLR.Utility.UWP.Controls
 			var verticalCoordsMajor  = CalculateVerticalAxisCoordinates(MajorTickRelativeSize);
 			var verticalCoordsMinor  = CalculateVerticalAxisCoordinates(MinorTickRelativeSize);
 
+			// Find optimal timescale for readable tick spacing
+			_currentInterval = _intervals.First;
+			var minorSpaceBetween = ConvertTimeIntervalToPixels(MinorTickInterval) - MinorTickThickness;
+			var majorSpaceBetween = ConvertTimeIntervalToPixels(MajorTickInterval) - MajorTickThickness;
+			while ((minorSpaceBetween < MinorTickClutterThreshold ||
+					majorSpaceBetween < MajorTickClutterThreshold) &&
+				   _currentInterval.Next != null)
+			{
+				_currentInterval  = _currentInterval.Next;
+				minorSpaceBetween = ConvertTimeIntervalToPixels(MinorTickInterval) - MinorTickThickness;
+				majorSpaceBetween = ConvertTimeIntervalToPixels(MajorTickInterval) - MajorTickThickness;
+			}
+
 			// Update tick lists
 			_majorTicks.Clear();
 			_minorTicks.Clear();
 
 			decimal major = 0;
-			if (MajorInterval > 0)
+			if (MajorTickInterval > 0)
 			{
-				major = MajorInterval * (int) (ZoomStart / MajorInterval);
+				major = MajorTickInterval * (int) (ZoomStart / MajorTickInterval);
 				if (ZoomStart >= 0 && Math.Abs(major - ZoomStart) > 0)
-					major = MajorInterval * ((int) (ZoomStart / MajorInterval) + 1);
+					major = MajorTickInterval * ((int) (ZoomStart / MajorTickInterval) + 1);
 			}
 
 			decimal minor = 0;
-			if (MinorInterval > 0)
+			if (MinorTickInterval > 0)
 			{
-				minor = MinorInterval * (int) (ZoomStart / MinorInterval);
+				minor = MinorTickInterval * (int) (ZoomStart / MinorTickInterval);
 				if (ZoomStart >= 0 && Math.Abs(minor - ZoomStart) > 0)
-					minor = MinorInterval * ((int) (ZoomStart / MinorInterval) + 1);
+					minor = MinorTickInterval * ((int) (ZoomStart / MinorTickInterval) + 1);
 			}
 
 			var majorAdj = decimal.Round(major, DecimalPrecision, MidpointRounding.ToEven);
 			var minorAdj = decimal.Round(minor, DecimalPrecision, MidpointRounding.ToEven);
-			if (MajorInterval > 0 && MinorInterval > 0) // Both major and minor ticks are needed
+			if (MajorTickInterval > 0 && MinorTickInterval > 0) // Both major and minor ticks are needed
 			{
 				while (majorAdj <= ZoomEnd || minorAdj <= ZoomEnd)
 				{
@@ -1483,14 +1455,14 @@ namespace JLR.Utility.UWP.Controls
 						AddMajorTick();
 				}
 			}
-			else if (MajorInterval > 0) // Only major ticks are needed
+			else if (MajorTickInterval > 0) // Only major ticks are needed
 			{
 				while (majorAdj <= ZoomEnd)
 				{
 					AddMajorTick();
 				}
 			}
-			else if (MinorInterval > 0) // Only minor ticks are needed
+			else if (MinorTickInterval > 0) // Only minor ticks are needed
 			{
 				while (minorAdj <= ZoomEnd)
 				{
@@ -1519,8 +1491,6 @@ namespace JLR.Utility.UWP.Controls
 				}
 			}
 
-			var totalThickness = 0.0;
-
 			// Draw Ticks
 			foreach (var type in drawOrder)
 			{
@@ -1529,10 +1499,9 @@ namespace JLR.Utility.UWP.Controls
 					case TickType.Origin:
 					{
 						DrawTick(CalculateHorizontalAxisCoordinate(0.0M),
-						         verticalCoordsOrigin,
-						         _originTickBrush,
-						         OriginTickThickness);
-						totalThickness += OriginTickThickness;
+								 verticalCoordsOrigin,
+								 _originTickBrush,
+								 OriginTickThickness);
 						break;
 					}
 
@@ -1543,10 +1512,9 @@ namespace JLR.Utility.UWP.Controls
 							foreach (var tick in _majorTicks)
 							{
 								DrawTick(CalculateHorizontalAxisCoordinate(tick),
-								         verticalCoordsMajor,
-								         _majorTickBrush,
-								         MajorTickThickness);
-								totalThickness += MajorTickThickness;
+										 verticalCoordsMajor,
+										 _majorTickBrush,
+										 MajorTickThickness);
 							}
 						}
 
@@ -1560,10 +1528,9 @@ namespace JLR.Utility.UWP.Controls
 							foreach (var tick in _minorTicks)
 							{
 								DrawTick(CalculateHorizontalAxisCoordinate(tick),
-								         verticalCoordsMinor,
-								         _minorTickBrush,
-								         MinorTickThickness);
-								totalThickness += MinorTickThickness;
+										 verticalCoordsMinor,
+										 _minorTickBrush,
+										 MinorTickThickness);
 							}
 						}
 
@@ -1572,13 +1539,11 @@ namespace JLR.Utility.UWP.Controls
 				}
 			}
 
-			TickDensity = 100 * (totalThickness / _tickCanvas.ActualWidth);
-
 			// Local function to add a major tick to its list and advance to the next
 			void AddMajorTick()
 			{
 				_majorTicks.Add(majorAdj);
-				major    += MajorInterval;
+				major    += MajorTickInterval;
 				majorAdj =  decimal.Round(major, DecimalPrecision, MidpointRounding.ToEven);
 			}
 
@@ -1586,7 +1551,7 @@ namespace JLR.Utility.UWP.Controls
 			void AddMinorTick()
 			{
 				_minorTicks.Add(minorAdj);
-				minor    += MinorInterval;
+				minor    += MinorTickInterval;
 				minorAdj =  decimal.Round(minor, DecimalPrecision, MidpointRounding.ToEven);
 			}
 
@@ -1594,8 +1559,8 @@ namespace JLR.Utility.UWP.Controls
 			double CalculateHorizontalAxisCoordinate(decimal value)
 			{
 				return decimal.ToDouble(value - ZoomStart) *
-				       _tickCanvas.ActualWidth /
-				       decimal.ToDouble(ZoomEnd - ZoomStart);
+					   _tickCanvas.ActualWidth /
+					   decimal.ToDouble(ZoomEnd - ZoomStart);
 			}
 
 			// Local function to calculate vertical axis render coordinates
@@ -1610,7 +1575,7 @@ namespace JLR.Utility.UWP.Controls
 						return (pos, _tickCanvas.ActualHeight - pos);
 					case NET.Position.Bottom:
 						return (_tickCanvas.ActualHeight,
-						        _tickCanvas.ActualHeight - relativeSize * _tickCanvas.ActualHeight);
+								_tickCanvas.ActualHeight - relativeSize * _tickCanvas.ActualHeight);
 					default:
 						return (0, 0);
 				}
@@ -1618,24 +1583,16 @@ namespace JLR.Utility.UWP.Controls
 
 			// Local function to draw a tick
 			void DrawTick(double position,
-			              (double start, double end) verticalCoords,
-			              ICanvasBrush brush,
-			              double thickness)
+						  (double start, double end) verticalCoords,
+						  ICanvasBrush brush,
+						  double thickness)
 			{
 				var posAdj = position - thickness / 2;
 				args.DrawingSession.FillRectangle(new Rect(new Point(posAdj, verticalCoords.start),
-				                                           new Point(posAdj + thickness, verticalCoords.end)),
-				                                  brush);
+														   new Point(posAdj + thickness, verticalCoords.end)),
+												  brush);
 			}
 		}
-		#endregion
-
-		#region Private Properties
-		private decimal MajorInterval => _currentInterval.Value.major;
-
-		private decimal MinorInterval => (decimal) _currentInterval.Value.minor /
-		                                 _currentInterval.Value.minorPerMajor *
-		                                 _currentInterval.Value.major;
 		#endregion
 
 		#region Private Methods
@@ -1691,9 +1648,9 @@ namespace JLR.Utility.UWP.Controls
 
 				// Position the selection start element on the horizontal axis
 				if (SelectionStart >= ZoomStart &&
-				    SelectionStart <= ZoomEnd &&
-				    ZoomStart != ZoomEnd &&
-				    SelectionEnd != null)
+					SelectionStart <= ZoomEnd &&
+					ZoomStart != ZoomEnd &&
+					SelectionEnd != null)
 				{
 					_selectionStartElement.Visibility = Visibility.Visible;
 					Canvas.SetLeft(
@@ -1710,9 +1667,9 @@ namespace JLR.Utility.UWP.Controls
 
 				// Position the selection end element on the horizontal axis
 				if (SelectionEnd >= ZoomStart &&
-				    SelectionEnd <= ZoomEnd &&
-				    ZoomStart != ZoomEnd &&
-				    SelectionStart != null)
+					SelectionEnd <= ZoomEnd &&
+					ZoomStart != ZoomEnd &&
+					SelectionStart != null)
 				{
 					_selectionEndElement.Visibility = Visibility.Visible;
 					Canvas.SetLeft(
@@ -1740,8 +1697,8 @@ namespace JLR.Utility.UWP.Controls
 
 			// Update selection highlight rectangle
 			if (SelectionEnd - SelectionStart != 0 &&
-			    SelectionStart < ZoomEnd &&
-			    SelectionEnd > ZoomStart)
+				SelectionStart < ZoomEnd &&
+				SelectionEnd > ZoomStart)
 			{
 				// Calculate selection highlight rectangle height
 				var rectHeight = SelectionHighlightRelativeSize * thumbHeight;
@@ -1750,10 +1707,10 @@ namespace JLR.Utility.UWP.Controls
 				var adjustedStart = SelectionStart >= ZoomStart ? (decimal) SelectionStart : ZoomStart;
 				var adjustedEnd   = SelectionEnd <= ZoomEnd ? (decimal) SelectionEnd : ZoomEnd;
 				var rectLeft = decimal.ToDouble((adjustedStart - ZoomStart) *
-				                                ((decimal) _mainPanel.ActualWidth / (ZoomEnd - ZoomStart)));
+												((decimal) _mainPanel.ActualWidth / (ZoomEnd - ZoomStart)));
 				var rectWidth = decimal.ToDouble(Math.Abs(adjustedEnd - adjustedStart) *
-				                                 (decimal) _mainPanel.ActualWidth /
-				                                 (ZoomEnd - ZoomStart));
+												 (decimal) _mainPanel.ActualWidth /
+												 (ZoomEnd - ZoomStart));
 
 				// Calculate selection highlight rectangle vertical start coordinate
 				var rectTop = SelectionHighlightAlignment switch
@@ -1798,7 +1755,7 @@ namespace JLR.Utility.UWP.Controls
 				Canvas.SetLeft(
 					_zoomEndElement,
 					decimal.ToDouble((ZoomEnd - Start) *
-					                 ((decimal) _zoomPanel.ActualWidth / (End - Start))));
+									 ((decimal) _zoomPanel.ActualWidth / (End - Start))));
 			}
 
 			// Position and resize the zoom thumb element
@@ -1825,24 +1782,6 @@ namespace JLR.Utility.UWP.Controls
 			}
 		}
 
-		private void FollowPosition()
-		{
-			switch (PositionFollowMode)
-			{
-				case FollowMode.Advance:
-					var currentWindow = ZoomEnd - ZoomStart;
-					if (Position > ZoomEnd)
-						SetVisibleWindow(ZoomEnd, ZoomEnd + currentWindow);
-					else if (Position < ZoomStart)
-						SetVisibleWindow(ZoomStart - currentWindow, ZoomStart);
-					break;
-
-				case FollowMode.Scroll:
-					CenterVisibleWindow(Position);
-					break;
-			}
-		}
-
 		private void AdjustPadding()
 		{
 			if (!IsLoaded)
@@ -1853,63 +1792,80 @@ namespace JLR.Utility.UWP.Controls
 
 			if (_selectionStartElement != null)
 				left = Math.Max(left, _selectionStartElement.ActualWidth) -
-				       Padding.Left - (_mainPanel?.Margin.Left ?? 0);
+					   Padding.Left - (_mainPanel?.Margin.Left ?? 0);
 
 			if (_selectionEndElement != null)
 				right = Math.Max(right, _selectionEndElement.ActualWidth) -
-				        Padding.Right - (_mainPanel?.Margin.Right ?? 0);
+						Padding.Right - (_mainPanel?.Margin.Right ?? 0);
 
 			if (_zoomStartElement != null)
 				left = Math.Max(left, _zoomStartElement.ActualWidth) -
-				       Padding.Left - (_zoomPanel?.Margin.Left ?? 0);
+					   Padding.Left - (_zoomPanel?.Margin.Left ?? 0);
 
 			if (_zoomEndElement != null)
 				right = Math.Max(right, _zoomEndElement.ActualWidth) -
-				        Padding.Right - (_zoomPanel?.Margin.Right ?? 0);
+						Padding.Right - (_zoomPanel?.Margin.Right ?? 0);
 
 
 			if (_mainPanel != null)
 			{
 				var margin = new Thickness(left > 0 ? left : 0,
-				                           _mainPanel.Margin.Top,
-				                           right > 0 ? right : 0,
-				                           _mainPanel.Margin.Bottom);
+										   _mainPanel.Margin.Top,
+										   right > 0 ? right : 0,
+										   _mainPanel.Margin.Bottom);
 				_mainPanel.SetValue(MarginProperty, margin);
 			}
 
 			if (_zoomPanel != null)
 			{
 				var margin = new Thickness(left > 0 ? left : 0,
-				                           _zoomPanel.Margin.Top,
-				                           right > 0 ? right : 0,
-				                           _zoomPanel.Margin.Bottom);
+										   _zoomPanel.Margin.Top,
+										   right > 0 ? right : 0,
+										   _zoomPanel.Margin.Bottom);
 				_zoomPanel.SetValue(MarginProperty, margin);
 			}
 		}
 
-		private double CalculateSnapDistanceInPixels()
+		private void FollowPosition()
 		{
-			return decimal.ToDouble(MinorInterval *
-			                        (decimal) _mainPanel.ActualWidth /
-			                        (ZoomEnd - ZoomStart));
+			switch (PositionFollowMode)
+			{
+				case FollowMode.Advance:
+					var currentWindow = ZoomEnd - ZoomStart;
+					if (Position > ZoomEnd)
+						OffsetVisibleWindow(currentWindow);
+					else if (Position < ZoomStart)
+						OffsetVisibleWindow(-currentWindow);
+					break;
+
+				case FollowMode.Scroll:
+					CenterVisibleWindow(Position);
+					break;
+			}
 		}
 
-		private decimal GetFirstTickValue()
+		private double ConvertTimeIntervalToPixels(decimal duration)
 		{
-			if (_minorTicks.Count == 0)
-				return _majorTicks.First();
-			if (_majorTicks.Count == 0)
-				return _minorTicks.First();
-			return Math.Min(_majorTicks.First(), _minorTicks.First());
+			return decimal.ToDouble((decimal) _tickCanvas.ActualWidth * duration / (ZoomEnd - ZoomStart));
 		}
 
-		private decimal GetLastTickValue()
+		private decimal ConvertScreenCoordinateToPosition(double coordinate)
 		{
-			if (_minorTicks.Count == 0)
-				return _majorTicks.Last();
-			if (_majorTicks.Count == 0)
-				return _majorTicks.Last();
-			return Math.Max(_majorTicks.Last(), _minorTicks.Last());
+			var positiveWidth  = ConvertTimeIntervalToPixels(ZoomEnd); // Number of pixels for which Position >= 0
+			var zeroCoordinate = _tickCanvas.ActualWidth - positiveWidth;
+
+			if (coordinate >= zeroCoordinate)
+			{
+				return Math.Round((decimal) (coordinate - zeroCoordinate) * ZoomEnd / (decimal) positiveWidth,
+				                  DecimalPrecision,
+				                  MidpointRounding.ToEven);
+			}
+
+			return Math.Round(
+				(decimal) (zeroCoordinate - coordinate) * ZoomStart /
+				(decimal) (_tickCanvas.ActualWidth - positiveWidth),
+				DecimalPrecision,
+				MidpointRounding.ToEven);
 		}
 
 		private void InitializeTimescale()
@@ -1940,32 +1896,7 @@ namespace JLR.Utility.UWP.Controls
 				_intervals.AddLast((SecondsPerDay, (int) divisor, HoursPerDay));
 			}
 
-			ResetTimescale();
-		}
-
-		private void IncreaseTimescale()
-		{
-			if (_currentInterval.Next == null)
-				return;
-
-			_currentInterval = _currentInterval.Next;
-		}
-
-		private void DecreaseTimescale()
-		{
-			if (_currentInterval.Previous == null)
-				return;
-
-			_currentInterval = _currentInterval.Previous;
-		}
-
-		private bool ResetTimescale()
-		{
-			if (_currentInterval == _intervals.First)
-				return false;
-
 			_currentInterval = _intervals.First;
-			return true;
 		}
 
 		private void AdjustStart()
@@ -2110,14 +2041,6 @@ namespace JLR.Utility.UWP.Controls
 			Origin,
 			Major,
 			Minor
-		}
-
-		private enum ZoomChange
-		{
-			In,
-			Out,
-			None,
-			Unknown
 		}
 
 		private class TickTypeComparer : IComparer<KeyValuePair<TickType, int>>

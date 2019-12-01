@@ -1,0 +1,18 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1">
+  <Class Name="JLR.Utility.UWP.Controls.MediaSlider" Collapsed="true">
+    <Position X="0.5" Y="0.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>Oi7ZcuFqo/JrU/inngCg4v3yAZJx5mpIE628ajKM4KQ=</HashCode>
+      <FileName>Controls\MediaSlider.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Enum Name="JLR.Utility.UWP.Controls.FollowMode" Collapsed="true">
+    <Position X="0.5" Y="1.75" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAIAAAAAAAAAAAAAAAAAAAAAAAAAQAgAAAAAAA=</HashCode>
+      <FileName>Controls\MediaSlider.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>
