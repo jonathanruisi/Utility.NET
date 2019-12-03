@@ -2,7 +2,8 @@
 	xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
 	xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
 	xmlns:controls="using:JLR.Utility.UWP.Controls"
-	xmlns:xaml="using:Microsoft.Graphics.Canvas.UI.Xaml">
+	xmlns:xaml="using:Microsoft.Graphics.Canvas.UI.Xaml"
+	xmlns:geometry="using:Microsoft.Graphics.Canvas.Geometry">
 
 	<ControlTemplate x:Key="MediaSliderDefaultTemplate" TargetType="controls:MediaSlider">
 		<Border Background="{TemplateBinding Background}"
@@ -12,12 +13,15 @@
 				Margin="{TemplateBinding Padding}">
 			<Grid>
 				<Grid.RowDefinitions>
+					<RowDefinition Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MarkerBarSize}"/>
 					<RowDefinition Height="*"/>
 					<RowDefinition Height="0.05*"/>
 					<RowDefinition Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ZoomBarSize}"/>
 				</Grid.RowDefinitions>
 
-				<Canvas Grid.Row="0" Background="#20FFFFFF">
+				<xaml:CanvasControl x:Name="PART_MarkerBar" Grid.Row="0"/>
+
+				<Canvas Grid.Row="1" Background="#20FFFFFF">
 					<xaml:CanvasControl x:Name="PART_TickBar"
 										Canvas.ZIndex="0"/>
 					<controls:TransportElement x:Name="PART_SelectionStart"
@@ -37,7 +41,7 @@
 											   Template="{TemplateBinding PositionElementTemplate}"/>
 				</Canvas>
 
-				<Canvas Grid.Row="2" Background="#10FFFFFF">
+				<Canvas Grid.Row="3" Background="#10FFFFFF">
 					<controls:TransportElement x:Name="PART_ZoomThumb"
 											   Canvas.ZIndex="0"
 											   MouseOverCursorType="Hand"
@@ -65,11 +69,12 @@
 		<Setter Property="Margin" Value="0"/>
 		<Setter Property="Padding" Value="0"/>
 		<Setter Property="ZoomBarSize" Value="0.25*"/>
+		<Setter Property="MarkerBarSize" Value="0.20*"/>
 		<Setter Property="FramesPerSecond" Value="30"/>
 		<Setter Property="TickAlignment" Value="Bottom"/>
-		<Setter Property="PositionElementAlignment" Value="Top"/>
+		<Setter Property="PositionElementAlignment" Value="Bottom"/>
 		<Setter Property="SelectionElementAlignment" Value="Top"/>
-		<Setter Property="PositionElementRelativeSize" Value="1.0"/>
+		<Setter Property="PositionElementRelativeSize" Value="0.667"/>
 		<Setter Property="SelectionElementRelativeSize" Value="0.667"/>
 		<Setter Property="SelectionHighlightBrush">
 			<Setter.Value>
@@ -90,6 +95,32 @@
 		<Setter Property="MinorTickThickness" Value="1"/>
 		<Setter Property="MinorTickRelativeSize" Value="0.165"/>
 		<Setter Property="MinorTickZIndex" Value="0"/>
+		<Setter Property="ClipMarkerBrush">
+			<Setter.Value>
+				<SolidColorBrush Color="#FFC000" Opacity="0.5"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="MarkerBrush" Value="Lime"/>
+		<Setter Property="MarkerLineThickness" Value="2.0"/>
+		<Setter Property="MarkerLineStyle">
+			<Setter.Value>
+				<geometry:CanvasStrokeStyle DashStyle="Dash"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="InPointBrush" Value="OrangeRed"/>
+		<Setter Property="InPointLineThickness" Value="2.0"/>
+		<Setter Property="InPointLineStyle">
+			<Setter.Value>
+				<geometry:CanvasStrokeStyle DashStyle="Dot"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="OutPointBrush" Value="OrangeRed"/>
+		<Setter Property="OutPointLineThickness" Value="2.0"/>
+		<Setter Property="OutPointLineStyle">
+			<Setter.Value>
+				<geometry:CanvasStrokeStyle DashStyle="Dot"/>
+			</Setter.Value>
+		</Setter>
 		<Setter Property="PositionElementTemplate" Value="{StaticResource PositionTopAlignedDefaultTemplate}"/>
 		<Setter Property="SelectionStartElementTemplate" Value="{StaticResource SelectionStartDefaultTemplate}"/>
 		<Setter Property="SelectionEndElementTemplate" Value="{StaticResource SelectionEndDefaultTemplate}"/>

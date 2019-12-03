@@ -28,7 +28,7 @@ namespace UWPTestApp
 
 		public MainPage()
 		{
-			this.InitializeComponent();
+			InitializeComponent();
 		}
 
 		#region Event Handlers (Page)
@@ -119,6 +119,32 @@ namespace UWPTestApp
 							CoreDispatcherPriority.Normal, () => { Slider.IncreasePosition(0, 1); });
 					}
 				}, period);
+		}
+
+		private void ButtonB1A_Click(object sender, RoutedEventArgs e)
+		{
+			Slider.Markers.Add(Slider.Position);
+		}
+
+		private void ButtonB1B_Click(object sender, RoutedEventArgs e)
+		{
+			Slider.Markers.Remove(Slider.Position);
+		}
+
+		private void ButtonB2A_Click(object sender, RoutedEventArgs e)
+		{
+			if (Slider.SelectionStart == null || Slider.SelectionEnd == null)
+				return;
+
+			Slider.Clips.Add(((decimal) Slider.SelectionStart, (decimal) Slider.SelectionEnd));
+		}
+
+		private void ButtonB2B_Click(object sender, RoutedEventArgs e)
+		{
+			if(Slider.SelectionStart == null || Slider.SelectionEnd == null)
+				return;
+
+			Slider.Clips.Remove(((decimal)Slider.SelectionStart, (decimal)Slider.SelectionEnd));
 		}
 		#endregion
 

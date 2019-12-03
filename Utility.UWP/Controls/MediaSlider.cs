@@ -1,9 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
+using System.Diagnostics;
+using System.Linq;
+using System.Numerics;
 
 using Windows.Devices.Input;
 using Windows.Foundation;
 using Windows.System;
+using Windows.UI;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -14,11 +20,13 @@ using JLR.Utility.NET;
 using JLR.Utility.NET.Math;
 
 using Microsoft.Graphics.Canvas.Brushes;
+using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 
 namespace JLR.Utility.UWP.Controls
 {
+	[TemplatePart(Name = "PART_MarkerBar", Type      = typeof(CanvasControl))]
 	[TemplatePart(Name = "PART_TickBar", Type        = typeof(CanvasControl))]
 	[TemplatePart(Name = "PART_Position", Type       = typeof(TransportElement))]
 	[TemplatePart(Name = "PART_SelectionStart", Type = typeof(TransportElement))]
@@ -29,7 +37,7 @@ namespace JLR.Utility.UWP.Controls
 	public sealed class MediaSlider : Control
 	{
 		#region Constants
-		private const int     DecimalPrecision    = 10;
+		private const int     DecimalPrecision    = 8;
 		private const decimal MinimumVisibleRange = 1.0M;
 		private const int     SecondsPerMinute    = 60;
 		private const int     SecondsPerHour      = 3600;
@@ -51,22 +59,22 @@ namespace JLR.Utility.UWP.Controls
 			_selectionHighlightBrush,
 			_originTickBrush,
 			_majorTickBrush,
-			_minorTickBrush;
+			_minorTickBrush,
+			_markerBrush,
+			_clipMarkerBrush,
+			_inPointBrush,
+			_outPointBrush;
 
 		private bool
 			_isLeftMouseDown,
 			_isBoundaryUpdateInProgress;
-
-		private readonly HashSet<decimal>
-			_majorTicks,
-			_minorTicks;
 
 		private CoreCursor _previousCursor;
 
 		private readonly CoreCursor _primaryCursor =
 			new CoreCursor(CoreCursorType.UpArrow, 0);
 
-		private CanvasControl _tickCanvas;
+		private CanvasControl _tickCanvas, _markerCanvas;
 		private Panel         _mainPanel, _zoomPanel;
 		private Rect          _selectionRect;
 		private double        _prevMousePosX;
@@ -79,7 +87,7 @@ namespace JLR.Utility.UWP.Controls
 		public TimeSpan Duration
 		{
 			get => TimeSpan.FromSeconds(decimal.ToDouble(End - Start));
-			set => End = Start + (decimal)value.TotalSeconds;
+			set => End = decimal.Round(Start + (decimal) value.TotalSeconds, DecimalPrecision);
 		}
 
 		public TimeSpan VisibleDuration
@@ -87,7 +95,7 @@ namespace JLR.Utility.UWP.Controls
 			get => TimeSpan.FromSeconds(decimal.ToDouble(ZoomEnd - ZoomStart));
 			set
 			{
-				var newDuration = (decimal)value.TotalSeconds;
+				var newDuration = decimal.Round((decimal) value.TotalSeconds, DecimalPrecision);
 				if(newDuration < MinimumVisibleRange)
 					newDuration = MinimumVisibleRange;
 				else if(newDuration >= End - Start)
@@ -96,17 +104,16 @@ namespace JLR.Utility.UWP.Controls
 					return;
 				}
 
-				var currentDuration = ZoomEnd - ZoomStart;
-				var center = ZoomStart + currentDuration / 2;
-
-				var start = center - newDuration / 2;
+				var center = decimal.Round(ZoomStart + (ZoomEnd - ZoomStart) / 2, DecimalPrecision);
+				var start = decimal.Round(center - newDuration / 2, DecimalPrecision);
+				
 				if(start <= Start)
 				{
 					SetVisibleWindow(Start, newDuration);
 					return;
 				}
 
-				var end = center + newDuration / 2;
+				var end = decimal.Round(center + newDuration / 2, DecimalPrecision);
 				if(end >= End)
 				{
 					SetVisibleWindow(End - newDuration, End);
@@ -117,15 +124,19 @@ namespace JLR.Utility.UWP.Controls
 			}
 		}
 
-		private decimal MajorTickInterval => _currentInterval.Value.major;
+		public ObservableCollection<decimal> Markers { get; }
 
-		private decimal MinorTickInterval => (decimal)_currentInterval.Value.minor /
+		public ObservableCollection<(decimal start, decimal end)> Clips { get; }
+
+		public decimal MajorTickInterval => _currentInterval.Value.major;
+
+		public decimal MinorTickInterval => (decimal)_currentInterval.Value.minor /
 											 _currentInterval.Value.minorPerMajor *
 											 _currentInterval.Value.major;
 		#endregion
 
 		#region Dependency Properties
-		//goto:#Behavior goto:#Alignment goto:#Sizing goto:#Z_Index goto:#Brushes goto:#Templates
+		// goto:#Behavior goto:#Alignment goto:#Sizing goto:#Z_Index goto:#Brushes goto:#Line_Styles goto:#Templates
 		// tag:#General
 		public decimal Start
 		{
@@ -322,6 +333,18 @@ namespace JLR.Utility.UWP.Controls
 										typeof(MediaSlider),
 										new PropertyMetadata(new GridLength(0.5, GridUnitType.Star)));
 
+		public GridLength MarkerBarSize
+		{
+			get => (GridLength)GetValue(MarkerBarSizeProperty);
+			set => SetValue(MarkerBarSizeProperty, value);
+		}
+
+		public static readonly DependencyProperty MarkerBarSizeProperty =
+			DependencyProperty.Register("MarkerBarSize",
+										typeof(GridLength),
+										typeof(MediaSlider),
+										new PropertyMetadata(new GridLength(0.20, GridUnitType.Star)));
+
 		public double PositionElementRelativeSize
 		{
 			get => (double) GetValue(PositionElementRelativeSizeProperty);
@@ -429,7 +452,43 @@ namespace JLR.Utility.UWP.Controls
 										typeof(double),
 										typeof(MediaSlider),
 										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
-		
+
+		public double MarkerLineThickness
+		{
+			get => (double)GetValue(MarkerLineThicknessProperty);
+			set => SetValue(MarkerLineThicknessProperty, value);
+		}
+
+		public static readonly DependencyProperty MarkerLineThicknessProperty =
+			DependencyProperty.Register("MarkerLineThickness",
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
+
+		public double InPointLineThickness
+		{
+			get => (double)GetValue(InPointLineThicknessProperty);
+			set => SetValue(InPointLineThicknessProperty, value);
+		}
+
+		public static readonly DependencyProperty InPointLineThicknessProperty =
+			DependencyProperty.Register("InPointLineThickness",
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
+
+		public double OutPointLineThickness
+		{
+			get => (double)GetValue(OutPointLineThicknessProperty);
+			set => SetValue(OutPointLineThicknessProperty, value);
+		}
+
+		public static readonly DependencyProperty OutPointLineThicknessProperty =
+			DependencyProperty.Register("OutPointLineThickness",
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
+
 		// tag:#Z_Index
 		public int OriginTickZIndex
 		{
@@ -515,7 +574,92 @@ namespace JLR.Utility.UWP.Controls
 										typeof(Brush),
 										typeof(MediaSlider),
 										new PropertyMetadata(null, OnTickCanvasBrushChanged));
-		
+
+		public Brush MarkerBrush
+		{
+			get => (Brush)GetValue(MarkerBrushProperty);
+			set => SetValue(MarkerBrushProperty, value);
+		}
+
+		public static readonly DependencyProperty MarkerBrushProperty =
+			DependencyProperty.Register("MarkerBrush",
+			                            typeof(Brush),
+			                            typeof(MediaSlider),
+			                            new PropertyMetadata(null, OnTickCanvasBrushChanged));
+
+		public Brush ClipMarkerBrush
+		{
+			get => (Brush)GetValue(ClipMarkerBrushProperty);
+			set => SetValue(ClipMarkerBrushProperty, value);
+		}
+
+		public static readonly DependencyProperty ClipMarkerBrushProperty =
+			DependencyProperty.Register("ClipMarkerBrush",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnMarkerCanvasBrushChanged));
+
+		public Brush InPointBrush
+		{
+			get => (Brush)GetValue(InPointBrushProperty);
+			set => SetValue(InPointBrushProperty, value);
+		}
+
+		public static readonly DependencyProperty InPointBrushProperty =
+			DependencyProperty.Register("InPointBrush",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
+
+		public Brush OutPointBrush
+		{
+			get => (Brush)GetValue(OutPointBrushProperty);
+			set => SetValue(OutPointBrushProperty, value);
+		}
+
+		public static readonly DependencyProperty OutPointBrushProperty =
+			DependencyProperty.Register("OutPointBrush",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
+
+		// tag:#Line_Styles
+		public CanvasStrokeStyle MarkerLineStyle
+		{
+			get => (CanvasStrokeStyle) GetValue(MarkerLineStyleProperty);
+			set => SetValue(MarkerLineStyleProperty, value);
+		}
+
+		public static readonly DependencyProperty MarkerLineStyleProperty =
+			DependencyProperty.Register("MarkerLineStyle",
+			                            typeof(CanvasStrokeStyle),
+			                            typeof(MediaSlider),
+			                            new PropertyMetadata(null, OnTickCanvasRenderPropertyChanged));
+
+		public CanvasStrokeStyle InPointLineStyle
+		{
+			get => (CanvasStrokeStyle)GetValue(InPointLineStyleProperty);
+			set => SetValue(InPointLineStyleProperty, value);
+		}
+
+		public static readonly DependencyProperty InPointLineStyleProperty =
+			DependencyProperty.Register("InPointLineStyle",
+										typeof(CanvasStrokeStyle),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasRenderPropertyChanged));
+
+		public CanvasStrokeStyle OutPointLineStyle
+		{
+			get => (CanvasStrokeStyle)GetValue(OutPointLineStyleProperty);
+			set => SetValue(OutPointLineStyleProperty, value);
+		}
+
+		public static readonly DependencyProperty OutPointLineStyleProperty =
+			DependencyProperty.Register("OutPointLineStyle",
+										typeof(CanvasStrokeStyle),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasRenderPropertyChanged));
+
 		// tag:#Templates
 		public ControlTemplate PositionElementTemplate
 		{
@@ -650,9 +794,13 @@ namespace JLR.Utility.UWP.Controls
 		public MediaSlider()
 		{
 			DefaultStyleKey = typeof(MediaSlider);
-			_majorTicks     = new HashSet<decimal>();
-			_minorTicks     = new HashSet<decimal>();
 			_intervals      = new LinkedList<(int major, int minor, int minorPerMajor)>();
+
+			Markers = new ObservableCollection<decimal>();
+			Clips   = new ObservableCollection<(decimal start, decimal end)>();
+
+			Markers.CollectionChanged += Markers_CollectionChanged;
+			Clips.CollectionChanged   += Clips_CollectionChanged;
 		}
 		#endregion
 
@@ -708,7 +856,7 @@ namespace JLR.Utility.UWP.Controls
 			var amount = majorIntervals * MajorTickInterval + minorIntervals * MinorTickInterval;
 			Position = amount >= End
 				? End
-				: decimal.Round(Position + amount, DecimalPrecision);
+				: GetNearestTick(Position + amount, false);
 		}
 
 		public void DecreasePosition(int majorIntervals, int minorIntervals)
@@ -716,58 +864,68 @@ namespace JLR.Utility.UWP.Controls
 			var amount = majorIntervals * MajorTickInterval + minorIntervals * MinorTickInterval;
 			Position = amount <= Start
 				? Start
-				: decimal.Round(Position - amount, DecimalPrecision);
+				: GetNearestTick(Position - amount, false);
 		}
 
 		public decimal GetNearestTick(decimal relativeTo, bool preferVisible)
 		{
-			var value = Math.Abs(relativeTo);
+			decimal newValue;
+			var     value = Math.Abs(relativeTo);
 
-			var offsetMajorToward = decimal.Round(value % MajorTickInterval, DecimalPrecision);
-			var offsetMinorToward = decimal.Round(value % MinorTickInterval, DecimalPrecision);
+			var minorTickInterval = MinorTickInterval;
+			var offsetMajorToward = value % MajorTickInterval;
+			var offsetMinorToward = value % minorTickInterval;
 
 			if (offsetMajorToward == 0 || offsetMinorToward == 0)
-				return relativeTo;
+				return decimal.Round(relativeTo, DecimalPrecision);
 
-			var offsetMajorAway = decimal.Round(MajorTickInterval - offsetMajorToward, DecimalPrecision);
-			var offsetMinorAway = decimal.Round(MinorTickInterval - offsetMinorToward, DecimalPrecision);
+			var offsetMajorAway = MajorTickInterval - offsetMajorToward;
+			var offsetMinorAway = minorTickInterval - offsetMinorToward;
 
 			var offsetToward = Math.Min(offsetMajorToward, offsetMinorToward);
 			var offsetAway   = Math.Min(offsetMajorAway, offsetMinorAway);
 
-			if (!preferVisible)
+			if (preferVisible)
 			{
-				return decimal.Round(offsetToward < offsetAway
-					                     ? relativeTo > 0
-						                     ? relativeTo - offsetToward
-						                     : relativeTo + offsetToward
-					                     : relativeTo > 0
-						                     ? relativeTo + offsetAway
-						                     : relativeTo - offsetAway,
-				                     DecimalPrecision);
+				if (relativeTo >= 0)
+				{
+					if (relativeTo - offsetToward < ZoomStart)
+						newValue = relativeTo + offsetAway;
+					else if (relativeTo + offsetAway > ZoomEnd)
+						newValue = relativeTo - offsetToward;
+					else
+					{
+						newValue = offsetToward < offsetAway
+							? relativeTo - offsetToward
+							: relativeTo + offsetAway;
+					}
+				}
+				else
+				{
+					if (relativeTo + offsetToward > ZoomEnd)
+						newValue = relativeTo - offsetAway;
+					else if (relativeTo - offsetAway < ZoomStart)
+						newValue = relativeTo + offsetToward;
+					else
+					{
+						newValue = offsetToward < offsetAway
+							? relativeTo + offsetToward
+							: relativeTo - offsetAway;
+					}
+				}
+			}
+			else
+			{
+				newValue = offsetToward < offsetAway
+					? relativeTo > 0
+						? relativeTo - offsetToward
+						: relativeTo + offsetToward
+					: relativeTo > 0
+						? relativeTo + offsetAway
+						: relativeTo - offsetAway;
 			}
 
-			if (relativeTo >= 0)
-			{
-				if (relativeTo - offsetToward < ZoomStart)
-					return decimal.Round(relativeTo + offsetAway, DecimalPrecision);
-				if (relativeTo + offsetAway > ZoomEnd)
-					return decimal.Round(relativeTo - offsetToward, DecimalPrecision);
-				return decimal.Round(offsetToward < offsetAway
-					                     ? relativeTo - offsetToward
-					                     : relativeTo + offsetAway
-				                   , DecimalPrecision);
-			}
-
-			if (relativeTo + offsetToward > ZoomEnd)
-				return decimal.Round(relativeTo - offsetAway, DecimalPrecision);
-			if (relativeTo - offsetAway < ZoomStart)
-				return decimal.Round(relativeTo + offsetToward, DecimalPrecision);
-			return decimal.Round(offsetToward < offsetAway
-				                     ? relativeTo + offsetToward
-				                     : relativeTo - offsetAway,
-			                     DecimalPrecision);
-
+			return decimal.Round(newValue, DecimalPrecision);
 		}
 		#endregion
 
@@ -788,6 +946,7 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = false;
 
 			slider._tickCanvas?.Invalidate();
+			slider._markerCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
 			slider.UpdatePositionElementLayout();
@@ -810,6 +969,7 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = false;
 
 			slider._tickCanvas?.Invalidate();
+			slider._markerCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
 			slider.UpdatePositionElementLayout();
@@ -854,6 +1014,7 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = false;
 
 			slider._tickCanvas?.Invalidate();
+			slider._markerCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
 			slider.UpdatePositionElementLayout();
@@ -870,6 +1031,7 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = false;
 
 			slider._tickCanvas?.Invalidate();
+			slider._markerCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
 			slider.UpdatePositionElementLayout();
@@ -949,12 +1111,27 @@ namespace JLR.Utility.UWP.Controls
 
 			//@@warn TODO: Need to reload resources needed for rendering
 		}
+
+		private static void OnMarkerCanvasBrushChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			if(!(d is MediaSlider slider))
+				return;
+
+			//@@warn TODO: Need to reload resources needed for rendering
+		}
 		#endregion
 
 		#region Layout Method Overrides
 		protected override void OnApplyTemplate()
 		{
 			base.OnApplyTemplate();
+
+			if (GetTemplateChild("PART_MarkerBar") is CanvasControl markerBar)
+			{
+				_markerCanvas                 =  markerBar;
+				_markerCanvas.Draw            += MarkerCanvas_Draw;
+				_markerCanvas.CreateResources += MarkerCanvas_CreateResources;
+			}
 
 			if (GetTemplateChild("PART_TickBar") is CanvasControl tickBar)
 			{
@@ -968,8 +1145,8 @@ namespace JLR.Utility.UWP.Controls
 				}
 
 				_tickCanvas                 =  tickBar;
-				_tickCanvas.Draw            += DrawTickBar;
-				_tickCanvas.CreateResources += CreateTickBarResources;
+				_tickCanvas.Draw            += TickCanvas_Draw;
+				_tickCanvas.CreateResources += TickCanvas_CreateResources;
 			}
 
 			if (GetTemplateChild("PART_Position") is TransportElement position)
@@ -1049,9 +1226,11 @@ namespace JLR.Utility.UWP.Controls
 
 		private void MediaSlider_Unloaded(object sender, RoutedEventArgs e)
 		{
-			// CanvasControl needs to properly dispose of resources to avoid memory leaks
+			// CanvasControls need to properly dispose of resources to avoid memory leaks
 			_tickCanvas.RemoveFromVisualTree();
+			_markerCanvas.RemoveFromVisualTree();
 			_tickCanvas = null;
+			_markerCanvas = null;
 		}
 
 		private void MainPanel_PointerEntered(object sender, PointerRoutedEventArgs e)
@@ -1197,28 +1376,32 @@ namespace JLR.Utility.UWP.Controls
 
 			// Get mouse position, continuing only if the position has changed
 			// by more than half of the snap distance
-			var snapPixels = ConvertTimeIntervalToPixels(MinorTickInterval);
-			var pos        = e.GetCurrentPoint(_positionElement).Position.X - _prevMousePosX;
-			var delta      = Math.Abs(pos);
+			var minorInterval = MinorTickInterval;
+			var snapPixels    = ConvertTimeIntervalToPixels(minorInterval);
+			var pos           = e.GetCurrentPoint(_positionElement).Position.X - _prevMousePosX;
+			var delta         = Math.Abs(pos);
 
 			if (delta < snapPixels / 2)
 				return;
 
-			var newValue = MinorTickInterval * (int) (delta / snapPixels);
+			var newValue = minorInterval * (int) (delta / snapPixels);
 			if (pos < 0)
 			{
-				if (Position - newValue >= ZoomStart)
-					Position -= newValue;
-				else
-					Position = GetNearestTick(ZoomStart, true);
+				newValue = Position - newValue >= ZoomStart
+					? GetNearestTick(Position - newValue, true)
+					: GetNearestTick(ZoomStart, true);
 
+				if (newValue != Position)
+					Position = newValue;
 			}
 			else if (pos > 0)
 			{
-				if (Position + newValue <= ZoomEnd)
-					Position += newValue;
-				else
-					Position = GetNearestTick(ZoomEnd, true);
+				newValue = Position + newValue <= ZoomEnd
+					? GetNearestTick(Position + newValue, true)
+					: GetNearestTick(ZoomEnd, true);
+
+				if (newValue != Position)
+					Position = newValue;
 			}
 		}
 
@@ -1229,27 +1412,32 @@ namespace JLR.Utility.UWP.Controls
 
 			// Get mouse position, continuing only if the position has changed
 			// by more than half of the snap distance
-			var snapPixels = ConvertTimeIntervalToPixels(MinorTickInterval);
-			var pos        = e.GetCurrentPoint(_selectionStartElement).Position.X - _prevMousePosX;
-			var delta      = Math.Abs(pos);
+			var minorInterval = MinorTickInterval;
+			var snapPixels    = ConvertTimeIntervalToPixels(minorInterval);
+			var pos           = e.GetCurrentPoint(_selectionStartElement).Position.X - _prevMousePosX;
+			var delta         = Math.Abs(pos);
 
 			if (delta < snapPixels / 2)
 				return;
 
-			var newValue = MinorTickInterval * (int) (delta / snapPixels);
-			if (pos < 0)
+			var newValue = minorInterval * (int) (delta / snapPixels);
+			if (pos < 0 && SelectionStart != null)
 			{
-				if (SelectionStart - newValue >= ZoomStart)
-					SelectionStart -= newValue;
-				else
-					Position = GetNearestTick(ZoomStart, true);
+				newValue = SelectionStart - newValue >= ZoomStart
+					? GetNearestTick((decimal) SelectionStart - newValue, true)
+					: GetNearestTick(ZoomStart, true);
+
+				if (newValue != SelectionStart)
+					SelectionStart = newValue;
 			}
-			else if (pos > 0)
+			else if (pos > 0 && SelectionStart != null)
 			{
-				if (SelectionStart + newValue <= ZoomEnd)
-					SelectionStart += newValue;
-				else
-					Position = GetNearestTick(ZoomEnd, true);
+				newValue = SelectionStart + newValue <= ZoomEnd
+					? GetNearestTick((decimal) SelectionStart + newValue, true)
+					: GetNearestTick(ZoomEnd, true);
+
+				if (newValue != SelectionStart)
+					SelectionStart = newValue;
 			}
 		}
 
@@ -1260,27 +1448,32 @@ namespace JLR.Utility.UWP.Controls
 
 			// Get mouse position, continuing only if the position has changed
 			// by more than half of the snap distance
-			var snapPixels = ConvertTimeIntervalToPixels(MinorTickInterval);
-			var pos        = e.GetCurrentPoint(_selectionEndElement).Position.X - _prevMousePosX;
-			var delta      = Math.Abs(pos);
+			var minorInterval = MinorTickInterval;
+			var snapPixels    = ConvertTimeIntervalToPixels(minorInterval);
+			var pos           = e.GetCurrentPoint(_selectionEndElement).Position.X - _prevMousePosX;
+			var delta         = Math.Abs(pos);
 
 			if (delta < snapPixels / 2)
 				return;
 
-			var newValue = MinorTickInterval * (int) (delta / snapPixels);
-			if (pos < 0)
+			var newValue = minorInterval * (int) (delta / snapPixels);
+			if (pos < 0 && SelectionEnd != null)
 			{
-				if (SelectionEnd - newValue >= ZoomStart)
-					SelectionEnd -= newValue;
-				else
-					Position = GetNearestTick(ZoomStart, true);
+				newValue = SelectionEnd - newValue >= ZoomStart
+					? GetNearestTick((decimal) SelectionEnd - newValue, true)
+					: GetNearestTick(ZoomStart, true);
+
+				if (newValue != SelectionEnd)
+					SelectionEnd = newValue;
 			}
-			else if (pos > 0)
+			else if (pos > 0 && SelectionEnd != null)
 			{
-				if (SelectionEnd + newValue <= ZoomEnd)
-					SelectionEnd += newValue;
-				else
-					Position = GetNearestTick(ZoomEnd, true);
+				newValue = SelectionEnd + newValue <= ZoomEnd
+					? GetNearestTick((decimal) SelectionEnd + newValue, true)
+					: GetNearestTick(ZoomEnd, true);
+
+				if (newValue != SelectionEnd)
+					SelectionEnd = newValue;
 			}
 		}
 
@@ -1390,16 +1583,86 @@ namespace JLR.Utility.UWP.Controls
 		}
 		#endregion
 
+		#region Event Handlers (Collection)
+		private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			if (e.NewItems != null)
+			{
+				if (e.NewItems.Cast<decimal>().Any(marker => marker >= ZoomStart && marker <= ZoomEnd))
+				{
+					_tickCanvas.Invalidate();
+					_markerCanvas?.Invalidate();
+					return;
+				}
+			}
+
+			if (e.OldItems != null)
+			{
+				if (e.OldItems.Cast<decimal>().Any(marker => marker >= ZoomStart && marker <= ZoomEnd))
+				{
+					_tickCanvas.Invalidate();
+					_markerCanvas?.Invalidate();
+				}
+			}
+		}
+
+		private void Clips_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+		{
+			if (e.NewItems != null)
+			{
+				if (e.NewItems.Cast<(decimal start, decimal end)>().Any(
+					clip => clip.start >= ZoomStart && clip.start <= ZoomEnd ||
+					        clip.end >= ZoomStart && clip.end <= ZoomEnd))
+				{
+					_tickCanvas.Invalidate();
+					_markerCanvas?.Invalidate();
+					return;
+				}
+			}
+
+			if (e.OldItems != null)
+			{
+				if (e.OldItems.Cast<(decimal start, decimal end)>().Any(
+					clip => clip.start >= ZoomStart && clip.start <= ZoomEnd ||
+					        clip.end >= ZoomStart && clip.end <= ZoomEnd))
+				{
+					_tickCanvas.Invalidate();
+					_markerCanvas?.Invalidate();
+					return;
+				}
+			}
+		}
+		#endregion
+
 		#region Event Handlers (Rendering)
-		private void CreateTickBarResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
+		private void TickCanvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
 		{
 			_selectionHighlightBrush = SelectionHighlightBrush?.CreateCanvasBrush(sender.Device);
 			_originTickBrush         = OriginTickBrush?.CreateCanvasBrush(sender.Device);
 			_majorTickBrush          = MajorTickBrush?.CreateCanvasBrush(sender.Device);
 			_minorTickBrush          = MinorTickBrush?.CreateCanvasBrush(sender.Device);
+
+			if (_markerBrush == null)
+				_markerBrush = MarkerBrush?.CreateCanvasBrush(sender.Device);
+			if (_inPointBrush == null)
+				_inPointBrush = InPointBrush?.CreateCanvasBrush(sender.Device);
+			if (_outPointBrush == null)
+				_outPointBrush = OutPointBrush?.CreateCanvasBrush(sender.Device);
 		}
 
-		private void DrawTickBar(CanvasControl sender, CanvasDrawEventArgs args)
+		private void MarkerCanvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
+		{
+			_clipMarkerBrush = ClipMarkerBrush?.CreateCanvasBrush(sender.Device);
+
+			if (_markerBrush == null)
+				_markerBrush = MarkerBrush?.CreateCanvasBrush(sender.Device);
+			if (_inPointBrush == null)
+				_inPointBrush = InPointBrush?.CreateCanvasBrush(sender.Device);
+			if (_outPointBrush == null)
+				_outPointBrush = OutPointBrush?.CreateCanvasBrush(sender.Device);
+		}
+
+		private void TickCanvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
 		{
 			// Don't render if the CanvasControl's size is zero
 			if (Math.Abs(ActualWidth) < double.Epsilon || Math.Abs(ActualHeight) < double.Epsilon)
@@ -1415,19 +1678,20 @@ namespace JLR.Utility.UWP.Controls
 			var minorSpaceBetween = ConvertTimeIntervalToPixels(MinorTickInterval) - MinorTickThickness;
 			var majorSpaceBetween = ConvertTimeIntervalToPixels(MajorTickInterval) - MajorTickThickness;
 			while ((minorSpaceBetween < MinorTickClutterThreshold ||
-					majorSpaceBetween < MajorTickClutterThreshold) &&
-				   _currentInterval.Next != null)
+			        majorSpaceBetween < MajorTickClutterThreshold) &&
+			       _currentInterval.Next != null)
 			{
 				_currentInterval  = _currentInterval.Next;
 				minorSpaceBetween = ConvertTimeIntervalToPixels(MinorTickInterval) - MinorTickThickness;
 				majorSpaceBetween = ConvertTimeIntervalToPixels(MajorTickInterval) - MajorTickThickness;
 			}
 
-			// Update tick lists
-			_majorTicks.Clear();
-			_minorTicks.Clear();
+			// Create tick lists
+			var majorTicks = new HashSet<decimal>();
+			var minorTicks = new HashSet<decimal>();
 
-			decimal major = 0;
+			decimal major             = 0;
+			var     minorTickInterval = MinorTickInterval;
 			if (MajorTickInterval > 0)
 			{
 				major = MajorTickInterval * (int) (ZoomStart / MajorTickInterval);
@@ -1436,16 +1700,16 @@ namespace JLR.Utility.UWP.Controls
 			}
 
 			decimal minor = 0;
-			if (MinorTickInterval > 0)
+			if (minorTickInterval > 0)
 			{
-				minor = MinorTickInterval * (int) (ZoomStart / MinorTickInterval);
+				minor = minorTickInterval * (int) (ZoomStart / minorTickInterval);
 				if (ZoomStart >= 0 && Math.Abs(minor - ZoomStart) > 0)
-					minor = MinorTickInterval * ((int) (ZoomStart / MinorTickInterval) + 1);
+					minor = minorTickInterval * ((int) (ZoomStart / minorTickInterval) + 1);
 			}
 
-			var majorAdj = decimal.Round(major, DecimalPrecision, MidpointRounding.ToEven);
-			var minorAdj = decimal.Round(minor, DecimalPrecision, MidpointRounding.ToEven);
-			if (MajorTickInterval > 0 && MinorTickInterval > 0) // Both major and minor ticks are needed
+			var majorAdj = decimal.Round(major, DecimalPrecision);
+			var minorAdj = decimal.Round(minor, DecimalPrecision);
+			if (MajorTickInterval > 0 && minorTickInterval > 0) // Both major and minor ticks are needed
 			{
 				while (majorAdj <= ZoomEnd || minorAdj <= ZoomEnd)
 				{
@@ -1462,7 +1726,7 @@ namespace JLR.Utility.UWP.Controls
 					AddMajorTick();
 				}
 			}
-			else if (MinorTickInterval > 0) // Only minor ticks are needed
+			else if (minorTickInterval > 0) // Only minor ticks are needed
 			{
 				while (minorAdj <= ZoomEnd)
 				{
@@ -1472,7 +1736,7 @@ namespace JLR.Utility.UWP.Controls
 
 			// If major and minor ticks sharing the same Z-index overlap, major ticks take precedence.
 			if (MajorTickZIndex == MinorTickZIndex)
-				_minorTicks.ExceptWith(_majorTicks);
+				minorTicks.ExceptWith(majorTicks);
 
 			// Determine tick type draw order based on Z-index
 			var drawOrder = new SortedSet<KeyValuePair<TickType, int>>(new TickTypeComparer())
@@ -1491,7 +1755,7 @@ namespace JLR.Utility.UWP.Controls
 				}
 			}
 
-			// Draw Ticks
+			// Draw ticks
 			foreach (var type in drawOrder)
 			{
 				switch (type.Key)
@@ -1499,9 +1763,9 @@ namespace JLR.Utility.UWP.Controls
 					case TickType.Origin:
 					{
 						DrawTick(CalculateHorizontalAxisCoordinate(0.0M),
-								 verticalCoordsOrigin,
-								 _originTickBrush,
-								 OriginTickThickness);
+						         verticalCoordsOrigin,
+						         _originTickBrush,
+						         OriginTickThickness);
 						break;
 					}
 
@@ -1509,12 +1773,12 @@ namespace JLR.Utility.UWP.Controls
 					{
 						using (args.DrawingSession.CreateLayer(1.0f))
 						{
-							foreach (var tick in _majorTicks)
+							foreach (var tick in majorTicks)
 							{
 								DrawTick(CalculateHorizontalAxisCoordinate(tick),
-										 verticalCoordsMajor,
-										 _majorTickBrush,
-										 MajorTickThickness);
+								         verticalCoordsMajor,
+								         _majorTickBrush,
+								         MajorTickThickness);
 							}
 						}
 
@@ -1525,12 +1789,12 @@ namespace JLR.Utility.UWP.Controls
 					{
 						using (args.DrawingSession.CreateLayer(1.0f))
 						{
-							foreach (var tick in _minorTicks)
+							foreach (var tick in minorTicks)
 							{
 								DrawTick(CalculateHorizontalAxisCoordinate(tick),
-										 verticalCoordsMinor,
-										 _minorTickBrush,
-										 MinorTickThickness);
+								         verticalCoordsMinor,
+								         _minorTickBrush,
+								         MinorTickThickness);
 							}
 						}
 
@@ -1539,28 +1803,63 @@ namespace JLR.Utility.UWP.Controls
 				}
 			}
 
+			// Draw marker lines
+			foreach (var marker in Markers)
+			{
+				if (marker < ZoomStart || marker > ZoomEnd)
+					continue;
+
+				var x = (float) CalculateHorizontalAxisCoordinate(marker);
+				args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
+				                             _markerBrush,
+				                             (float) MarkerLineThickness,
+				                             MarkerLineStyle);
+			}
+
+			// Draw in/out point lines
+			foreach (var (start, end) in Clips)
+			{
+				if (start >= ZoomStart || start <= ZoomEnd)
+				{
+					var x = (float) CalculateHorizontalAxisCoordinate(start);
+					args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
+					                             _inPointBrush,
+					                             (float) InPointLineThickness,
+					                             InPointLineStyle);
+				}
+
+				if (end >= ZoomStart || end <= ZoomEnd)
+				{
+					var x = (float) CalculateHorizontalAxisCoordinate(end);
+					args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
+					                             _outPointBrush,
+					                             (float) OutPointLineThickness,
+					                             OutPointLineStyle);
+				}
+			}
+
 			// Local function to add a major tick to its list and advance to the next
 			void AddMajorTick()
 			{
-				_majorTicks.Add(majorAdj);
+				majorTicks.Add(majorAdj);
 				major    += MajorTickInterval;
-				majorAdj =  decimal.Round(major, DecimalPrecision, MidpointRounding.ToEven);
+				majorAdj =  decimal.Round(major, DecimalPrecision);
 			}
 
 			// Local function to add a minor tick to its list and advance to the next
 			void AddMinorTick()
 			{
-				_minorTicks.Add(minorAdj);
-				minor    += MinorTickInterval;
-				minorAdj =  decimal.Round(minor, DecimalPrecision, MidpointRounding.ToEven);
+				minorTicks.Add(minorAdj);
+				minor    += minorTickInterval;
+				minorAdj =  decimal.Round(minor, DecimalPrecision);
 			}
 
 			// Local function to calculate horizontal axis render coordinate
 			double CalculateHorizontalAxisCoordinate(decimal value)
 			{
 				return decimal.ToDouble(value - ZoomStart) *
-					   _tickCanvas.ActualWidth /
-					   decimal.ToDouble(ZoomEnd - ZoomStart);
+				       _tickCanvas.ActualWidth /
+				       decimal.ToDouble(ZoomEnd - ZoomStart);
 			}
 
 			// Local function to calculate vertical axis render coordinates
@@ -1575,7 +1874,7 @@ namespace JLR.Utility.UWP.Controls
 						return (pos, _tickCanvas.ActualHeight - pos);
 					case NET.Position.Bottom:
 						return (_tickCanvas.ActualHeight,
-								_tickCanvas.ActualHeight - relativeSize * _tickCanvas.ActualHeight);
+						        _tickCanvas.ActualHeight - relativeSize * _tickCanvas.ActualHeight);
 					default:
 						return (0, 0);
 				}
@@ -1583,14 +1882,108 @@ namespace JLR.Utility.UWP.Controls
 
 			// Local function to draw a tick
 			void DrawTick(double position,
-						  (double start, double end) verticalCoords,
-						  ICanvasBrush brush,
-						  double thickness)
+			              (double start, double end) verticalCoords,
+			              ICanvasBrush brush,
+			              double thickness)
 			{
 				var posAdj = position - thickness / 2;
 				args.DrawingSession.FillRectangle(new Rect(new Point(posAdj, verticalCoords.start),
-														   new Point(posAdj + thickness, verticalCoords.end)),
-												  brush);
+				                                           new Point(posAdj + thickness, verticalCoords.end)),
+				                                  brush);
+			}
+		}
+
+		private void MarkerCanvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
+		{
+			// Don't render if the CanvasControl's size is zero
+			if (Math.Abs(ActualWidth) < double.Epsilon || Math.Abs(ActualHeight) < double.Epsilon)
+				return;
+
+			// Calculate vertical axis coordinates for marker geometry
+			var y1 = (float) (_markerCanvas.ActualHeight * 0.25);
+			var y2 = (float) (_markerCanvas.ActualHeight * 0.5);
+			var y3 = (float) (_markerCanvas.ActualHeight * 0.667);
+			var y4 = (float) (_markerCanvas.ActualHeight * 0.75);
+			var y5 = (float) _markerCanvas.ActualHeight;
+
+			// Create marker geometry
+			var path = new CanvasPathBuilder(sender.Device);
+			path.BeginFigure(5.0f, 0.0f);
+			path.AddLine(5.0f, y3);
+			path.AddLine(0.0f, y5);
+			path.AddLine(-5.0f, y3);
+			path.AddLine(-5.0f, 0.0f);
+			path.EndFigure(CanvasFigureLoop.Closed);
+			var markerGeometry = CanvasGeometry.CreatePath(path);
+
+			// Create in-point geometry
+			path = new CanvasPathBuilder(sender.Device);
+			path.BeginFigure(2.0f, 0.0f);
+			path.AddLine(2.0f, y5);
+			path.AddLine(-2.0f, y5);
+			path.AddLine(-2.0f, y4);
+			path.AddLine(-8.0f, y2);
+			path.AddLine(-2.0f, y1);
+			path.AddLine(-2.0f, 0.0f);
+			path.EndFigure(CanvasFigureLoop.Closed);
+			var inPointGeometry = CanvasGeometry.CreatePath(path);
+
+			// Create out-point geometry
+			path = new CanvasPathBuilder(sender.Device);
+			path.BeginFigure(-2.0f, 0.0f);
+			path.AddLine(-2.0f, y5);
+			path.AddLine(2.0f, y5);
+			path.AddLine(2.0f, y4);
+			path.AddLine(8.0f, y2);
+			path.AddLine(2.0f, y1);
+			path.AddLine(2.0f, 0.0f);
+			path.EndFigure(CanvasFigureLoop.Closed);
+			var outPointGeometry = CanvasGeometry.CreatePath(path);
+
+			// Draw clip markers
+			foreach (var (start, end) in Clips)
+			{
+				if (end - start == 0 || start >= ZoomEnd || end <= ZoomStart)
+					continue;
+
+				var x1 = (float) CalculateHorizontalAxisCoordinate(start <= ZoomStart ? ZoomStart : start);
+				var x2 = (float) CalculateHorizontalAxisCoordinate(end >= ZoomEnd ? ZoomEnd : end);
+
+				args.DrawingSession.FillRectangle(x1, y3, x2 - x1, y4, _clipMarkerBrush);
+			}
+
+			// Draw in/out point markers
+			foreach (var (start, end) in Clips)
+			{
+				if (start >= ZoomStart || start <= ZoomEnd)
+				{
+					var x = (float) CalculateHorizontalAxisCoordinate(start);
+					args.DrawingSession.FillGeometry(inPointGeometry, x, 0, _inPointBrush);
+				}
+
+				if (end >= ZoomStart || end <= ZoomEnd)
+				{
+					var x = (float) CalculateHorizontalAxisCoordinate(end);
+					args.DrawingSession.FillGeometry(outPointGeometry, x, 0, _outPointBrush);
+				}
+			}
+
+			// Draw markers
+			foreach (var marker in Markers)
+			{
+				if (marker < ZoomStart || marker > ZoomEnd)
+					continue;
+
+				var x = (float) CalculateHorizontalAxisCoordinate(marker);
+				args.DrawingSession.FillGeometry(markerGeometry, x, 0, _markerBrush);
+			}
+
+			// Local function to calculate horizontal axis render coordinate
+			double CalculateHorizontalAxisCoordinate(decimal value)
+			{
+				return decimal.ToDouble(value - ZoomStart) *
+				       _markerCanvas.ActualWidth /
+				       decimal.ToDouble(ZoomEnd - ZoomStart);
 			}
 		}
 		#endregion
@@ -1791,38 +2184,55 @@ namespace JLR.Utility.UWP.Controls
 			var right = left;
 
 			if (_selectionStartElement != null)
+			{
 				left = Math.Max(left, _selectionStartElement.ActualWidth) -
-					   Padding.Left - (_mainPanel?.Margin.Left ?? 0);
+				       Padding.Left - (_mainPanel?.Margin.Left ?? 0);
+			}
 
 			if (_selectionEndElement != null)
+			{
 				right = Math.Max(right, _selectionEndElement.ActualWidth) -
-						Padding.Right - (_mainPanel?.Margin.Right ?? 0);
+				        Padding.Right - (_mainPanel?.Margin.Right ?? 0);
+			}
 
 			if (_zoomStartElement != null)
+			{
 				left = Math.Max(left, _zoomStartElement.ActualWidth) -
-					   Padding.Left - (_zoomPanel?.Margin.Left ?? 0);
+				       Padding.Left - (_zoomPanel?.Margin.Left ?? 0);
+			}
 
 			if (_zoomEndElement != null)
+			{
 				right = Math.Max(right, _zoomEndElement.ActualWidth) -
-						Padding.Right - (_zoomPanel?.Margin.Right ?? 0);
+				        Padding.Right - (_zoomPanel?.Margin.Right ?? 0);
+			}
 
 
 			if (_mainPanel != null)
 			{
 				var margin = new Thickness(left > 0 ? left : 0,
-										   _mainPanel.Margin.Top,
-										   right > 0 ? right : 0,
-										   _mainPanel.Margin.Bottom);
+				                           _mainPanel.Margin.Top,
+				                           right > 0 ? right : 0,
+				                           _mainPanel.Margin.Bottom);
 				_mainPanel.SetValue(MarginProperty, margin);
 			}
 
 			if (_zoomPanel != null)
 			{
 				var margin = new Thickness(left > 0 ? left : 0,
-										   _zoomPanel.Margin.Top,
-										   right > 0 ? right : 0,
-										   _zoomPanel.Margin.Bottom);
+				                           _zoomPanel.Margin.Top,
+				                           right > 0 ? right : 0,
+				                           _zoomPanel.Margin.Bottom);
 				_zoomPanel.SetValue(MarginProperty, margin);
+			}
+
+			if (_markerCanvas != null)
+			{
+				var margin = new Thickness(left > 0 ? left : 0,
+				                           _markerCanvas.Margin.Top,
+				                           right > 0 ? right : 0,
+				                           _markerCanvas.Margin.Bottom);
+				_markerCanvas.SetValue(MarginProperty, margin);
 			}
 		}
 
@@ -1835,7 +2245,7 @@ namespace JLR.Utility.UWP.Controls
 					if (Position > ZoomEnd)
 						OffsetVisibleWindow(currentWindow);
 					else if (Position < ZoomStart)
-						OffsetVisibleWindow(-currentWindow);
+						OffsetVisibleWindow(decimal.Negate(currentWindow));
 					break;
 
 				case FollowMode.Scroll:
@@ -1856,16 +2266,14 @@ namespace JLR.Utility.UWP.Controls
 
 			if (coordinate >= zeroCoordinate)
 			{
-				return Math.Round((decimal) (coordinate - zeroCoordinate) * ZoomEnd / (decimal) positiveWidth,
-				                  DecimalPrecision,
-				                  MidpointRounding.ToEven);
+				return decimal.Round((decimal) (coordinate - zeroCoordinate) * ZoomEnd / (decimal) positiveWidth,
+				                     DecimalPrecision);
 			}
 
-			return Math.Round(
+			return decimal.Round(
 				(decimal) (zeroCoordinate - coordinate) * ZoomStart /
 				(decimal) (_tickCanvas.ActualWidth - positiveWidth),
-				DecimalPrecision,
-				MidpointRounding.ToEven);
+				DecimalPrecision);
 		}
 
 		private void InitializeTimescale()
