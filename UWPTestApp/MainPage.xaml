@@ -58,20 +58,20 @@
 			              Content="Simulate Play" Click="ButtonA3_Click"/>
 
 			<StackPanel Grid.Row="0" Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
-				<TextBlock Margin="0,0,0,10" FontSize="18" HorizontalAlignment="Center"
-				           Text="Markers"/>
+				<TextBox x:Name="TextBoxMarkerName" Header="Marker Name" HorizontalAlignment="Center" Width="350" Margin="0,0,0,10"/>
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<Button x:Name="ButtonB1A" Width="100" Content="Add" Click="ButtonB1A_Click"/>
-					<Button x:Name="ButtonB1B" Width="100" Margin="25,0,0,0" Content="Remove" Click="ButtonB1B_Click" />
+					<Button x:Name="ButtonB1B" Width="100" Margin="25,0" Content="Select" Click="ButtonB1B_Click"/>
+					<Button x:Name="ButtonB1C" Width="100" Content="Remove" Click="ButtonB1C_Click" />
 				</StackPanel>
 			</StackPanel>
 
 			<StackPanel Grid.Row="1" Grid.Column="1" Orientation="Vertical" VerticalAlignment="Center">
-				<TextBlock Margin="0,0,0,10" FontSize="18" HorizontalAlignment="Center"
-				           Text="Clips"/>
+				<TextBox x:Name="TextBoxClipName" Header="Clip Name" HorizontalAlignment="Center" Width="350" Margin="0,0,0,10"/>
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
 					<Button x:Name="ButtonB2A" Width="100" Content="Add" Click="ButtonB2A_Click"/>
-					<Button x:Name="ButtonB2B" Width="100" Margin="25,0,0,0" Content="Remove" Click="ButtonB2B_Click" />
+					<Button x:Name="ButtonB2B" Width="100" Margin="25,0" Content="Select" Click="ButtonB2B_Click"/>
+					<Button x:Name="ButtonB2C" Width="100" Content="Remove" Click="ButtonB2C_Click" />
 				</StackPanel>
 			</StackPanel>
 		</Grid>

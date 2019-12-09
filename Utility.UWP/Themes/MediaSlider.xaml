@@ -121,6 +121,8 @@
 				<geometry:CanvasStrokeStyle DashStyle="Dot"/>
 			</Setter.Value>
 		</Setter>
+		<Setter Property="SelectedMarkerBrush" Value="White"/>
+		<Setter Property="SelectedClipBrush" Value="White"/>
 		<Setter Property="PositionElementTemplate" Value="{StaticResource PositionTopAlignedDefaultTemplate}"/>
 		<Setter Property="SelectionStartElementTemplate" Value="{StaticResource SelectionStartDefaultTemplate}"/>
 		<Setter Property="SelectionEndElementTemplate" Value="{StaticResource SelectionEndDefaultTemplate}"/>

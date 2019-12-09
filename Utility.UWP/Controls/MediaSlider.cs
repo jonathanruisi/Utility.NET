@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.Linq;
-using System.Numerics;
 
 using Windows.Devices.Input;
 using Windows.Foundation;
@@ -21,6 +19,7 @@ using JLR.Utility.NET.Math;
 
 using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.Geometry;
+using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
 
@@ -63,7 +62,9 @@ namespace JLR.Utility.UWP.Controls
 			_markerBrush,
 			_clipMarkerBrush,
 			_inPointBrush,
-			_outPointBrush;
+			_outPointBrush,
+			_selectedMarkerBrush,
+			_selectedClipBrush;
 
 		private bool
 			_isLeftMouseDown,
@@ -123,10 +124,6 @@ namespace JLR.Utility.UWP.Controls
 				SetVisibleWindow(start, end);
 			}
 		}
-
-		public ObservableCollection<decimal> Markers { get; }
-
-		public ObservableCollection<(decimal start, decimal end)> Clips { get; }
 
 		public decimal MajorTickInterval => _currentInterval.Value.major;
 
@@ -233,6 +230,54 @@ namespace JLR.Utility.UWP.Controls
 										typeof(int),
 										typeof(MediaSlider),
 										new PropertyMetadata(30, OnFramesPerSecondChanged));
+
+		public ObservableCollection<MediaSliderMarker> Markers
+		{
+			get => (ObservableCollection<MediaSliderMarker>) GetValue(MarkersProperty);
+			private set => SetValue(MarkersProperty, value);
+		}
+
+		public static readonly DependencyProperty MarkersProperty =
+			DependencyProperty.Register("Markers",
+			                            typeof(ObservableCollection<MediaSliderMarker>),
+			                            typeof(MediaSlider),
+			                            new PropertyMetadata(null));
+
+		public MediaSliderMarker SelectedMarker
+		{
+			get => (MediaSliderMarker) GetValue(SelectedMarkerProperty);
+			set => SetValue(SelectedMarkerProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectedMarkerProperty =
+			DependencyProperty.Register("SelectedMarker",
+			                            typeof(MediaSliderMarker),
+			                            typeof(MediaSlider),
+			                            new PropertyMetadata(null, OnSelectedMarkerChanged));
+
+		public ObservableCollection<MediaSliderClip> Clips
+		{
+			get => (ObservableCollection<MediaSliderClip>) GetValue(ClipsProperty);
+			private set => SetValue(ClipsProperty, value);
+		}
+
+		public static readonly DependencyProperty ClipsProperty =
+			DependencyProperty.Register("Clips",
+			                            typeof(ObservableCollection<MediaSliderClip>),
+			                            typeof(MediaSlider),
+			                            new PropertyMetadata(null));
+
+		public MediaSliderClip SelectedClip
+		{
+			get => (MediaSliderClip)GetValue(SelectedClipProperty);
+			set => SetValue(SelectedClipProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectedClipProperty =
+			DependencyProperty.Register("SelectedClip",
+										typeof(MediaSliderClip),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnSelectedMarkerChanged));
 
 		// tag:#Behavior
 		public FollowMode PositionFollowMode
@@ -623,6 +668,30 @@ namespace JLR.Utility.UWP.Controls
 										typeof(MediaSlider),
 										new PropertyMetadata(null, OnTickCanvasBrushChanged));
 
+		public Brush SelectedMarkerBrush
+		{
+			get => (Brush)GetValue(SelectedMarkerBrushProperty);
+			set => SetValue(SelectedMarkerBrushProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectedMarkerBrushProperty =
+			DependencyProperty.Register("SelectedMarkerBrush",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
+
+		public Brush SelectedClipBrush
+		{
+			get => (Brush)GetValue(SelectedClipBrushProperty);
+			set => SetValue(SelectedClipBrushProperty, value);
+		}
+
+		public static readonly DependencyProperty SelectedClipBrushProperty =
+			DependencyProperty.Register("SelectedClipBrush",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
+
 		// tag:#Line_Styles
 		public CanvasStrokeStyle MarkerLineStyle
 		{
@@ -796,8 +865,8 @@ namespace JLR.Utility.UWP.Controls
 			DefaultStyleKey = typeof(MediaSlider);
 			_intervals      = new LinkedList<(int major, int minor, int minorPerMajor)>();
 
-			Markers = new ObservableCollection<decimal>();
-			Clips   = new ObservableCollection<(decimal start, decimal end)>();
+			Markers = new ObservableCollection<MediaSliderMarker>();
+			Clips   = new ObservableCollection<MediaSliderClip>();
 
 			Markers.CollectionChanged += Markers_CollectionChanged;
 			Clips.CollectionChanged   += Clips_CollectionChanged;
@@ -1118,6 +1187,15 @@ namespace JLR.Utility.UWP.Controls
 				return;
 
 			//@@warn TODO: Need to reload resources needed for rendering
+		}
+
+		private static void OnSelectedMarkerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			if (!(d is MediaSlider slider))
+				return;
+
+			slider._tickCanvas.Invalidate();
+			slider._markerCanvas.Invalidate();
 		}
 		#endregion
 
@@ -1588,7 +1666,8 @@ namespace JLR.Utility.UWP.Controls
 		{
 			if (e.NewItems != null)
 			{
-				if (e.NewItems.Cast<decimal>().Any(marker => marker >= ZoomStart && marker <= ZoomEnd))
+				if (e.NewItems.Cast<MediaSliderMarker>().Any(marker => marker.Time >= ZoomStart &&
+				                                                       marker.Time <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
 					_markerCanvas?.Invalidate();
@@ -1598,7 +1677,8 @@ namespace JLR.Utility.UWP.Controls
 
 			if (e.OldItems != null)
 			{
-				if (e.OldItems.Cast<decimal>().Any(marker => marker >= ZoomStart && marker <= ZoomEnd))
+				if (e.OldItems.Cast<MediaSliderMarker>().Any(marker => marker.Time >= ZoomStart &&
+				                                                       marker.Time <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
 					_markerCanvas?.Invalidate();
@@ -1610,9 +1690,9 @@ namespace JLR.Utility.UWP.Controls
 		{
 			if (e.NewItems != null)
 			{
-				if (e.NewItems.Cast<(decimal start, decimal end)>().Any(
-					clip => clip.start >= ZoomStart && clip.start <= ZoomEnd ||
-					        clip.end >= ZoomStart && clip.end <= ZoomEnd))
+				if (e.NewItems.Cast<MediaSliderClip>().Any(
+					clip => clip.StartTime >= ZoomStart && clip.StartTime <= ZoomEnd ||
+					        clip.EndTime >= ZoomStart && clip.EndTime <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
 					_markerCanvas?.Invalidate();
@@ -1622,13 +1702,12 @@ namespace JLR.Utility.UWP.Controls
 
 			if (e.OldItems != null)
 			{
-				if (e.OldItems.Cast<(decimal start, decimal end)>().Any(
-					clip => clip.start >= ZoomStart && clip.start <= ZoomEnd ||
-					        clip.end >= ZoomStart && clip.end <= ZoomEnd))
+				if (e.OldItems.Cast<MediaSliderClip>().Any(
+					clip => clip.StartTime >= ZoomStart && clip.StartTime <= ZoomEnd ||
+					        clip.EndTime >= ZoomStart && clip.EndTime <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
 					_markerCanvas?.Invalidate();
-					return;
 				}
 			}
 		}
@@ -1648,6 +1727,10 @@ namespace JLR.Utility.UWP.Controls
 				_inPointBrush = InPointBrush?.CreateCanvasBrush(sender.Device);
 			if (_outPointBrush == null)
 				_outPointBrush = OutPointBrush?.CreateCanvasBrush(sender.Device);
+			if(_selectedMarkerBrush == null)
+				_selectedMarkerBrush = SelectedMarkerBrush?.CreateCanvasBrush(sender.Device);
+			if(_selectedClipBrush == null)
+				_selectedClipBrush = SelectedClipBrush?.CreateCanvasBrush(sender.Device);
 		}
 
 		private void MarkerCanvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
@@ -1660,6 +1743,10 @@ namespace JLR.Utility.UWP.Controls
 				_inPointBrush = InPointBrush?.CreateCanvasBrush(sender.Device);
 			if (_outPointBrush == null)
 				_outPointBrush = OutPointBrush?.CreateCanvasBrush(sender.Device);
+			if(_selectedMarkerBrush == null)
+				_selectedMarkerBrush = SelectedMarkerBrush?.CreateCanvasBrush(sender.Device);
+			if(_selectedClipBrush == null)
+				_selectedClipBrush = SelectedClipBrush?.CreateCanvasBrush(sender.Device);
 		}
 
 		private void TickCanvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
@@ -1806,33 +1893,36 @@ namespace JLR.Utility.UWP.Controls
 			// Draw marker lines
 			foreach (var marker in Markers)
 			{
-				if (marker < ZoomStart || marker > ZoomEnd)
+				if (marker.Time < ZoomStart || marker.Time > ZoomEnd)
 					continue;
 
-				var x = (float) CalculateHorizontalAxisCoordinate(marker);
+				var brush = marker == SelectedMarker ? _selectedMarkerBrush : _markerBrush;
+				var x     = (float) CalculateHorizontalAxisCoordinate(marker.Time);
 				args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
-				                             _markerBrush,
+				                             brush,
 				                             (float) MarkerLineThickness,
 				                             MarkerLineStyle);
 			}
 
 			// Draw in/out point lines
-			foreach (var (start, end) in Clips)
+			foreach (var clip in Clips)
 			{
-				if (start >= ZoomStart || start <= ZoomEnd)
+				if (clip.StartTime >= ZoomStart || clip.StartTime <= ZoomEnd)
 				{
-					var x = (float) CalculateHorizontalAxisCoordinate(start);
+					var brush = clip == SelectedClip ? _selectedClipBrush : _inPointBrush;
+					var x = (float) CalculateHorizontalAxisCoordinate(clip.StartTime);
 					args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
-					                             _inPointBrush,
+					                             brush,
 					                             (float) InPointLineThickness,
 					                             InPointLineStyle);
 				}
 
-				if (end >= ZoomStart || end <= ZoomEnd)
+				if (clip.EndTime >= ZoomStart || clip.EndTime <= ZoomEnd)
 				{
-					var x = (float) CalculateHorizontalAxisCoordinate(end);
+					var brush = clip == SelectedClip ? _selectedClipBrush : _outPointBrush;
+					var x = (float) CalculateHorizontalAxisCoordinate(clip.EndTime);
 					args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
-					                             _outPointBrush,
+					                             brush,
 					                             (float) OutPointLineThickness,
 					                             OutPointLineStyle);
 				}
@@ -1941,41 +2031,52 @@ namespace JLR.Utility.UWP.Controls
 			var outPointGeometry = CanvasGeometry.CreatePath(path);
 
 			// Draw clip markers
-			foreach (var (start, end) in Clips)
+			foreach (var clip in Clips)
 			{
-				if (end - start == 0 || start >= ZoomEnd || end <= ZoomStart)
+				if (clip.EndTime - clip.StartTime == 0 || clip.StartTime >= ZoomEnd || clip.EndTime <= ZoomStart)
 					continue;
 
-				var x1 = (float) CalculateHorizontalAxisCoordinate(start <= ZoomStart ? ZoomStart : start);
-				var x2 = (float) CalculateHorizontalAxisCoordinate(end >= ZoomEnd ? ZoomEnd : end);
+				var x1 = (float) CalculateHorizontalAxisCoordinate(
+					clip.StartTime <= ZoomStart ? ZoomStart : clip.StartTime);
+				var x2 = (float) CalculateHorizontalAxisCoordinate(clip.EndTime >= ZoomEnd ? ZoomEnd : clip.EndTime);
 
-				args.DrawingSession.FillRectangle(x1, y3, x2 - x1, y4, _clipMarkerBrush);
+				var brush = clip == SelectedClip ? _selectedClipBrush : _clipMarkerBrush;
+				args.DrawingSession.FillRectangle(x1, y3, x2 - x1, y4, brush);
+
+				var textFormat = new CanvasTextFormat() {FontFamily = "Arial Narrow", FontSize = 10.0f};
+				var textLayout = new CanvasTextLayout(sender.Device, clip.Name, textFormat, x2 - x1, y5);
+				var textX      = (float) (x1 + (x2 - x1) / 2 - textLayout.DrawBounds.Width / 2);
+
+				args.DrawingSession.DrawTextLayout(textLayout, textX, 0, Colors.White);
 			}
 
 			// Draw in/out point markers
-			foreach (var (start, end) in Clips)
+			foreach (var clip in Clips)
 			{
-				if (start >= ZoomStart || start <= ZoomEnd)
+				if (clip.StartTime >= ZoomStart || clip.StartTime <= ZoomEnd)
 				{
-					var x = (float) CalculateHorizontalAxisCoordinate(start);
-					args.DrawingSession.FillGeometry(inPointGeometry, x, 0, _inPointBrush);
+					var brush = clip == SelectedClip ? _selectedClipBrush : _inPointBrush;
+					var x     = (float) CalculateHorizontalAxisCoordinate(clip.StartTime);
+					args.DrawingSession.FillGeometry(inPointGeometry, x, 0, brush);
 				}
 
-				if (end >= ZoomStart || end <= ZoomEnd)
+				if (clip.EndTime >= ZoomStart || clip.EndTime <= ZoomEnd)
 				{
-					var x = (float) CalculateHorizontalAxisCoordinate(end);
-					args.DrawingSession.FillGeometry(outPointGeometry, x, 0, _outPointBrush);
+					var brush = clip == SelectedClip ? _selectedClipBrush : _outPointBrush;
+					var x     = (float) CalculateHorizontalAxisCoordinate(clip.EndTime);
+					args.DrawingSession.FillGeometry(outPointGeometry, x, 0, brush);
 				}
 			}
 
 			// Draw markers
 			foreach (var marker in Markers)
 			{
-				if (marker < ZoomStart || marker > ZoomEnd)
+				if (marker.Time < ZoomStart || marker.Time > ZoomEnd)
 					continue;
 
-				var x = (float) CalculateHorizontalAxisCoordinate(marker);
-				args.DrawingSession.FillGeometry(markerGeometry, x, 0, _markerBrush);
+				var brush = marker == SelectedMarker ? _selectedMarkerBrush : _markerBrush;
+				var x     = (float) CalculateHorizontalAxisCoordinate(marker.Time);
+				args.DrawingSession.FillGeometry(markerGeometry, x, 0, brush);
 			}
 
 			// Local function to calculate horizontal axis render coordinate
@@ -2443,7 +2544,45 @@ namespace JLR.Utility.UWP.Controls
 		}
 		#endregion
 
-		#region Nested Types
+		#region Nested Types (Public)
+		public class MediaSliderMarker
+		{
+			public string Name { get; }
+			public decimal Time { get; }
+
+			public MediaSliderMarker(string name, decimal time)
+			{
+				Name = name;
+				Time = time;
+			}
+		}
+
+		public class MediaSliderClip
+		{
+			public string Name { get; }
+			public decimal StartTime { get; }
+			public decimal EndTime { get; }
+
+			public MediaSliderClip(string name, decimal startTime, decimal endTime)
+			{
+				Name      = name;
+				StartTime = startTime;
+				EndTime   = endTime;
+			}
+		}
+
+		public enum TimeIntervals
+		{
+			Frame,
+			Millisecond,
+			Second,
+			Minute,
+			Hour,
+			Day
+		}
+		#endregion
+
+		#region Nested Types (Private)
 		private enum TickType
 		{
 			Origin,

@@ -123,12 +123,25 @@ namespace UWPTestApp
 
 		private void ButtonB1A_Click(object sender, RoutedEventArgs e)
 		{
-			Slider.Markers.Add(Slider.Position);
+			Slider.Markers.Add(new MediaSlider.MediaSliderMarker(TextBoxMarkerName.Text, Slider.Position));
 		}
 
 		private void ButtonB1B_Click(object sender, RoutedEventArgs e)
 		{
-			Slider.Markers.Remove(Slider.Position);
+			var selection = Slider.Markers.FirstOrDefault(marker => marker.Name == TextBoxMarkerName.Text);
+			Slider.SelectedMarker = selection;
+		}
+
+		private void ButtonB1C_Click(object sender, RoutedEventArgs e)
+		{
+			foreach (var marker in Slider.Markers)
+			{
+				if (marker.Name != TextBoxMarkerName.Text)
+					continue;
+
+				Slider.Markers.Remove(marker);
+				break;
+			}
 		}
 
 		private void ButtonB2A_Click(object sender, RoutedEventArgs e)
@@ -136,15 +149,27 @@ namespace UWPTestApp
 			if (Slider.SelectionStart == null || Slider.SelectionEnd == null)
 				return;
 
-			Slider.Clips.Add(((decimal) Slider.SelectionStart, (decimal) Slider.SelectionEnd));
+			Slider.Clips.Add(new MediaSlider.MediaSliderClip(TextBoxClipName.Text,
+			                                                 (decimal) Slider.SelectionStart,
+			                                                 (decimal) Slider.SelectionEnd));
 		}
 
 		private void ButtonB2B_Click(object sender, RoutedEventArgs e)
 		{
-			if(Slider.SelectionStart == null || Slider.SelectionEnd == null)
-				return;
+			var selection = Slider.Clips.First(clip => clip.Name == TextBoxClipName.Text);
+			Slider.SelectedClip = selection;
+		}
 
-			Slider.Clips.Remove(((decimal)Slider.SelectionStart, (decimal)Slider.SelectionEnd));
+		private void ButtonB2C_Click(object sender, RoutedEventArgs e)
+		{
+			foreach (var clip in Slider.Clips)
+			{
+				if (clip.Name != TextBoxClipName.Text)
+					continue;
+
+				Slider.Clips.Remove(clip);
+				break;
+			}
 		}
 		#endregion
 
