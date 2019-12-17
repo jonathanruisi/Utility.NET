@@ -1,19 +1,10 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.WindowsRuntime;
-using Windows.Foundation;
-using Windows.Foundation.Collections;
+
 using Windows.System.Threading;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
-using Windows.UI.Xaml.Controls.Primitives;
-using Windows.UI.Xaml.Data;
-using Windows.UI.Xaml.Input;
-using Windows.UI.Xaml.Media;
-using Windows.UI.Xaml.Navigation;
 
 using JLR.Utility.UWP.Controls;
 
@@ -59,6 +50,13 @@ namespace UWPTestApp
 
 			Slider.DurationChanged += Slider_DurationChanged;
 			Slider.PositionChanged += Slider_PositionChanged;
+
+			foreach (var name in Enum.GetNames(typeof(MediaSlider.SnapIntervals)))
+			{
+				ComboBoxC1.Items?.Add(name);
+			}
+
+			ComboBoxC1.SelectedItem = Enum.GetName(typeof(MediaSlider.SnapIntervals), Slider.SnapToNearest);
 		}
 		#endregion
 
@@ -111,12 +109,12 @@ namespace UWPTestApp
 					if (_isPlayDirectionReversed)
 					{
 						await Dispatcher.RunAsync(
-							CoreDispatcherPriority.Normal, () => { Slider.DecreasePosition(0, 1); });
+							CoreDispatcherPriority.Normal, () => { Slider.DecreasePosition(1, MediaSlider.SnapIntervals.Frame); });
 					}
 					else
 					{
 						await Dispatcher.RunAsync(
-							CoreDispatcherPriority.Normal, () => { Slider.IncreasePosition(0, 1); });
+							CoreDispatcherPriority.Normal, () => { Slider.IncreasePosition(1, MediaSlider.SnapIntervals.Frame); });
 					}
 				}, period);
 		}
@@ -170,6 +168,15 @@ namespace UWPTestApp
 				Slider.Clips.Remove(clip);
 				break;
 			}
+		}
+
+		private void ComboBoxC1_SelectionChanged(object sender, SelectionChangedEventArgs e)
+		{
+			if (ComboBoxC1.SelectedItem == null)
+				return;
+
+			var selection = Enum.Parse<MediaSlider.SnapIntervals>((string) ComboBoxC1.SelectedItem);
+			Slider.SnapToNearest = selection;
 		}
 		#endregion
 

@@ -71,6 +71,8 @@
 		<Setter Property="ZoomBarSize" Value="0.25*"/>
 		<Setter Property="MarkerBarSize" Value="0.20*"/>
 		<Setter Property="FramesPerSecond" Value="30"/>
+		<Setter Property="PositionFollowMode" Value="NoFollow"/>
+		<Setter Property="SnapToNearest" Value="MinorTick"/>
 		<Setter Property="TickAlignment" Value="Bottom"/>
 		<Setter Property="PositionElementAlignment" Value="Bottom"/>
 		<Setter Property="SelectionElementAlignment" Value="Top"/>
