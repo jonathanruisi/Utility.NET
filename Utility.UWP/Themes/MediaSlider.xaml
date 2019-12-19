@@ -7,10 +7,10 @@
 
 	<ControlTemplate x:Key="MediaSliderDefaultTemplate" TargetType="controls:MediaSlider">
 		<Border Background="{TemplateBinding Background}"
-				BorderBrush="{TemplateBinding BorderBrush}"
-				BorderThickness="{TemplateBinding BorderThickness}"
-				CornerRadius="{TemplateBinding CornerRadius}"
-				Margin="{TemplateBinding Padding}">
+		        BorderBrush="{TemplateBinding BorderBrush}"
+		        BorderThickness="{TemplateBinding BorderThickness}"
+		        CornerRadius="{TemplateBinding CornerRadius}"
+		        Margin="{TemplateBinding Padding}">
 			<Grid>
 				<Grid.RowDefinitions>
 					<RowDefinition Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=MarkerBarSize}"/>
@@ -19,44 +19,41 @@
 					<RowDefinition Height="{Binding RelativeSource={RelativeSource TemplatedParent}, Path=ZoomBarSize}"/>
 				</Grid.RowDefinitions>
 
-				<xaml:CanvasControl x:Name="PART_MarkerBar" Grid.Row="0"/>
-
-				<Canvas Grid.Row="1" Background="#20FFFFFF">
-					<xaml:CanvasControl x:Name="PART_TickBar"
-										Canvas.ZIndex="0"/>
+				<Canvas Grid.Row="0" Grid.RowSpan="2">
+					<xaml:CanvasControl x:Name="PART_TickBar" Canvas.ZIndex="0"/>
 					<controls:TransportElement x:Name="PART_SelectionStart"
-											   Canvas.ZIndex="1"
-											   MouseOverCursorType="Hand"
-											   MouseDragCursorType="SizeWestEast"
-											   Template="{TemplateBinding SelectionStartElementTemplate}"/>
+					                           Canvas.ZIndex="1"
+					                           MouseOverCursorType="Hand"
+					                           MouseDragCursorType="SizeWestEast"
+					                           Template="{TemplateBinding SelectionStartElementTemplate}"/>
 					<controls:TransportElement x:Name="PART_SelectionEnd"
-											   Canvas.ZIndex="1"
-											   MouseOverCursorType="Hand"
-											   MouseDragCursorType="SizeWestEast"
-											   Template="{TemplateBinding SelectionEndElementTemplate}"/>
+					                           Canvas.ZIndex="1"
+					                           MouseOverCursorType="Hand"
+					                           MouseDragCursorType="SizeWestEast"
+					                           Template="{TemplateBinding SelectionEndElementTemplate}"/>
 					<controls:TransportElement x:Name="PART_Position"
-											   Canvas.ZIndex="2"
-											   MouseOverCursorType="Hand"
-											   MouseDragCursorType="SizeWestEast"
-											   Template="{TemplateBinding PositionElementTemplate}"/>
+					                           Canvas.ZIndex="2"
+					                           MouseOverCursorType="Hand"
+					                           MouseDragCursorType="SizeWestEast"
+					                           Template="{TemplateBinding PositionElementTemplate}"/>
 				</Canvas>
 
-				<Canvas Grid.Row="3" Background="#10FFFFFF">
+				<Canvas Grid.Row="3" Background="{TemplateBinding ZoomAreaBackground}">
 					<controls:TransportElement x:Name="PART_ZoomThumb"
-											   Canvas.ZIndex="0"
-											   MouseOverCursorType="Hand"
-											   MouseDragCursorType="SizeWestEast"
-											   Template="{TemplateBinding ZoomThumbElementTemplate}"/>
+					                           Canvas.ZIndex="0"
+					                           MouseOverCursorType="Hand"
+					                           MouseDragCursorType="SizeWestEast"
+					                           Template="{TemplateBinding ZoomThumbElementTemplate}"/>
 					<controls:TransportElement x:Name="PART_ZoomStart"
-											   Canvas.ZIndex="1"
-											   MouseOverCursorType="Hand"
-											   MouseDragCursorType="SizeWestEast"
-											   Template="{TemplateBinding ZoomStartElementTemplate}"/>
+					                           Canvas.ZIndex="1"
+					                           MouseOverCursorType="Hand"
+					                           MouseDragCursorType="SizeWestEast"
+					                           Template="{TemplateBinding ZoomStartElementTemplate}"/>
 					<controls:TransportElement x:Name="PART_ZoomEnd"
-											   Canvas.ZIndex="1"
-											   MouseOverCursorType="Hand"
-											   MouseDragCursorType="SizeWestEast"
-											   Template="{TemplateBinding ZoomEndElementTemplate}"/>
+					                           Canvas.ZIndex="1"
+					                           MouseOverCursorType="Hand"
+					                           MouseDragCursorType="SizeWestEast"
+					                           Template="{TemplateBinding ZoomEndElementTemplate}"/>
 				</Canvas>
 			</Grid>
 		</Border>
@@ -64,6 +61,17 @@
 
 	<Style TargetType="controls:MediaSlider">
 		<Setter Property="Background" Value="Transparent"/>
+		<Setter Property="TickAreaBackground">
+			<Setter.Value>
+				<SolidColorBrush Color="#FFFFFF" Opacity="0.125"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="MarkerAreaBackground">
+			<Setter.Value>
+				<SolidColorBrush Color="#FFFFFF" Opacity="0.0"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="ZoomAreaBackground" Value="#10FFFFFF"/>
 		<Setter Property="BorderBrush" Value="White"/>
 		<Setter Property="BorderThickness" Value="0"/>
 		<Setter Property="Margin" Value="0"/>
@@ -97,34 +105,38 @@
 		<Setter Property="MinorTickThickness" Value="1"/>
 		<Setter Property="MinorTickRelativeSize" Value="0.165"/>
 		<Setter Property="MinorTickZIndex" Value="0"/>
-		<Setter Property="ClipMarkerBrush">
-			<Setter.Value>
-				<SolidColorBrush Color="#FFC000" Opacity="0.5"/>
-			</Setter.Value>
-		</Setter>
 		<Setter Property="MarkerBrush" Value="Lime"/>
+		<Setter Property="SelectedMarkerBrush" Value="White"/>
 		<Setter Property="MarkerLineThickness" Value="2.0"/>
 		<Setter Property="MarkerLineStyle">
 			<Setter.Value>
 				<geometry:CanvasStrokeStyle DashStyle="Dash"/>
 			</Setter.Value>
 		</Setter>
-		<Setter Property="InPointBrush" Value="OrangeRed"/>
-		<Setter Property="InPointLineThickness" Value="2.0"/>
-		<Setter Property="InPointLineStyle">
+		<Setter Property="ClipSpanBrush">
 			<Setter.Value>
-				<geometry:CanvasStrokeStyle DashStyle="Dot"/>
+				<SolidColorBrush Color="#FFC000" Opacity="0.5"/>
 			</Setter.Value>
 		</Setter>
-		<Setter Property="OutPointBrush" Value="OrangeRed"/>
-		<Setter Property="OutPointLineThickness" Value="2.0"/>
-		<Setter Property="OutPointLineStyle">
-			<Setter.Value>
-				<geometry:CanvasStrokeStyle DashStyle="Dot"/>
-			</Setter.Value>
-		</Setter>
-		<Setter Property="SelectedMarkerBrush" Value="White"/>
 		<Setter Property="SelectedClipBrush" Value="White"/>
+		<Setter Property="ClipLabelBrush" Value="White"/>
+		<Setter Property="ClipInOutPointBrush" Value="OrangeRed"/>
+		<Setter Property="ClipInOutPointLineThickness" Value="2.0"/>
+		<Setter Property="ClipInOutPointLineStyle">
+			<Setter.Value>
+				<geometry:CanvasStrokeStyle DashStyle="Dot"/>
+			</Setter.Value>
+		</Setter>
+		<Setter Property="FontFamily" Value="Arial"/>
+		<Setter Property="FontSize" Value="12"/>
+		<Setter Property="FontStretch" Value="Normal"/>
+		<Setter Property="FontStyle" Value="Normal"/>
+		<Setter Property="FontWeight" Value="Normal"/>
+		<Setter Property="AlternateFontFamily" Value="Arial Narrow"/>
+		<Setter Property="AlternateFontSize" Value="9"/>
+		<Setter Property="AlternateFontStretch" Value="Condensed"/>
+		<Setter Property="AlternateFontStyle" Value="Normal"/>
+		<Setter Property="AlternateFontWeight" Value="SemiLight"/>
 		<Setter Property="PositionElementTemplate" Value="{StaticResource PositionTopAlignedDefaultTemplate}"/>
 		<Setter Property="SelectionStartElementTemplate" Value="{StaticResource SelectionStartDefaultTemplate}"/>
 		<Setter Property="SelectionEndElementTemplate" Value="{StaticResource SelectionEndDefaultTemplate}"/>

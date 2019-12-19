@@ -126,19 +126,31 @@ namespace UWPTestApp
 
 		private void ButtonB1B_Click(object sender, RoutedEventArgs e)
 		{
-			var selection = Slider.Markers.FirstOrDefault(marker => marker.Name == TextBoxMarkerName.Text);
-			Slider.SelectedMarker = selection;
+			if (!string.IsNullOrEmpty(TextBoxMarkerName.Text))
+			{
+				var selection = Slider.Markers.FirstOrDefault(marker => marker.Name == TextBoxMarkerName.Text);
+				Slider.SelectedMarker = selection;
+			}
+			else
+			{
+				var selection = Slider.Markers.FirstOrDefault(marker => marker.Time == Slider.Position);
+				Slider.SelectedMarker = selection;
+			}
 		}
 
 		private void ButtonB1C_Click(object sender, RoutedEventArgs e)
 		{
-			foreach (var marker in Slider.Markers)
+			if (!string.IsNullOrEmpty(TextBoxMarkerName.Text))
 			{
-				if (marker.Name != TextBoxMarkerName.Text)
-					continue;
-
-				Slider.Markers.Remove(marker);
-				break;
+				var selection = Slider.Markers.FirstOrDefault(marker => marker.Name == TextBoxMarkerName.Text);
+				if (selection != null)
+					Slider.Markers.Remove(selection);
+			}
+			else
+			{
+				var selection = Slider.Markers.FirstOrDefault(marker => marker.Time == Slider.Position);
+				if (selection != null)
+					Slider.Markers.Remove(selection);
 			}
 		}
 

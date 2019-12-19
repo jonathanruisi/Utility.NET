@@ -9,6 +9,7 @@ using Windows.Foundation;
 using Windows.System;
 using Windows.UI;
 using Windows.UI.Core;
+using Windows.UI.Text;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
@@ -25,7 +26,6 @@ using Microsoft.Graphics.Canvas.UI.Xaml;
 
 namespace JLR.Utility.UWP.Controls
 {
-	[TemplatePart(Name = "PART_MarkerBar", Type      = typeof(CanvasControl))]
 	[TemplatePart(Name = "PART_TickBar", Type        = typeof(CanvasControl))]
 	[TemplatePart(Name = "PART_Position", Type       = typeof(TransportElement))]
 	[TemplatePart(Name = "PART_SelectionStart", Type = typeof(TransportElement))]
@@ -55,14 +55,16 @@ namespace JLR.Utility.UWP.Controls
 			_zoomThumbElement;
 
 		private ICanvasBrush
+			_tickAreaBackgroundBrush,
+			_markerAreaBackgroundBrush,
 			_selectionHighlightBrush,
 			_originTickBrush,
 			_majorTickBrush,
 			_minorTickBrush,
 			_markerBrush,
-			_clipMarkerBrush,
-			_inPointBrush,
-			_outPointBrush,
+			_clipSpanBrush,
+			_clipInOutPointBrush,
+			_clipLabelBrush,
 			_selectedMarkerBrush,
 			_selectedClipBrush;
 
@@ -75,8 +77,8 @@ namespace JLR.Utility.UWP.Controls
 		private readonly CoreCursor _primaryCursor =
 			new CoreCursor(CoreCursorType.UpArrow, 0);
 
-		private CanvasControl _tickCanvas, _markerCanvas;
-		private Panel         _mainPanel,  _zoomPanel;
+		private CanvasControl _tickCanvas;
+		private Panel         _mainPanel, _zoomPanel;
 		private Rect          _selectionRect;
 		private double        _prevMousePosX;
 
@@ -518,26 +520,14 @@ namespace JLR.Utility.UWP.Controls
 										typeof(MediaSlider),
 										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
 
-		public double InPointLineThickness
+		public double ClipInOutPointLineThickness
 		{
-			get => (double) GetValue(InPointLineThicknessProperty);
-			set => SetValue(InPointLineThicknessProperty, value);
+			get => (double) GetValue(ClipInOutPointLineThicknessProperty);
+			set => SetValue(ClipInOutPointLineThicknessProperty, value);
 		}
 
-		public static readonly DependencyProperty InPointLineThicknessProperty =
-			DependencyProperty.Register("InPointLineThickness",
-										typeof(double),
-										typeof(MediaSlider),
-										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
-
-		public double OutPointLineThickness
-		{
-			get => (double) GetValue(OutPointLineThicknessProperty);
-			set => SetValue(OutPointLineThicknessProperty, value);
-		}
-
-		public static readonly DependencyProperty OutPointLineThicknessProperty =
-			DependencyProperty.Register("OutPointLineThickness",
+		public static readonly DependencyProperty ClipInOutPointLineThicknessProperty =
+			DependencyProperty.Register("ClipInOutPointLineThickness",
 										typeof(double),
 										typeof(MediaSlider),
 										new PropertyMetadata(1.0, OnTickCanvasRenderPropertyChanged));
@@ -581,7 +571,105 @@ namespace JLR.Utility.UWP.Controls
 										new PropertyMetadata(0, OnTickCanvasRenderPropertyChanged));
 		#endregion
 
+		#region Alternate Font
+		public string AlternateFontFamily
+		{
+			get => (string) GetValue(AlternateFontFamilyProperty);
+			set => SetValue(AlternateFontFamilyProperty, value);
+		}
+
+		public static readonly DependencyProperty AlternateFontFamilyProperty =
+			DependencyProperty.Register("AlternateFontFamily",
+										typeof(string),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasRenderPropertyChanged));
+
+		public double AlternateFontSize
+		{
+			get => (double) GetValue(AlternateFontSizeProperty);
+			set => SetValue(AlternateFontSizeProperty, value);
+		}
+
+		public static readonly DependencyProperty AlternateFontSizeProperty =
+			DependencyProperty.Register("AlternateFontSize",
+										typeof(double),
+										typeof(MediaSlider),
+										new PropertyMetadata(0.0, OnTickCanvasRenderPropertyChanged));
+
+		public FontStretch AlternateFontStretch
+		{
+			get => (FontStretch) GetValue(AlternateFontStretchProperty);
+			set => SetValue(AlternateFontStretchProperty, value);
+		}
+
+		public static readonly DependencyProperty AlternateFontStretchProperty =
+			DependencyProperty.Register("AlternateFontStretch",
+										typeof(FontStretch),
+										typeof(MediaSlider),
+										new PropertyMetadata(FontStretch.Normal, OnTickCanvasRenderPropertyChanged));
+
+		public FontStyle AlternateFontStyle
+		{
+			get => (FontStyle) GetValue(AlternateFontStyleProperty);
+			set => SetValue(AlternateFontStyleProperty, value);
+		}
+
+		public static readonly DependencyProperty AlternateFontStyleProperty =
+			DependencyProperty.Register("AlternateFontStyle",
+										typeof(FontStyle),
+										typeof(MediaSlider),
+										new PropertyMetadata(FontStyle.Normal, OnTickCanvasRenderPropertyChanged));
+
+		public FontWeight AlternateFontWeight
+		{
+			get => (FontWeight) GetValue(AlternateFontWeightProperty);
+			set => SetValue(AlternateFontWeightProperty, value);
+		}
+
+		public static readonly DependencyProperty AlternateFontWeightProperty =
+			DependencyProperty.Register("AlternateFontWeight",
+										typeof(FontWeight),
+										typeof(MediaSlider),
+										new PropertyMetadata(FontWeights.Normal, OnTickCanvasRenderPropertyChanged));
+		#endregion
+
 		#region Brushes
+		public Brush TickAreaBackground
+		{
+			get => (Brush) GetValue(TickAreaBackgroundProperty);
+			set => SetValue(TickAreaBackgroundProperty, value);
+		}
+
+		public static readonly DependencyProperty TickAreaBackgroundProperty =
+			DependencyProperty.Register("TickAreaBackground",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
+
+		public Brush MarkerAreaBackground
+		{
+			get => (Brush) GetValue(MarkerAreaBackgroundProperty);
+			set => SetValue(MarkerAreaBackgroundProperty, value);
+		}
+
+		public static readonly DependencyProperty MarkerAreaBackgroundProperty =
+			DependencyProperty.Register("MarkerAreaBackground",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
+
+		public Brush ZoomAreaBackground
+		{
+			get => (Brush) GetValue(ZoomAreaBackgroundProperty);
+			set => SetValue(ZoomAreaBackgroundProperty, value);
+		}
+
+		public static readonly DependencyProperty ZoomAreaBackgroundProperty =
+			DependencyProperty.Register("ZoomAreaBackground",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null));
+
 		public Brush SelectionHighlightBrush
 		{
 			get => (Brush) GetValue(SelectionHighlightBrushProperty);
@@ -642,38 +730,38 @@ namespace JLR.Utility.UWP.Controls
 										typeof(MediaSlider),
 										new PropertyMetadata(null, OnTickCanvasBrushChanged));
 
-		public Brush ClipMarkerBrush
+		public Brush ClipSpanBrush
 		{
-			get => (Brush) GetValue(ClipMarkerBrushProperty);
-			set => SetValue(ClipMarkerBrushProperty, value);
+			get => (Brush) GetValue(ClipSpanBrushProperty);
+			set => SetValue(ClipSpanBrushProperty, value);
 		}
 
-		public static readonly DependencyProperty ClipMarkerBrushProperty =
-			DependencyProperty.Register("ClipMarkerBrush",
-										typeof(Brush),
-										typeof(MediaSlider),
-										new PropertyMetadata(null, OnMarkerCanvasBrushChanged));
-
-		public Brush InPointBrush
-		{
-			get => (Brush) GetValue(InPointBrushProperty);
-			set => SetValue(InPointBrushProperty, value);
-		}
-
-		public static readonly DependencyProperty InPointBrushProperty =
-			DependencyProperty.Register("InPointBrush",
+		public static readonly DependencyProperty ClipSpanBrushProperty =
+			DependencyProperty.Register("ClipSpanBrush",
 										typeof(Brush),
 										typeof(MediaSlider),
 										new PropertyMetadata(null, OnTickCanvasBrushChanged));
 
-		public Brush OutPointBrush
+		public Brush ClipInOutPointBrush
 		{
-			get => (Brush) GetValue(OutPointBrushProperty);
-			set => SetValue(OutPointBrushProperty, value);
+			get => (Brush) GetValue(ClipInOutPointBrushProperty);
+			set => SetValue(ClipInOutPointBrushProperty, value);
 		}
 
-		public static readonly DependencyProperty OutPointBrushProperty =
-			DependencyProperty.Register("OutPointBrush",
+		public static readonly DependencyProperty ClipInOutPointBrushProperty =
+			DependencyProperty.Register("ClipInOutPointBrush",
+										typeof(Brush),
+										typeof(MediaSlider),
+										new PropertyMetadata(null, OnTickCanvasBrushChanged));
+
+		public Brush ClipLabelBrush
+		{
+			get => (Brush) GetValue(ClipLabelBrushProperty);
+			set => SetValue(ClipLabelBrushProperty, value);
+		}
+
+		public static readonly DependencyProperty ClipLabelBrushProperty =
+			DependencyProperty.Register("ClipLabelBrush",
 										typeof(Brush),
 										typeof(MediaSlider),
 										new PropertyMetadata(null, OnTickCanvasBrushChanged));
@@ -716,26 +804,14 @@ namespace JLR.Utility.UWP.Controls
 										typeof(MediaSlider),
 										new PropertyMetadata(null, OnTickCanvasRenderPropertyChanged));
 
-		public CanvasStrokeStyle InPointLineStyle
+		public CanvasStrokeStyle ClipInOutPointLineStyle
 		{
-			get => (CanvasStrokeStyle) GetValue(InPointLineStyleProperty);
-			set => SetValue(InPointLineStyleProperty, value);
+			get => (CanvasStrokeStyle) GetValue(ClipInOutPointLineStyleProperty);
+			set => SetValue(ClipInOutPointLineStyleProperty, value);
 		}
 
-		public static readonly DependencyProperty InPointLineStyleProperty =
-			DependencyProperty.Register("InPointLineStyle",
-										typeof(CanvasStrokeStyle),
-										typeof(MediaSlider),
-										new PropertyMetadata(null, OnTickCanvasRenderPropertyChanged));
-
-		public CanvasStrokeStyle OutPointLineStyle
-		{
-			get => (CanvasStrokeStyle) GetValue(OutPointLineStyleProperty);
-			set => SetValue(OutPointLineStyleProperty, value);
-		}
-
-		public static readonly DependencyProperty OutPointLineStyleProperty =
-			DependencyProperty.Register("OutPointLineStyle",
+		public static readonly DependencyProperty ClipInOutPointLineStyleProperty =
+			DependencyProperty.Register("ClipInOutPointLineStyle",
 										typeof(CanvasStrokeStyle),
 										typeof(MediaSlider),
 										new PropertyMetadata(null, OnTickCanvasRenderPropertyChanged));
@@ -1024,7 +1100,6 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = false;
 
 			slider._tickCanvas?.Invalidate();
-			slider._markerCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
 			slider.UpdatePositionElementLayout();
@@ -1047,7 +1122,6 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = false;
 
 			slider._tickCanvas?.Invalidate();
-			slider._markerCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
 			slider.UpdatePositionElementLayout();
@@ -1092,7 +1166,6 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = false;
 
 			slider._tickCanvas?.Invalidate();
-			slider._markerCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
 			slider.UpdatePositionElementLayout();
@@ -1109,7 +1182,6 @@ namespace JLR.Utility.UWP.Controls
 			slider._isBoundaryUpdateInProgress = false;
 
 			slider._tickCanvas?.Invalidate();
-			slider._markerCanvas?.Invalidate();
 			slider.UpdateSelectionElementLayout();
 			slider.UpdateZoomElementLayout();
 			slider.UpdatePositionElementLayout();
@@ -1190,21 +1262,12 @@ namespace JLR.Utility.UWP.Controls
 			// TODO: Need to reload resources needed for rendering
 		}
 
-		private static void OnMarkerCanvasBrushChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
-		{
-			if (!(d is MediaSlider slider))
-				return;
-
-			// TODO: Need to reload resources needed for rendering
-		}
-
 		private static void OnSelectedMarkerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
 		{
 			if (!(d is MediaSlider slider))
 				return;
 
 			slider._tickCanvas.Invalidate();
-			slider._markerCanvas.Invalidate();
 		}
 		#endregion
 
@@ -1212,13 +1275,6 @@ namespace JLR.Utility.UWP.Controls
 		protected override void OnApplyTemplate()
 		{
 			base.OnApplyTemplate();
-
-			if (GetTemplateChild("PART_MarkerBar") is CanvasControl markerBar)
-			{
-				_markerCanvas                 =  markerBar;
-				_markerCanvas.Draw            += MarkerCanvas_Draw;
-				_markerCanvas.CreateResources += MarkerCanvas_CreateResources;
-			}
 
 			if (GetTemplateChild("PART_TickBar") is CanvasControl tickBar)
 			{
@@ -1315,9 +1371,7 @@ namespace JLR.Utility.UWP.Controls
 		{
 			// CanvasControls need to properly dispose of resources to avoid memory leaks
 			_tickCanvas.RemoveFromVisualTree();
-			_markerCanvas.RemoveFromVisualTree();
 			_tickCanvas   = null;
-			_markerCanvas = null;
 		}
 
 		private void MainPanel_PointerEntered(object sender, PointerRoutedEventArgs e)
@@ -1679,7 +1733,6 @@ namespace JLR.Utility.UWP.Controls
 																	   marker.Time <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
-					_markerCanvas?.Invalidate();
 					return;
 				}
 			}
@@ -1690,7 +1743,6 @@ namespace JLR.Utility.UWP.Controls
 																	   marker.Time <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
-					_markerCanvas?.Invalidate();
 				}
 			}
 		}
@@ -1704,7 +1756,6 @@ namespace JLR.Utility.UWP.Controls
 							clip.EndTime >= ZoomStart && clip.EndTime <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
-					_markerCanvas?.Invalidate();
 					return;
 				}
 			}
@@ -1716,7 +1767,6 @@ namespace JLR.Utility.UWP.Controls
 							clip.EndTime >= ZoomStart && clip.EndTime <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
-					_markerCanvas?.Invalidate();
 				}
 			}
 		}
@@ -1725,49 +1775,76 @@ namespace JLR.Utility.UWP.Controls
 		#region Event Handlers (Rendering)
 		private void TickCanvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
 		{
-			_selectionHighlightBrush = SelectionHighlightBrush?.CreateCanvasBrush(sender.Device);
-			_originTickBrush         = OriginTickBrush?.CreateCanvasBrush(sender.Device);
-			_majorTickBrush          = MajorTickBrush?.CreateCanvasBrush(sender.Device);
-			_minorTickBrush          = MinorTickBrush?.CreateCanvasBrush(sender.Device);
-
-			if (_markerBrush == null)
-				_markerBrush = MarkerBrush?.CreateCanvasBrush(sender.Device);
-			if (_inPointBrush == null)
-				_inPointBrush = InPointBrush?.CreateCanvasBrush(sender.Device);
-			if (_outPointBrush == null)
-				_outPointBrush = OutPointBrush?.CreateCanvasBrush(sender.Device);
-			if (_selectedMarkerBrush == null)
-				_selectedMarkerBrush = SelectedMarkerBrush?.CreateCanvasBrush(sender.Device);
-			if (_selectedClipBrush == null)
-				_selectedClipBrush = SelectedClipBrush?.CreateCanvasBrush(sender.Device);
-		}
-
-		private void MarkerCanvas_CreateResources(CanvasControl sender, CanvasCreateResourcesEventArgs args)
-		{
-			_clipMarkerBrush = ClipMarkerBrush?.CreateCanvasBrush(sender.Device);
-
-			if (_markerBrush == null)
-				_markerBrush = MarkerBrush?.CreateCanvasBrush(sender.Device);
-			if (_inPointBrush == null)
-				_inPointBrush = InPointBrush?.CreateCanvasBrush(sender.Device);
-			if (_outPointBrush == null)
-				_outPointBrush = OutPointBrush?.CreateCanvasBrush(sender.Device);
-			if (_selectedMarkerBrush == null)
-				_selectedMarkerBrush = SelectedMarkerBrush?.CreateCanvasBrush(sender.Device);
-			if (_selectedClipBrush == null)
-				_selectedClipBrush = SelectedClipBrush?.CreateCanvasBrush(sender.Device);
+			_tickAreaBackgroundBrush   = TickAreaBackground?.CreateCanvasBrush(sender.Device);
+			_markerAreaBackgroundBrush = MarkerAreaBackground?.CreateCanvasBrush(sender.Device);
+			_selectionHighlightBrush   = SelectionHighlightBrush?.CreateCanvasBrush(sender.Device);
+			_originTickBrush           = OriginTickBrush?.CreateCanvasBrush(sender.Device);
+			_majorTickBrush            = MajorTickBrush?.CreateCanvasBrush(sender.Device);
+			_minorTickBrush            = MinorTickBrush?.CreateCanvasBrush(sender.Device);
+			_markerBrush               = MarkerBrush?.CreateCanvasBrush(sender.Device);
+			_clipSpanBrush             = ClipSpanBrush?.CreateCanvasBrush(sender.Device);
+			_clipInOutPointBrush       = ClipInOutPointBrush?.CreateCanvasBrush(sender.Device);
+			_clipLabelBrush            = ClipLabelBrush?.CreateCanvasBrush(sender.Device);
+			_selectedMarkerBrush       = SelectedMarkerBrush?.CreateCanvasBrush(sender.Device);
+			_selectedClipBrush         = SelectedClipBrush?.CreateCanvasBrush(sender.Device);
 		}
 
 		private void TickCanvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
 		{
 			// Don't render if the CanvasControl's size is zero
-			if (Math.Abs(ActualWidth) < double.Epsilon || Math.Abs(ActualHeight) < double.Epsilon)
+			if (Math.Abs(sender.ActualWidth) < double.Epsilon || Math.Abs(sender.ActualHeight) < double.Epsilon)
 				return;
 
-			// Calculate vertical axis render coordinates
+			// Get current marker area and tick area rectangles
+			var markerAreaRect = MarkerAreaRect;
+			var tickAreaRect   = TickAreaRect;
+
+			// Calculate vertical axis render coordinates for each tick type
 			var verticalCoordsOrigin = CalculateVerticalAxisCoordinates(OriginTickRelativeSize);
 			var verticalCoordsMajor  = CalculateVerticalAxisCoordinates(MajorTickRelativeSize);
 			var verticalCoordsMinor  = CalculateVerticalAxisCoordinates(MinorTickRelativeSize);
+
+			// Calculate vertical axis render coordinates for marker geometry
+			var y0 = (float) markerAreaRect.Top;
+			var y1 = (float) (markerAreaRect.Height * 0.25);
+			var y2 = (float) (markerAreaRect.Height * 0.5);
+			var y3 = (float) (markerAreaRect.Height * 0.667);
+			var y4 = (float) (markerAreaRect.Height * 0.75);
+			var y5 = (float) (markerAreaRect.Top + markerAreaRect.Height);
+
+			// Create marker geometry
+			var path = new CanvasPathBuilder(sender.Device);
+			path.BeginFigure(5.0f, y0);
+			path.AddLine(5.0f, y3);
+			path.AddLine(0.0f, y5);
+			path.AddLine(-5.0f, y3);
+			path.AddLine(-5.0f, y0);
+			path.EndFigure(CanvasFigureLoop.Closed);
+			var markerGeometry = CanvasGeometry.CreatePath(path);
+
+			// Create clip in-point geometry
+			path = new CanvasPathBuilder(sender.Device);
+			path.BeginFigure(2.0f, y0);
+			path.AddLine(2.0f, y5);
+			path.AddLine(-2.0f, y5);
+			path.AddLine(-2.0f, y4);
+			path.AddLine(-8.0f, y2);
+			path.AddLine(-2.0f, y1);
+			path.AddLine(-2.0f, y0);
+			path.EndFigure(CanvasFigureLoop.Closed);
+			var inPointGeometry = CanvasGeometry.CreatePath(path);
+
+			// Create clip out-point geometry
+			path = new CanvasPathBuilder(sender.Device);
+			path.BeginFigure(-2.0f, y0);
+			path.AddLine(-2.0f, y5);
+			path.AddLine(2.0f, y5);
+			path.AddLine(2.0f, y4);
+			path.AddLine(8.0f, y2);
+			path.AddLine(2.0f, y1);
+			path.AddLine(2.0f, y0);
+			path.EndFigure(CanvasFigureLoop.Closed);
+			var outPointGeometry = CanvasGeometry.CreatePath(path);
 
 			// Find optimal timescale for readable tick spacing
 			_currentInterval = _intervals.First;
@@ -1847,6 +1924,10 @@ namespace JLR.Utility.UWP.Controls
 				new KeyValuePair<TickType, int>(TickType.Minor, MinorTickZIndex)
 			};
 
+			// Draw background(s)
+			args.DrawingSession.FillRectangle(tickAreaRect, _tickAreaBackgroundBrush);
+			args.DrawingSession.FillRectangle(markerAreaRect, _markerAreaBackgroundBrush);
+
 			// Draw selection highlight rectangle
 			if (_selectionRect != Rect.Empty)
 			{
@@ -1863,10 +1944,14 @@ namespace JLR.Utility.UWP.Controls
 				{
 					case TickType.Origin:
 					{
-						DrawTick(CalculateHorizontalAxisCoordinate(0.0M),
-								 verticalCoordsOrigin,
-								 _originTickBrush,
-								 OriginTickThickness);
+						using (args.DrawingSession.CreateLayer(1.0f))
+						{
+							DrawTick(CalculateHorizontalAxisCoordinate(0.0M),
+									 verticalCoordsOrigin,
+									 _originTickBrush,
+									 OriginTickThickness);
+						}
+
 						break;
 					}
 
@@ -1904,41 +1989,181 @@ namespace JLR.Utility.UWP.Controls
 				}
 			}
 
-			// Draw marker lines
-			foreach (var marker in Markers)
+			// Draw clips
+			using (args.DrawingSession.CreateLayer(1.0f))
 			{
-				if (marker.Time < ZoomStart || marker.Time > ZoomEnd)
-					continue;
+				foreach (var clip in Clips)
+				{
+					if (clip.EndTime - clip.StartTime == 0 || clip.StartTime > ZoomEnd || clip.EndTime < ZoomStart)
+						continue;
 
-				var brush = marker == SelectedMarker ? _selectedMarkerBrush : _markerBrush;
-				var x     = (float) CalculateHorizontalAxisCoordinate(marker.Time);
-				args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
-											 brush,
-											 (float) MarkerLineThickness,
-											 MarkerLineStyle);
+					var spanBrush  = clip == SelectedClip ? _selectedClipBrush : _clipSpanBrush;
+					var inOutBrush = clip == SelectedClip ? _selectedClipBrush : _clipInOutPointBrush;
+
+					var x1 = (float) CalculateHorizontalAxisCoordinate(
+						clip.StartTime <= ZoomStart ? ZoomStart : clip.StartTime);
+					var x2 = (float) CalculateHorizontalAxisCoordinate(
+						clip.EndTime >= ZoomEnd ? ZoomEnd : clip.EndTime);
+
+					// Generate text label for this clip
+					var textFormat = new CanvasTextFormat
+					{
+						FontFamily          = FontFamily.Source,
+						FontSize            = (float) FontSize,
+						FontStretch         = FontStretch,
+						FontStyle           = FontStyle,
+						FontWeight          = FontWeight,
+						Direction           = CanvasTextDirection.LeftToRightThenTopToBottom,
+						LastLineWrapping    = false,
+						LineSpacingMode     = CanvasLineSpacingMode.Default,
+						LineSpacing         = 0,
+						LineSpacingBaseline = 0,
+						HorizontalAlignment = CanvasHorizontalAlignment.Center,
+						VerticalAlignment   = CanvasVerticalAlignment.Top,
+						WordWrapping        = CanvasWordWrapping.EmergencyBreak
+					};
+
+					var textLayout = new CanvasTextLayout(sender.Device,
+														  clip.Name,
+														  textFormat,
+														  x2 - x1,
+														  (float) markerAreaRect.Height);
+
+					textLayout.LineSpacingBaseline = (float) textLayout.DrawBounds.Height;
+					textLayout.LineSpacing         = textLayout.LineSpacingBaseline + 1;
+
+					// Generate alternate text label for this clip (if applicable)
+					CanvasTextLayout textLayoutAlt = null;
+					if (!string.IsNullOrEmpty(AlternateFontFamily) && AlternateFontSize > 0)
+					{
+						var textFormatAlt = new CanvasTextFormat
+						{
+							FontFamily          = AlternateFontFamily,
+							FontSize            = (float) AlternateFontSize,
+							FontStretch         = AlternateFontStretch,
+							FontStyle           = AlternateFontStyle,
+							FontWeight          = AlternateFontWeight,
+							Direction           = CanvasTextDirection.LeftToRightThenTopToBottom,
+							LastLineWrapping    = false,
+							LineSpacingMode     = CanvasLineSpacingMode.Default,
+							LineSpacing         = 0,
+							LineSpacingBaseline = 0,
+							HorizontalAlignment = CanvasHorizontalAlignment.Center,
+							VerticalAlignment   = CanvasVerticalAlignment.Top,
+							WordWrapping        = CanvasWordWrapping.EmergencyBreak
+						};
+
+						textLayoutAlt = new CanvasTextLayout(sender.Device,
+															 clip.Name,
+															 textFormatAlt,
+															 x2 - x1,
+															 (float) markerAreaRect.Height);
+
+						textLayoutAlt.LineSpacingBaseline = (float) textLayoutAlt.DrawBounds.Height;
+						textLayoutAlt.LineSpacing         = textLayoutAlt.LineSpacingBaseline + 1;
+					}
+
+					// Draw the span rectangle and clip label based on available space
+					if (textLayout.DrawBounds.Height <= y3 && textLayout.DrawBounds.Width <= x2 - x1)
+					{
+						args.DrawingSession.FillRectangle(x1, y3, x2 - x1, y5 - y3, spanBrush);
+						args.DrawingSession.DrawTextLayout
+						(
+							textLayout,
+							x1,
+							(y3 / 2) - (float) (textLayout.DrawBounds.Top + (textLayout.DrawBounds.Height / 2)),
+							_clipLabelBrush
+						);
+					}
+					else if (textLayoutAlt != null &&
+							 textLayoutAlt.DrawBounds.Height <= y3 &&
+							 textLayoutAlt.DrawBounds.Width <= x2 - x1)
+					{
+						args.DrawingSession.FillRectangle(x1, y3, x2 - x1, y5 - y3, spanBrush);
+						args.DrawingSession.DrawTextLayout
+						(
+							textLayoutAlt,
+							x1,
+							(y3 / 2) - (float) (textLayoutAlt.DrawBounds.Top +
+												(textLayoutAlt.DrawBounds.Height / 2)),
+							_clipLabelBrush
+						);
+					}
+					else if (textLayout.DrawBounds.Height <= y5 && textLayout.DrawBounds.Width <= x2 - x1)
+					{
+						var width = ((x2 - x1) / 2) - ((float) textLayout.DrawBounds.Width / 2) - 2;
+						args.DrawingSession.FillRectangle(x1, y3, width, y5 - y3, spanBrush);
+						args.DrawingSession.FillRectangle(x2 - width, y3, width, y5 - y3, spanBrush);
+						args.DrawingSession.DrawTextLayout
+						(
+							textLayout,
+							x1,
+							(y5 / 2) - (float) (textLayout.DrawBounds.Top + (textLayout.DrawBounds.Height / 2)),
+							_clipLabelBrush
+						);
+					}
+					else if (textLayoutAlt != null &&
+							 textLayoutAlt.DrawBounds.Height <= y5 &&
+							 textLayoutAlt.DrawBounds.Width <= x2 - x1)
+					{
+						var width = ((x2 - x1) / 2) - ((float) textLayoutAlt.DrawBounds.Width / 2) - 2;
+						args.DrawingSession.FillRectangle(x1, y3, width, y5 - y3, spanBrush);
+						args.DrawingSession.FillRectangle(x2 - width, y3, width, y5 - y3, spanBrush);
+						args.DrawingSession.DrawTextLayout
+						(
+							textLayoutAlt,
+							x1,
+							(y5 / 2) - (float) (textLayoutAlt.DrawBounds.Top +
+												(textLayoutAlt.DrawBounds.Height / 2)),
+							_clipLabelBrush
+						);
+					}
+					else
+					{
+						args.DrawingSession.FillRectangle(x1, y3, x2 - x1, y5 - y3, spanBrush);
+					}
+
+					// Draw clip in-point
+					if (clip.StartTime >= ZoomStart && clip.StartTime <= ZoomEnd)
+					{
+						args.DrawingSession.FillGeometry(inPointGeometry, x1, (float) markerAreaRect.Top, inOutBrush);
+						args.DrawingSession.DrawLine(x1, (float) tickAreaRect.Top,
+													 x1, (float) tickAreaRect.Bottom,
+													 inOutBrush,
+													 (float) ClipInOutPointLineThickness,
+													 ClipInOutPointLineStyle);
+					}
+
+					// Draw clip out-point
+					if (clip.EndTime >= ZoomStart && clip.EndTime <= ZoomEnd)
+					{
+						args.DrawingSession.FillGeometry(outPointGeometry, x2, (float) markerAreaRect.Top, inOutBrush);
+						args.DrawingSession.DrawLine(x2, (float) tickAreaRect.Top,
+													 x2, (float) tickAreaRect.Bottom,
+													 inOutBrush,
+													 (float) ClipInOutPointLineThickness,
+													 ClipInOutPointLineStyle);
+					}
+				}
 			}
 
-			// Draw in/out point lines
-			foreach (var clip in Clips)
+			// Draw markers
+			using (args.DrawingSession.CreateLayer(1.0f))
 			{
-				if (clip.StartTime >= ZoomStart || clip.StartTime <= ZoomEnd)
+				foreach (var marker in Markers)
 				{
-					var brush = clip == SelectedClip ? _selectedClipBrush : _inPointBrush;
-					var x     = (float) CalculateHorizontalAxisCoordinate(clip.StartTime);
-					args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
-												 brush,
-												 (float) InPointLineThickness,
-												 InPointLineStyle);
-				}
+					if (marker.Time < ZoomStart || marker.Time > ZoomEnd)
+						continue;
 
-				if (clip.EndTime >= ZoomStart || clip.EndTime <= ZoomEnd)
-				{
-					var brush = clip == SelectedClip ? _selectedClipBrush : _outPointBrush;
-					var x     = (float) CalculateHorizontalAxisCoordinate(clip.EndTime);
-					args.DrawingSession.DrawLine(x, 0, x, (float) _tickCanvas.ActualHeight,
+					var brush = marker == SelectedMarker ? _selectedMarkerBrush : _markerBrush;
+					var x     = (float) CalculateHorizontalAxisCoordinate(marker.Time);
+
+					args.DrawingSession.FillGeometry(markerGeometry, x, (float) markerAreaRect.Top, brush);
+					args.DrawingSession.DrawLine(x, (float) tickAreaRect.Top,
+												 x, (float) tickAreaRect.Bottom,
 												 brush,
-												 (float) OutPointLineThickness,
-												 OutPointLineStyle);
+												 (float) MarkerLineThickness,
+												 MarkerLineStyle);
 				}
 			}
 
@@ -1961,8 +2186,7 @@ namespace JLR.Utility.UWP.Controls
 			// Local function to calculate horizontal axis render coordinate
 			double CalculateHorizontalAxisCoordinate(decimal value)
 			{
-				return (decimal.ToDouble(value - ZoomStart) *
-						_tickCanvas.ActualWidth) /
+				return (decimal.ToDouble(value - ZoomStart) * tickAreaRect.Width) /
 					   decimal.ToDouble(ZoomEnd - ZoomStart);
 			}
 
@@ -1972,13 +2196,13 @@ namespace JLR.Utility.UWP.Controls
 				switch (TickAlignment)
 				{
 					case NET.Position.Top:
-						return (0, relativeSize * _tickCanvas.ActualHeight);
+						return (tickAreaRect.Top, relativeSize * tickAreaRect.Height);
 					case NET.Position.Middle:
-						var pos = (_tickCanvas.ActualHeight - (relativeSize * _tickCanvas.ActualHeight)) / 2;
-						return (pos, _tickCanvas.ActualHeight - pos);
+						var offset = (tickAreaRect.Height - (relativeSize * tickAreaRect.Height)) / 2;
+						return (tickAreaRect.Top + offset, tickAreaRect.Bottom - offset);
 					case NET.Position.Bottom:
-						return (_tickCanvas.ActualHeight,
-								_tickCanvas.ActualHeight - (relativeSize * _tickCanvas.ActualHeight));
+						return (tickAreaRect.Bottom,
+								tickAreaRect.Bottom - (relativeSize * tickAreaRect.Height));
 					default:
 						return (0, 0);
 				}
@@ -1996,111 +2220,33 @@ namespace JLR.Utility.UWP.Controls
 												  brush);
 			}
 		}
+		#endregion
 
-		private void MarkerCanvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
+		#region Private Properties
+		private Rect TickAreaRect
 		{
-			// Don't render if the CanvasControl's size is zero
-			if (Math.Abs(ActualWidth) < double.Epsilon || Math.Abs(ActualHeight) < double.Epsilon)
-				return;
-
-			// Calculate vertical axis coordinates for marker geometry
-			var y1 = (float) (_markerCanvas.ActualHeight * 0.25);
-			var y2 = (float) (_markerCanvas.ActualHeight * 0.5);
-			var y3 = (float) (_markerCanvas.ActualHeight * 0.667);
-			var y4 = (float) (_markerCanvas.ActualHeight * 0.75);
-			var y5 = (float) _markerCanvas.ActualHeight;
-
-			// Create marker geometry
-			var path = new CanvasPathBuilder(sender.Device);
-			path.BeginFigure(5.0f, 0.0f);
-			path.AddLine(5.0f, y3);
-			path.AddLine(0.0f, y5);
-			path.AddLine(-5.0f, y3);
-			path.AddLine(-5.0f, 0.0f);
-			path.EndFigure(CanvasFigureLoop.Closed);
-			var markerGeometry = CanvasGeometry.CreatePath(path);
-
-			// Create in-point geometry
-			path = new CanvasPathBuilder(sender.Device);
-			path.BeginFigure(2.0f, 0.0f);
-			path.AddLine(2.0f, y5);
-			path.AddLine(-2.0f, y5);
-			path.AddLine(-2.0f, y4);
-			path.AddLine(-8.0f, y2);
-			path.AddLine(-2.0f, y1);
-			path.AddLine(-2.0f, 0.0f);
-			path.EndFigure(CanvasFigureLoop.Closed);
-			var inPointGeometry = CanvasGeometry.CreatePath(path);
-
-			// Create out-point geometry
-			path = new CanvasPathBuilder(sender.Device);
-			path.BeginFigure(-2.0f, 0.0f);
-			path.AddLine(-2.0f, y5);
-			path.AddLine(2.0f, y5);
-			path.AddLine(2.0f, y4);
-			path.AddLine(8.0f, y2);
-			path.AddLine(2.0f, y1);
-			path.AddLine(2.0f, 0.0f);
-			path.EndFigure(CanvasFigureLoop.Closed);
-			var outPointGeometry = CanvasGeometry.CreatePath(path);
-
-			// Draw clip markers
-			foreach (var clip in Clips)
+			get
 			{
-				if (clip.EndTime - clip.StartTime == 0 || clip.StartTime >= ZoomEnd || clip.EndTime <= ZoomStart)
-					continue;
-
-				var x1 = (float) CalculateHorizontalAxisCoordinate(
-					clip.StartTime <= ZoomStart ? ZoomStart : clip.StartTime);
-				var x2 = (float) CalculateHorizontalAxisCoordinate(clip.EndTime >= ZoomEnd ? ZoomEnd : clip.EndTime);
-
-				var brush = clip == SelectedClip ? _selectedClipBrush : _clipMarkerBrush;
-				args.DrawingSession.FillRectangle(x1, y3, x2 - x1, y4, brush);
-
-				var textFormat = new CanvasTextFormat() {FontFamily = "Arial Narrow", FontSize = 10.0f};
-				var textLayout = new CanvasTextLayout(sender.Device, clip.Name, textFormat, x2 - x1, y5);
-				var textX      = (float) ((x1 + ((x2 - x1) / 2)) - (textLayout.DrawBounds.Width / 2));
-
-				args.DrawingSession.DrawTextLayout(textLayout, textX, 0, Colors.White);
-			}
-
-			// Draw in/out point markers
-			foreach (var clip in Clips)
-			{
-				if (clip.StartTime >= ZoomStart || clip.StartTime <= ZoomEnd)
+				var markerRect = MarkerAreaRect;
+				return new Rect()
 				{
-					var brush = clip == SelectedClip ? _selectedClipBrush : _inPointBrush;
-					var x     = (float) CalculateHorizontalAxisCoordinate(clip.StartTime);
-					args.DrawingSession.FillGeometry(inPointGeometry, x, 0, brush);
-				}
-
-				if (clip.EndTime >= ZoomStart || clip.EndTime <= ZoomEnd)
-				{
-					var brush = clip == SelectedClip ? _selectedClipBrush : _outPointBrush;
-					var x     = (float) CalculateHorizontalAxisCoordinate(clip.EndTime);
-					args.DrawingSession.FillGeometry(outPointGeometry, x, 0, brush);
-				}
-			}
-
-			// Draw markers
-			foreach (var marker in Markers)
-			{
-				if (marker.Time < ZoomStart || marker.Time > ZoomEnd)
-					continue;
-
-				var brush = marker == SelectedMarker ? _selectedMarkerBrush : _markerBrush;
-				var x     = (float) CalculateHorizontalAxisCoordinate(marker.Time);
-				args.DrawingSession.FillGeometry(markerGeometry, x, 0, brush);
-			}
-
-			// Local function to calculate horizontal axis render coordinate
-			double CalculateHorizontalAxisCoordinate(decimal value)
-			{
-				return (decimal.ToDouble(value - ZoomStart) *
-						_markerCanvas.ActualWidth) /
-					   decimal.ToDouble(ZoomEnd - ZoomStart);
+					X      = markerRect.Left,
+					Y      = markerRect.Bottom,
+					Width  = markerRect.Width,
+					Height = _mainPanel.ActualHeight - markerRect.Height
+				};
 			}
 		}
+
+		private Rect MarkerAreaRect =>
+			new Rect(0, 0,
+					 _mainPanel.ActualWidth,
+					 MarkerBarSize.GridUnitType switch
+					 {
+						 GridUnitType.Pixel => MarkerBarSize.Value,
+						 GridUnitType.Star  => MarkerBarSize.Value * ActualHeight,
+						 _                  => 0
+					 });
 		#endregion
 
 		#region Private Methods
@@ -2108,6 +2254,9 @@ namespace JLR.Utility.UWP.Controls
 		{
 			if (_mainPanel == null || _positionElement == null)
 				return;
+
+			// Get current tick area rectangle
+			var tickAreaRect = TickAreaRect;
 
 			// Hide position element if the current position is not within the zoom range
 			if (Position < ZoomStart || Position > ZoomEnd || ZoomStart == ZoomEnd)
@@ -2117,7 +2266,7 @@ namespace JLR.Utility.UWP.Controls
 			}
 
 			// Resize position element
-			var height = PositionElementRelativeSize * _mainPanel.ActualHeight;
+			var height = PositionElementRelativeSize * tickAreaRect.Height;
 			_positionElement.Height = height;
 
 			// Position the position element on the horizontal axis
@@ -2126,15 +2275,15 @@ namespace JLR.Utility.UWP.Controls
 				_positionElement,
 				decimal.ToDouble(
 					((Position - ZoomStart) *
-					 ((decimal) _mainPanel.ActualWidth / (ZoomEnd - ZoomStart))) -
+					 ((decimal) tickAreaRect.Width / (ZoomEnd - ZoomStart))) -
 					((decimal) _positionElement.ActualWidth / 2)));
 
 			// Position the position element on the vertical axis
 			var top = PositionElementAlignment switch
 			{
-				NET.Position.Middle => ((_mainPanel.ActualHeight - height) / 2),
-				NET.Position.Bottom => (_mainPanel.ActualHeight - height),
-				_                   => 0.0
+				NET.Position.Middle => tickAreaRect.Top + ((tickAreaRect.Height - height) / 2),
+				NET.Position.Bottom => tickAreaRect.Bottom - height,
+				_                   => tickAreaRect.Top
 			};
 
 			Canvas.SetTop(_positionElement, top);
@@ -2145,8 +2294,11 @@ namespace JLR.Utility.UWP.Controls
 			if (_mainPanel == null)
 				return;
 
-			var thumbTop    = 0.0;
-			var thumbHeight = SelectionElementRelativeSize * _mainPanel.ActualHeight;
+			// Get current tick area rectangle
+			var tickAreaRect = TickAreaRect;
+
+			var thumbTop = tickAreaRect.Top;
+			var thumbHeight = SelectionElementRelativeSize * tickAreaRect.Height;
 
 			if (_selectionStartElement != null && _selectionEndElement != null)
 			{
@@ -2165,7 +2317,7 @@ namespace JLR.Utility.UWP.Controls
 						_selectionStartElement,
 						decimal.ToDouble(
 							(((decimal) SelectionStart - ZoomStart) *
-							 ((decimal) _mainPanel.ActualWidth / (ZoomEnd - ZoomStart))) -
+							 ((decimal) tickAreaRect.Width / (ZoomEnd - ZoomStart))) -
 							(decimal) _selectionStartElement.ActualWidth));
 				}
 				else
@@ -2184,7 +2336,7 @@ namespace JLR.Utility.UWP.Controls
 						_selectionEndElement,
 						decimal.ToDouble(
 							((decimal) SelectionEnd - ZoomStart) *
-							((decimal) _mainPanel.ActualWidth / (ZoomEnd - ZoomStart))));
+							((decimal) tickAreaRect.Width / (ZoomEnd - ZoomStart))));
 				}
 				else
 				{
@@ -2194,9 +2346,9 @@ namespace JLR.Utility.UWP.Controls
 				// Position the selection elements on the vertical axis
 				thumbTop = SelectionElementAlignment switch
 				{
-					NET.Position.Middle => ((_mainPanel.ActualHeight - thumbHeight) / 2),
-					NET.Position.Bottom => (_mainPanel.ActualHeight - thumbHeight),
-					_                   => 0.0
+					NET.Position.Middle => tickAreaRect.Top + ((_mainPanel.ActualHeight - thumbHeight) / 2),
+					NET.Position.Bottom => tickAreaRect.Bottom - thumbHeight,
+					_                   => tickAreaRect.Top
 				};
 
 				Canvas.SetTop(_selectionStartElement, thumbTop);
@@ -2215,18 +2367,17 @@ namespace JLR.Utility.UWP.Controls
 				var adjustedStart = SelectionStart >= ZoomStart ? (decimal) SelectionStart : ZoomStart;
 				var adjustedEnd   = SelectionEnd <= ZoomEnd ? (decimal) SelectionEnd : ZoomEnd;
 				var rectLeft = decimal.ToDouble((adjustedStart - ZoomStart) *
-												((decimal) _mainPanel.ActualWidth / (ZoomEnd - ZoomStart)));
+												((decimal) tickAreaRect.Width / (ZoomEnd - ZoomStart)));
 				var rectWidth = decimal.ToDouble((Math.Abs(adjustedEnd - adjustedStart) *
-												  (decimal) _mainPanel.ActualWidth) /
+												  (decimal) tickAreaRect.Width) /
 												 (ZoomEnd - ZoomStart));
 
 				// Calculate selection highlight rectangle vertical start coordinate
 				var rectTop = SelectionHighlightAlignment switch
 				{
-					NET.Position.Top    => thumbTop,
-					NET.Position.Middle => (thumbTop + ((thumbHeight - rectHeight) / 2)),
-					NET.Position.Bottom => (thumbTop + (thumbHeight - rectHeight)),
-					_                   => 0.0
+					NET.Position.Middle => thumbTop + ((thumbHeight - rectHeight) / 2),
+					NET.Position.Bottom => thumbTop + (thumbHeight - rectHeight),
+					_                   => thumbTop
 				};
 
 				_selectionRect = new Rect(rectLeft, rectTop, rectWidth, rectHeight);
@@ -2339,15 +2490,6 @@ namespace JLR.Utility.UWP.Controls
 										   right > 0 ? right : 0,
 										   _zoomPanel.Margin.Bottom);
 				_zoomPanel.SetValue(MarginProperty, margin);
-			}
-
-			if (_markerCanvas != null)
-			{
-				var margin = new Thickness(left > 0 ? left : 0,
-										   _markerCanvas.Margin.Top,
-										   right > 0 ? right : 0,
-										   _markerCanvas.Margin.Bottom);
-				_markerCanvas.SetValue(MarginProperty, margin);
 			}
 		}
 

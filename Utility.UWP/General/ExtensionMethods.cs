@@ -2,6 +2,7 @@
 using System.Linq;
 
 using Windows.UI;
+using Windows.UI.Xaml;
 using Windows.UI.Xaml.Media;
 
 using Microsoft.Graphics.Canvas;
@@ -12,6 +13,7 @@ namespace JLR.Utility.UWP
 {
 	public static class ExtensionMethods
 	{
+		#region Brush
 		public static ICanvasBrush CreateCanvasBrush(this Brush brush,
 		                                             ICanvasResourceCreator resourceCreator)
 		{
@@ -53,5 +55,6 @@ namespace JLR.Utility.UWP
 						"This type of brush cannot be converted to ICanvasBrush");
 			}
 		}
+		#endregion
 	}
 }
