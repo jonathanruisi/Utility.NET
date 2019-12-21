@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 
+using Windows.Foundation.Collections;
 using Windows.System.Threading;
 using Windows.UI.Core;
 using Windows.UI.Xaml;
@@ -48,8 +49,18 @@ namespace UWPTestApp
 					break;
 			}
 
-			Slider.DurationChanged += Slider_DurationChanged;
-			Slider.PositionChanged += Slider_PositionChanged;
+			Slider.DurationChanged        += Slider_DurationChanged;
+			Slider.PositionChanged        += Slider_PositionChanged;
+			Slider.PositionDragStarted    += Slider_PositionDragStarted;
+			Slider.PositionDragCompleted  += Slider_PositionDragCompleted;
+			Slider.SelectionChanged       += Slider_SelectionChanged;
+			Slider.SelectionDragStarted   += Slider_SelectionDragStarted;
+			Slider.SelectionDragCompleted += Slider_SelectionDragCompleted;
+			Slider.ZoomChanged            += Slider_ZoomChanged;
+			Slider.ZoomDragStarted        += Slider_ZoomDragStarted;
+			Slider.ZoomDragCompleted      += Slider_ZoomDragCompleted;
+
+			ListBoxEvents.Items.VectorChanged += Items_VectorChanged;
 
 			foreach (var name in Enum.GetNames(typeof(MediaSlider.SnapIntervals)))
 			{
@@ -58,6 +69,12 @@ namespace UWPTestApp
 
 			ComboBoxC1.SelectedItem = Enum.GetName(typeof(MediaSlider.SnapIntervals), Slider.SnapToNearest);
 		}
+
+		private void Items_VectorChanged(IObservableVector<object> sender, IVectorChangedEventArgs @event)
+		{
+			if (@event.CollectionChange == CollectionChange.ItemInserted)
+				ListBoxEvents.ScrollIntoView(ListBoxEvents.Items?[(int) @event.Index]);
+		}
 		#endregion
 
 		#region Event Handlers (Slider)
@@ -65,11 +82,56 @@ namespace UWPTestApp
 		{
 			TextBoxA1.Text = e.start.ToString("0.###");
 			TextBoxA2.Text = e.end.ToString("0.###");
+
+			ListBoxEvents.Items?.Add($"DURATION: {e.start:0.###} : {e.end:0.###}");
 		}
 
 		private void Slider_PositionChanged(object sender, decimal e)
 		{
 			TextBoxB1.Text = e.ToString("0.###");
+			ListBoxEvents.Items?.Add($"POSITION: {e:0.######}");
+		}
+
+		private void Slider_PositionDragStarted(object sender, EventArgs e)
+		{
+			ListBoxEvents.Items?.Add("POSITION: Drag Started");
+		}
+
+		private void Slider_PositionDragCompleted(object sender, EventArgs e)
+		{
+			ListBoxEvents.Items?.Add("POSITION: Drag Completed");
+		}
+
+		private void Slider_SelectionChanged(object sender, (decimal start, decimal end)? e)
+		{
+			ListBoxEvents.Items?.Add(e == null
+										 ? "SELECTION: NULL"
+										 : $"SELECTION: {e?.start:0.###} : {e?.end:0.###}");
+		}
+
+		private void Slider_SelectionDragStarted(object sender, EventArgs e)
+		{
+			ListBoxEvents.Items?.Add("SELECTION: Drag Started");
+		}
+
+		private void Slider_SelectionDragCompleted(object sender, EventArgs e)
+		{
+			ListBoxEvents.Items?.Add("SELECTION: Drag Completed");
+		}
+
+		private void Slider_ZoomChanged(object sender, (decimal start, decimal end) e)
+		{
+			ListBoxEvents.Items?.Add($"ZOOM: {e.start:0.###} : {e.end:0.###}");
+		}
+
+		private void Slider_ZoomDragStarted(object sender, EventArgs e)
+		{
+			ListBoxEvents.Items?.Add("ZOOM: Drag Started");
+		}
+
+		private void Slider_ZoomDragCompleted(object sender, EventArgs e)
+		{
+			ListBoxEvents.Items?.Add("ZOOM: Drag Completed");
 		}
 		#endregion
 

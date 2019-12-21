@@ -132,7 +132,7 @@ namespace JLR.Utility.UWP.Controls
 
 			if (point.Properties.IsLeftButtonPressed)
 			{
-				_isMouseCaptured                        = CapturePointer(e.Pointer);
+				_isMouseCaptured = CapturePointer(e.Pointer);
 				Window.Current.CoreWindow.PointerCursor = _dragCursor;
 				VisualStateManager.GoToState(this, "LeftButtonPressed", false);
 			}
