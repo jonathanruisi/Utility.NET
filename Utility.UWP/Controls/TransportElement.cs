@@ -78,10 +78,11 @@ namespace JLR.Utility.UWP.Controls
 		#region Constructor
 		public TransportElement()
 		{
-			DefaultStyleKey =  typeof(TransportElement);
-			Loaded          += TransportElement_Loaded;
-			_primaryCursor  =  new CoreCursor(MouseOverCursorType, 0);
-			_dragCursor     =  new CoreCursor(MouseDragCursorType, 1);
+			DefaultStyleKey = typeof(TransportElement);
+			_primaryCursor  = new CoreCursor(MouseOverCursorType, 0);
+			_dragCursor     = new CoreCursor(MouseDragCursorType, 1);
+
+			Loaded += TransportElement_Loaded;
 		}
 		#endregion
 

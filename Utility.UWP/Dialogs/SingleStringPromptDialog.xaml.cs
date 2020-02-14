@@ -7,7 +7,7 @@ namespace JLR.Utility.UWP.Dialogs
 	{
 		public SingleStringPromptDialog()
 		{
-			this.InitializeComponent();
+			InitializeComponent();
 		}
 
 		public static readonly DependencyProperty PromptTextProperty =

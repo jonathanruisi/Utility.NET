@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.Linq;
+using System.Text;
 
 using Windows.Devices.Input;
 using Windows.Foundation;
@@ -15,6 +17,7 @@ using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
 using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
+using Windows.UI.Xaml.Media.Animation;
 
 using JLR.Utility.NET;
 using JLR.Utility.NET.Math;
@@ -34,7 +37,7 @@ namespace JLR.Utility.UWP.Controls
 	[TemplatePart(Name = "PART_ZoomStart", Type      = typeof(TransportElement))]
 	[TemplatePart(Name = "PART_ZoomEnd", Type        = typeof(TransportElement))]
 	[TemplatePart(Name = "PART_ZoomThumb", Type      = typeof(TransportElement))]
-	public sealed class MediaSlider : Control
+	public sealed class MediaSlider : Control, IFormattable
 	{
 		#region Constants
 		private const int     DecimalPrecision    = 8;
@@ -79,7 +82,7 @@ namespace JLR.Utility.UWP.Controls
 		private CanvasControl _tickCanvas;
 		private Panel         _mainPanel, _zoomPanel;
 		private Rect          _selectionRect;
-		private double        _leftMouseStartX, _rightMouseStartX;
+		private double        _leftMouseStartX;
 
 		private readonly LinkedList<(int major, int minor, int minorPerMajor)>     _intervals;
 		private          LinkedListNode<(int major, int minor, int minorPerMajor)> _currentInterval;
@@ -125,6 +128,8 @@ namespace JLR.Utility.UWP.Controls
 				SetVisibleWindow(start, end);
 			}
 		}
+
+		public TimeSpan FrameDuration => TimeSpan.FromSeconds((double) 1 / FramesPerSecond);
 		#endregion
 
 		#region Dependency Properties
@@ -248,33 +253,45 @@ namespace JLR.Utility.UWP.Controls
 										typeof(MediaSliderMarker),
 										typeof(MediaSlider),
 										new PropertyMetadata(null, OnSelectedMarkerChanged));
-
-		public ObservableCollection<MediaSliderClip> Clips
-		{
-			get => (ObservableCollection<MediaSliderClip>) GetValue(ClipsProperty);
-			private set => SetValue(ClipsProperty, value);
-		}
-
-		public static readonly DependencyProperty ClipsProperty =
-			DependencyProperty.Register("Clips",
-										typeof(ObservableCollection<MediaSliderClip>),
-										typeof(MediaSlider),
-										new PropertyMetadata(null));
-
-		public MediaSliderClip SelectedClip
-		{
-			get => (MediaSliderClip) GetValue(SelectedClipProperty);
-			set => SetValue(SelectedClipProperty, value);
-		}
-
-		public static readonly DependencyProperty SelectedClipProperty =
-			DependencyProperty.Register("SelectedClip",
-										typeof(MediaSliderClip),
-										typeof(MediaSlider),
-										new PropertyMetadata(null, OnSelectedMarkerChanged));
 		#endregion
 
 		#region Behavior
+		public bool IsPositionAdjustmentEnabled
+		{
+			get => (bool) GetValue(IsPositionAdjustmentEnabledProperty);
+			set => SetValue(IsPositionAdjustmentEnabledProperty, value);
+		}
+
+		public static readonly DependencyProperty IsPositionAdjustmentEnabledProperty =
+			DependencyProperty.Register("IsPositionAdjustmentEnabled",
+										typeof(bool),
+										typeof(MediaSlider),
+										new PropertyMetadata(true, OnIsAdjustmentEnabledChanged));
+
+		public bool IsSelectionAdjustmentEnabled
+		{
+			get => (bool) GetValue(IsSelectionAdjustmentEnabledProperty);
+			set => SetValue(IsSelectionAdjustmentEnabledProperty, value);
+		}
+
+		public static readonly DependencyProperty IsSelectionAdjustmentEnabledProperty =
+			DependencyProperty.Register("IsSelectionAdjustmentEnabled",
+										typeof(bool),
+										typeof(MediaSlider),
+										new PropertyMetadata(true, OnIsAdjustmentEnabledChanged));
+
+		public bool IsZoomAdjustmentEnabled
+		{
+			get => (bool) GetValue(IsZoomAdjustmentEnabledProperty);
+			set => SetValue(IsZoomAdjustmentEnabledProperty, value);
+		}
+
+		public static readonly DependencyProperty IsZoomAdjustmentEnabledProperty =
+			DependencyProperty.Register("IsZoomAdjustmentEnabled",
+										typeof(bool),
+										typeof(MediaSlider),
+										new PropertyMetadata(true, OnIsAdjustmentEnabledChanged));
+
 		public FollowMode PositionFollowMode
 		{
 			get => (FollowMode) GetValue(PositionFollowModeProperty);
@@ -892,36 +909,21 @@ namespace JLR.Utility.UWP.Controls
 		#endregion
 
 		#region Events
-		public event EventHandler<decimal> PositionChanged;
-
-		private void RaisePositionChanged()
-		{
-			var handler = PositionChanged;
-			handler?.Invoke(this, Position);
-		}
-
-		public event EventHandler PositionDragStarted;
-
-		private void RaisePositionDragStarted()
-		{
-			var handler = PositionDragStarted;
-			handler?.Invoke(this, null);
-		}
-
-		public event EventHandler PositionDragCompleted;
-
-		private void RaisePositionDragCompleted()
-		{
-			var handler = PositionDragCompleted;
-			handler?.Invoke(this, null);
-		}
-
+		#region General
 		public event EventHandler<(decimal start, decimal end)> DurationChanged;
 
 		private void RaiseDurationChanged()
 		{
 			var handler = DurationChanged;
 			handler?.Invoke(this, (Start, End));
+		}
+
+		public event EventHandler<decimal> PositionChanged;
+
+		private void RaisePositionChanged()
+		{
+			var handler = PositionChanged;
+			handler?.Invoke(this, Position);
 		}
 
 		public event EventHandler<(decimal start, decimal end)?> SelectionChanged;
@@ -936,6 +938,48 @@ namespace JLR.Utility.UWP.Controls
 
 			var handler = SelectionChanged;
 			handler?.Invoke(this, selection);
+		}
+
+		public event EventHandler<(decimal start, decimal end)> ZoomChanged;
+
+		private void RaiseZoomChanged()
+		{
+			var handler = ZoomChanged;
+			handler?.Invoke(this, (ZoomStart, ZoomEnd));
+		}
+
+		public event EventHandler<int> FramesPerSecondChanged;
+
+		private void RaiseFramesPerSecondChanged()
+		{
+			var handler = FramesPerSecondChanged;
+			handler?.Invoke(this, FramesPerSecond);
+		}
+
+		public event EventHandler<MediaSliderMarker> SelectedMarkerChanged;
+
+		private void RaiseSelectedMarkerChanged()
+		{
+			var handler = SelectedMarkerChanged;
+			handler?.Invoke(this, SelectedMarker);
+		}
+		#endregion
+
+		#region Click and Drag
+		public event EventHandler PositionDragStarted;
+
+		private void RaisePositionDragStarted()
+		{
+			var handler = PositionDragStarted;
+			handler?.Invoke(this, null);
+		}
+
+		public event EventHandler PositionDragCompleted;
+
+		private void RaisePositionDragCompleted()
+		{
+			var handler = PositionDragCompleted;
+			handler?.Invoke(this, null);
 		}
 
 		public event EventHandler SelectionDragStarted;
@@ -954,14 +998,6 @@ namespace JLR.Utility.UWP.Controls
 			handler?.Invoke(this, null);
 		}
 
-		public event EventHandler<(decimal start, decimal end)> ZoomChanged;
-
-		private void RaiseZoomChanged()
-		{
-			var handler = ZoomChanged;
-			handler?.Invoke(this, (ZoomStart, ZoomEnd));
-		}
-
 		public event EventHandler ZoomDragStarted;
 
 		private void RaiseZoomDragStarted()
@@ -978,6 +1014,7 @@ namespace JLR.Utility.UWP.Controls
 			handler?.Invoke(this, null);
 		}
 		#endregion
+		#endregion
 
 		#region Constructor
 		public MediaSlider()
@@ -985,18 +1022,15 @@ namespace JLR.Utility.UWP.Controls
 			DefaultStyleKey = typeof(MediaSlider);
 			_intervals      = new LinkedList<(int major, int minor, int minorPerMajor)>();
 
-			Markers = new ObservableCollection<MediaSliderMarker>();
-			Clips   = new ObservableCollection<MediaSliderClip>();
-
+			Markers                   =  new ObservableCollection<MediaSliderMarker>();
 			Markers.CollectionChanged += Markers_CollectionChanged;
-			Clips.CollectionChanged   += Clips_CollectionChanged;
 		}
 		#endregion
 
 		#region Public Methods
 		public void CenterVisibleWindow(decimal position)
 		{
-			if (position < Start || position > End)
+			if (position < Start || position > End || !IsValidVisibleRange)
 				return;
 
 			var amount = position - (ZoomStart + ((ZoomEnd - ZoomStart) / 2));
@@ -1005,6 +1039,9 @@ namespace JLR.Utility.UWP.Controls
 
 		public void OffsetVisibleWindow(decimal offset)
 		{
+			if (!IsValidVisibleRange)
+				return;
+
 			var currentWindow = ZoomEnd - ZoomStart;
 
 			if (offset < 0 && ZoomStart > Start)
@@ -1021,10 +1058,31 @@ namespace JLR.Utility.UWP.Controls
 
 		public void SetVisibleWindow(decimal start, decimal end)
 		{
-			if (start < Start)
-				throw new ArgumentException("This value must be >= Start", nameof(start));
-			if (end > End)
-				throw new ArgumentException("This value must be <= End", nameof(end));
+			if (start < Start || start > End)
+			{
+				throw new ArgumentOutOfRangeException(
+					nameof(start),
+					$"The specified value must be between {Start:#.###} and {End:#.###}");
+			}
+
+			if (end < End || end > End)
+			{
+				throw new ArgumentOutOfRangeException(
+					nameof(start),
+					$"The specified value must be between {Start:#.###} and {End:#.###}");
+			}
+
+			if (start >= end)
+			{
+				throw new ArgumentException($"The specified value must be < {end:#.###}", nameof(start));
+			}
+
+			if (Math.Abs(end - start) < MinimumVisibleRange)
+			{
+				throw new ArgumentOutOfRangeException(
+					$"The visible window defined by {nameof(start)} and {nameof(end)} " +
+					$"must be greater than or equal to {MinimumVisibleRange}");
+			}
 
 			if (ZoomStart > start && ZoomEnd < end ||
 				ZoomStart < start && ZoomEnd > end ||
@@ -1040,8 +1098,26 @@ namespace JLR.Utility.UWP.Controls
 			}
 		}
 
+		public bool IsPositionVisible(decimal position)
+		{
+			if (position < Start || position > End)
+			{
+				throw new ArgumentOutOfRangeException(
+					nameof(position),
+					$"The specified value must be between {Start:#.###} and {End:#.###}");
+			}
+
+			return position >= ZoomStart && position <= ZoomEnd;
+		}
+
 		public void IncreasePosition(int numberOfIntervals, SnapIntervals snapInterval)
 		{
+			if (numberOfIntervals <= 0)
+			{
+				throw new ArgumentOutOfRangeException(nameof(numberOfIntervals),
+													  "The specified value must be positive");
+			}
+
 			var interval = GetSnapIntervalValue(snapInterval);
 			var amount   = numberOfIntervals * interval;
 			Position = amount >= End
@@ -1058,6 +1134,58 @@ namespace JLR.Utility.UWP.Controls
 				: GetNearestSnapValue(Position - amount, false, snapInterval);
 		}
 
+		public void SetSelectionFromMarker(MediaSliderMarker marker)
+		{
+			if (marker == null)
+				SelectionStart = null;
+			else
+			{
+				SelectionStart = marker.Position;
+				SelectionEnd   = marker.Position + marker.Duration;
+			}
+		}
+
+		public int GetFrameAtPosition(decimal position)
+		{
+			if (position < Start || position > End)
+			{
+				throw new ArgumentOutOfRangeException(
+					nameof(position),
+					$"The specified value must be between {Start:#.###} and {End:#.###}");
+			}
+
+			var ms    = Position - (int) Position;
+			var frame = (int) decimal.Round(ms / (1M / FramesPerSecond), 0);
+			return frame == FramesPerSecond ? 0 : frame;
+		}
+
+		/*public IEnumerable<MediaSliderMarker> GetMarkersWithinInterval(decimal start, decimal end)
+		{
+			if (start < Start || start > End)
+			{
+				throw new ArgumentOutOfRangeException(
+					nameof(start),
+					$"The specified value must be between {Start:#.###} and {End:#.###}");
+			}
+
+			if (end < End || end > End)
+			{
+				throw new ArgumentOutOfRangeException(
+					nameof(start),
+					$"The specified value must be between {Start:#.###} and {End:#.###}");
+			}
+
+			if (start >= end)
+			{
+				throw new ArgumentException($"The specified value must be < {end:#.###}", nameof(start));
+			}
+
+			return Markers.Where(marker => marker.Position >= start &&
+										   marker.Position <= end ||
+										   marker.Position + marker.Duration >= start &&
+										   marker.Position + marker.Duration <= end);
+		}*/
+
 		public decimal GetNearestSnapValue(decimal relativeTo, bool mustBeVisible, SnapIntervals snapInterval)
 		{
 			decimal newValue;
@@ -1065,7 +1193,11 @@ namespace JLR.Utility.UWP.Controls
 			var     interval     = GetSnapIntervalValue(snapInterval);
 			var     offsetToward = value % interval;
 
-			if (offsetToward == 0)
+			// If the caller specifies that the nearest snap value must be visible
+			// and the current visible range is invalid,
+			// or if the specified value is a itself a snap value,
+			// return the original value.
+			if (offsetToward == 0 || (mustBeVisible && !IsValidVisibleRange))
 				return decimal.Round(relativeTo, DecimalPrecision);
 
 			var offsetAway = interval - offsetToward;
@@ -1239,7 +1371,35 @@ namespace JLR.Utility.UWP.Controls
 				return;
 
 			slider.InitializeTimescale();
-			slider._tickCanvas.Invalidate();
+			slider.RaiseFramesPerSecondChanged();
+			slider._tickCanvas?.Invalidate();
+		}
+
+		private static void OnIsAdjustmentEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+		{
+			if (!(d is MediaSlider slider))
+				return;
+
+			if (e.Property == IsPositionAdjustmentEnabledProperty && slider._positionElement != null)
+			{
+				slider._positionElement.IsEnabled = (bool) e.NewValue;
+			}
+			else if (e.Property == IsSelectionAdjustmentEnabledProperty)
+			{
+				if (slider._selectionStartElement != null)
+					slider._selectionStartElement.IsEnabled = (bool) e.NewValue;
+				if (slider._selectionEndElement != null)
+					slider._selectionEndElement.IsEnabled = (bool) e.NewValue;
+			}
+			else if (e.Property == IsZoomAdjustmentEnabledProperty)
+			{
+				if (slider._zoomStartElement != null)
+					slider._zoomStartElement.IsEnabled = (bool) e.NewValue;
+				if (slider._zoomEndElement != null)
+					slider._zoomEndElement.IsEnabled = (bool) e.NewValue;
+				if (slider._zoomThumbElement != null)
+					slider._zoomThumbElement.IsEnabled = (bool) e.NewValue;
+			}
 		}
 
 		private static void OnTransportElementChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
@@ -1298,6 +1458,7 @@ namespace JLR.Utility.UWP.Controls
 			if (!(d is MediaSlider slider))
 				return;
 
+			slider.RaiseSelectedMarkerChanged();
 			slider._tickCanvas.Invalidate();
 		}
 		#endregion
@@ -1392,7 +1553,7 @@ namespace JLR.Utility.UWP.Controls
 			Unloaded += MediaSlider_Unloaded;
 		}
 		#endregion
-
+		
 		#region Event Handlers
 		#region General
 		private void MediaSlider_Loaded(object sender, RoutedEventArgs e)
@@ -1405,9 +1566,9 @@ namespace JLR.Utility.UWP.Controls
 		{
 			// CanvasControls need to properly dispose of resources to avoid memory leaks
 			_tickCanvas.RemoveFromVisualTree();
-			_tickCanvas   = null;
+			_tickCanvas = null;
 		}
-		
+
 		private void MainPanel_SizeChanged(object sender, SizeChangedEventArgs e)
 		{
 			// TODO: Implement Measure/Arrange logic instead
@@ -1436,7 +1597,9 @@ namespace JLR.Utility.UWP.Controls
 		private void MainPanel_PointerEntered(object sender, PointerRoutedEventArgs e)
 		{
 			_previousCursor = Window.Current.CoreWindow.PointerCursor;
-			Window.Current.CoreWindow.PointerCursor = _primaryCursor;
+
+			if (IsValidVisibleRange && (IsPositionAdjustmentEnabled || IsSelectionAdjustmentEnabled))
+				Window.Current.CoreWindow.PointerCursor = _primaryCursor;
 		}
 
 		private void MainPanel_PointerExited(object sender, PointerRoutedEventArgs e)
@@ -1446,31 +1609,50 @@ namespace JLR.Utility.UWP.Controls
 
 		private void MainPanel_PointerPressed(object sender, PointerRoutedEventArgs e)
 		{
+			if (!IsValidVisibleRange || (!IsPositionAdjustmentEnabled && !IsSelectionAdjustmentEnabled))
+				return;
+
 			_mainPanel.CapturePointer(e.Pointer);
 
-			var point = e.GetCurrentPoint(_mainPanel);
-			var pos = GetNearestSnapValue(ConvertScreenCoordinateToPosition(point.Position.X),
-										  true, SnapToNearest);
+			var point    = e.GetCurrentPoint(_mainPanel);
+			var pos      = ConvertScreenCoordinateToPosition(point.Position.X);
+			var snapPos  = GetNearestSnapValue(pos, true, SnapToNearest);
+			var halfSnap = GetSnapIntervalValue(SnapToNearest) / 2;
 
-			switch (point.Properties.PointerUpdateKind)
+			if (point.Properties.PointerUpdateKind == PointerUpdateKind.LeftButtonPressed)
 			{
-				case PointerUpdateKind.LeftButtonPressed:
+				var closestMarker = Markers.Where(marker => marker.Position >= pos - halfSnap &&
+															marker.Position <= pos + halfSnap ||
+															marker.Position + marker.Duration >= pos - halfSnap &&
+															marker.Position + marker.Duration <= pos + halfSnap)
+										   .OrderBy(x => Math.Min(Math.Abs(x.Position - pos),
+																  Math.Abs((x.Position + x.Duration) - pos)))
+										   .FirstOrDefault();
+
+				if (MarkerAreaRect.Contains(point.Position))
+				{
+					SelectedMarker = closestMarker;
+				}
+				else if (IsPositionAdjustmentEnabled)
 				{
 					RaisePositionDragStarted();
-					Position = pos;
-					break;
+					if (closestMarker != null && Math.Abs(closestMarker.Position - pos) < Math.Abs(snapPos - pos))
+						Position = closestMarker.Position;
+					else
+						Position = snapPos;
 				}
-
-				case PointerUpdateKind.RightButtonPressed:
+			}
+			else if (point.Properties.PointerUpdateKind == PointerUpdateKind.RightButtonPressed)
+			{
+				if (IsSelectionAdjustmentEnabled)
 				{
 					RaiseSelectionDragStarted();
 					if (Window.Current.CoreWindow
 							  .GetKeyState(VirtualKey.Control)
 							  .HasFlag(CoreVirtualKeyStates.Down))
-						SelectionEnd = pos;
+						SelectionEnd = snapPos;
 					else
-						SelectionStart = pos;
-					break;
+						SelectionStart = snapPos;
 				}
 			}
 		}
@@ -1492,6 +1674,9 @@ namespace JLR.Utility.UWP.Controls
 
 		private void ZoomPanel_PointerPressed(object sender, PointerRoutedEventArgs e)
 		{
+			if (!IsValidVisibleRange || !IsZoomAdjustmentEnabled)
+				return;
+
 			_zoomPanel.CapturePointer(e.Pointer);
 		}
 
@@ -1504,7 +1689,8 @@ namespace JLR.Utility.UWP.Controls
 		#region TransportElement
 		private void MainPanelElement_PointerEntered(object sender, PointerRoutedEventArgs e)
 		{
-			// Let the TransportElement handle cursor changes (prevent this event from bubbling up to to parent Panel)
+			// Let the TransportElement handle cursor changes
+			// (prevent this event from bubbling up to to parent Panel)
 			e.Handled = true;
 		}
 
@@ -1719,8 +1905,10 @@ namespace JLR.Utility.UWP.Controls
 		{
 			if (e.NewItems != null)
 			{
-				if (e.NewItems.Cast<MediaSliderMarker>().Any(marker => marker.Time >= ZoomStart &&
-																	   marker.Time <= ZoomEnd))
+				if (e.NewItems.Cast<MediaSliderMarker>().Any(marker => marker.Position >= ZoomStart &&
+																	   marker.Position <= ZoomEnd ||
+																	   marker.Position + marker.Duration >= ZoomStart &&
+																	   marker.Position + marker.Duration <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
 					return;
@@ -1729,32 +1917,10 @@ namespace JLR.Utility.UWP.Controls
 
 			if (e.OldItems != null)
 			{
-				if (e.OldItems.Cast<MediaSliderMarker>().Any(marker => marker.Time >= ZoomStart &&
-																	   marker.Time <= ZoomEnd))
-				{
-					_tickCanvas.Invalidate();
-				}
-			}
-		}
-
-		private void Clips_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
-		{
-			if (e.NewItems != null)
-			{
-				if (e.NewItems.Cast<MediaSliderClip>().Any(
-					clip => clip.StartTime >= ZoomStart && clip.StartTime <= ZoomEnd ||
-							clip.EndTime >= ZoomStart && clip.EndTime <= ZoomEnd))
-				{
-					_tickCanvas.Invalidate();
-					return;
-				}
-			}
-
-			if (e.OldItems != null)
-			{
-				if (e.OldItems.Cast<MediaSliderClip>().Any(
-					clip => clip.StartTime >= ZoomStart && clip.StartTime <= ZoomEnd ||
-							clip.EndTime >= ZoomStart && clip.EndTime <= ZoomEnd))
+				if (e.OldItems.Cast<MediaSliderMarker>().Any(marker => marker.Position >= ZoomStart &&
+																	   marker.Position <= ZoomEnd ||
+																	   marker.Position + marker.Duration >= ZoomStart &&
+																	   marker.Position + marker.Duration <= ZoomEnd))
 				{
 					_tickCanvas.Invalidate();
 				}
@@ -1781,8 +1947,11 @@ namespace JLR.Utility.UWP.Controls
 
 		private void TickCanvas_Draw(CanvasControl sender, CanvasDrawEventArgs args)
 		{
-			// Don't render if the CanvasControl's size is zero
-			if (Math.Abs(sender.ActualWidth) < double.Epsilon || Math.Abs(sender.ActualHeight) < double.Epsilon)
+			// Don't render if the CanvasControl's size is zero,
+			// or if the current visible range is invalid.
+			if (!IsValidVisibleRange ||
+				Math.Abs(sender.ActualWidth) < double.Epsilon ||
+				Math.Abs(sender.ActualHeight) < double.Epsilon)
 				return;
 
 			// Get current marker area and tick area rectangles
@@ -1982,18 +2151,18 @@ namespace JLR.Utility.UWP.Controls
 			// Draw clips
 			using (args.DrawingSession.CreateLayer(1.0f))
 			{
-				foreach (var clip in Clips)
+				foreach (var clip in Markers.Where(x => x.Duration > 0))
 				{
-					if (clip.EndTime - clip.StartTime == 0 || clip.StartTime > ZoomEnd || clip.EndTime < ZoomStart)
+					if (clip.Duration == 0 || clip.Position > ZoomEnd || clip.Position + clip.Duration < ZoomStart)
 						continue;
 
-					var spanBrush  = clip == SelectedClip ? _selectedClipBrush : _clipSpanBrush;
-					var inOutBrush = clip == SelectedClip ? _selectedClipBrush : _clipInOutPointBrush;
+					var spanBrush  = clip == SelectedMarker ? _selectedClipBrush : _clipSpanBrush;
+					var inOutBrush = clip == SelectedMarker ? _selectedClipBrush : _clipInOutPointBrush;
 
 					var x1 = (float) CalculateHorizontalAxisCoordinate(
-						clip.StartTime <= ZoomStart ? ZoomStart : clip.StartTime);
+						clip.Position <= ZoomStart ? ZoomStart : clip.Position);
 					var x2 = (float) CalculateHorizontalAxisCoordinate(
-						clip.EndTime >= ZoomEnd ? ZoomEnd : clip.EndTime);
+						clip.Position + clip.Duration >= ZoomEnd ? ZoomEnd : clip.Position + clip.Duration);
 
 					// Generate text label for this clip
 					var textFormat = new CanvasTextFormat
@@ -2114,7 +2283,7 @@ namespace JLR.Utility.UWP.Controls
 					}
 
 					// Draw clip in-point
-					if (clip.StartTime >= ZoomStart && clip.StartTime <= ZoomEnd)
+					if (clip.Position >= ZoomStart && clip.Position <= ZoomEnd)
 					{
 						args.DrawingSession.FillGeometry(inPointGeometry, x1, (float) markerAreaRect.Top, inOutBrush);
 						args.DrawingSession.DrawLine(x1, (float) tickAreaRect.Top,
@@ -2125,7 +2294,7 @@ namespace JLR.Utility.UWP.Controls
 					}
 
 					// Draw clip out-point
-					if (clip.EndTime >= ZoomStart && clip.EndTime <= ZoomEnd)
+					if (clip.Position + clip.Duration >= ZoomStart && clip.Position + clip.Duration <= ZoomEnd)
 					{
 						args.DrawingSession.FillGeometry(outPointGeometry, x2, (float) markerAreaRect.Top, inOutBrush);
 						args.DrawingSession.DrawLine(x2, (float) tickAreaRect.Top,
@@ -2140,13 +2309,13 @@ namespace JLR.Utility.UWP.Controls
 			// Draw markers
 			using (args.DrawingSession.CreateLayer(1.0f))
 			{
-				foreach (var marker in Markers)
+				foreach (var marker in Markers.Where(x => x.Duration == 0))
 				{
-					if (marker.Time < ZoomStart || marker.Time > ZoomEnd)
+					if (marker.Position < ZoomStart || marker.Position > ZoomEnd)
 						continue;
 
 					var brush = marker == SelectedMarker ? _selectedMarkerBrush : _markerBrush;
-					var x     = (float) CalculateHorizontalAxisCoordinate(marker.Time);
+					var x     = (float) CalculateHorizontalAxisCoordinate(marker.Position);
 
 					args.DrawingSession.FillGeometry(markerGeometry, x, (float) markerAreaRect.Top, brush);
 					args.DrawingSession.DrawLine(x, (float) tickAreaRect.Top,
@@ -2214,6 +2383,8 @@ namespace JLR.Utility.UWP.Controls
 		#endregion
 
 		#region Private Properties
+		private bool IsValidVisibleRange => ZoomEnd - ZoomStart >= MinimumVisibleRange;
+
 		private Rect TickAreaRect
 		{
 			get
@@ -2246,15 +2417,16 @@ namespace JLR.Utility.UWP.Controls
 			if (_mainPanel == null || _positionElement == null)
 				return;
 
-			// Get current tick area rectangle
-			var tickAreaRect = TickAreaRect;
-
-			// Hide position element if the current position is not within the zoom range
-			if (Position < ZoomStart || Position > ZoomEnd || ZoomStart == ZoomEnd)
+			// Hide position element if the current position is not within the current visible range,
+			// or if the current visible range is invalid.
+			if(Position < ZoomStart || Position > ZoomEnd || !IsValidVisibleRange)
 			{
 				_positionElement.Visibility = Visibility.Collapsed;
 				return;
 			}
+
+			// Get current tick area rectangle
+			var tickAreaRect = TickAreaRect;
 
 			// Resize position element
 			var height = PositionElementRelativeSize * tickAreaRect.Height;
@@ -2285,7 +2457,16 @@ namespace JLR.Utility.UWP.Controls
 			if (_mainPanel == null)
 				return;
 
-			// Get current tick area rectangle
+			// Hide all selection-related elements if the current visible range of the slider is invalid.
+			if (!IsValidVisibleRange)
+			{
+				_selectionStartElement.Visibility = Visibility.Collapsed;
+				_selectionEndElement.Visibility   = Visibility.Collapsed;
+				_selectionRect                    = Rect.Empty;
+				return;
+			}
+
+			// // Get current tick area rectangle
 			var tickAreaRect = TickAreaRect;
 
 			var thumbTop = tickAreaRect.Top;
@@ -2300,7 +2481,6 @@ namespace JLR.Utility.UWP.Controls
 				// Position the selection start element on the horizontal axis
 				if (SelectionStart >= ZoomStart &&
 					SelectionStart <= ZoomEnd &&
-					ZoomStart != ZoomEnd &&
 					SelectionEnd != null)
 				{
 					_selectionStartElement.Visibility = Visibility.Visible;
@@ -2319,7 +2499,6 @@ namespace JLR.Utility.UWP.Controls
 				// Position the selection end element on the horizontal axis
 				if (SelectionEnd >= ZoomStart &&
 					SelectionEnd <= ZoomEnd &&
-					ZoomStart != ZoomEnd &&
 					SelectionStart != null)
 				{
 					_selectionEndElement.Visibility = Visibility.Visible;
@@ -2384,8 +2563,19 @@ namespace JLR.Utility.UWP.Controls
 			if (_zoomPanel == null)
 				return;
 
+			// Hide all zoom-related elements if the current visible range of the slider is invalid.
+			// This situation cannot be caused by direct modification of zoom values, instead this will occur
+			// if the slider has a total duration less than the minimum allowable visible range.
+			if (!IsValidVisibleRange)
+			{
+				_zoomStartElement.Visibility = Visibility.Collapsed;
+				_zoomEndElement.Visibility   = Visibility.Collapsed;
+				_zoomThumbElement.Visibility = Visibility.Collapsed;
+				return;
+			}
+
 			// Position and resize the zoom start element
-			if (_zoomStartElement != null)
+			if(_zoomStartElement != null)
 			{
 				_zoomStartElement.Height = _zoomPanel.ActualHeight;
 				Canvas.SetTop(_zoomStartElement, 0);
@@ -2504,11 +2694,19 @@ namespace JLR.Utility.UWP.Controls
 
 		private double ConvertTimeIntervalToPixels(decimal duration)
 		{
-			return decimal.ToDouble(((decimal) _tickCanvas.ActualWidth * duration) / (ZoomEnd - ZoomStart));
+			return IsValidVisibleRange
+				? decimal.ToDouble(((decimal) _tickCanvas.ActualWidth * duration) / (ZoomEnd - ZoomStart))
+				: 0;
 		}
 
 		private decimal ConvertScreenCoordinateToPosition(double coordinate)
 		{
+			if (!IsValidVisibleRange)
+				return 0;
+
+			if (coordinate < 0)
+				coordinate = 0;
+
 			var positiveWidth  = ConvertTimeIntervalToPixels(ZoomEnd); // Number of pixels for which Position >= 0
 			var zeroCoordinate = _tickCanvas.ActualWidth - positiveWidth;
 
@@ -2518,10 +2716,8 @@ namespace JLR.Utility.UWP.Controls
 									 DecimalPrecision);
 			}
 
-			return decimal.Round(
-				((decimal) (zeroCoordinate - coordinate) * ZoomStart) /
-				(decimal) (_tickCanvas.ActualWidth - positiveWidth),
-				DecimalPrecision);
+			return decimal.Round(((decimal) (zeroCoordinate - coordinate) * ZoomStart) /
+								 (decimal) zeroCoordinate, DecimalPrecision);
 		}
 
 		private decimal GetSnapIntervalValue(SnapIntervals interval)
@@ -2707,33 +2903,80 @@ namespace JLR.Utility.UWP.Controls
 		}
 		#endregion
 
+		#region Interface Implementation (IFormattable)
+		public string ToString(string format, IFormatProvider formatProvider)
+		{
+			if (string.IsNullOrEmpty(format))
+				format = "F";
+
+			if (formatProvider == null)
+				formatProvider = CultureInfo.CurrentCulture;
+
+			var isRemaining = format.ToUpperInvariant().Contains('R');
+			var duration    = Duration;
+			var builder     = new StringBuilder();
+
+			TimeSpan pos;
+			if (isRemaining)
+			{
+				pos = duration - TimeSpan.FromSeconds(decimal.ToDouble(Position));
+				builder.Append("- ");
+			}
+			else
+			{
+				pos = TimeSpan.FromSeconds(decimal.ToDouble(Position));
+			}
+
+			if (duration.Days > 0)
+			{
+				builder.Append(pos.Days);
+				builder.Append(':');
+			}
+
+			if (duration.Days > 0)
+				builder.Append($"{pos.Hours:00}:");
+			else if (duration.Hours > 0)
+				builder.Append($"{pos.Hours:#0}:");
+
+			if (duration.Hours > 0)
+				builder.Append($"{pos.Minutes:00}:");
+			else if (duration.Minutes > 0)
+				builder.Append($"{pos.Minutes:#0}:");
+
+			if (duration.Minutes > 0)
+				builder.Append($"{pos.Seconds:00}");
+			else if (duration.Seconds > 0)
+				builder.Append($"{pos.Seconds:#0}");
+
+			if (format.ToUpperInvariant().Contains('F'))
+			{
+				var frame = isRemaining
+					? FramesPerSecond - GetFrameAtPosition(Position) - 1
+					: GetFrameAtPosition(Position);
+
+				if (FramesPerSecond >= 1000)
+					builder.Append($";{frame:0000}");
+				else if (FramesPerSecond >= 100)
+					builder.Append($";{frame:000}");
+				else if (FramesPerSecond >= 10)
+					builder.Append($";{frame:00}");
+				else
+					builder.Append($";{frame:#}");
+			}
+			else if (format.ToUpperInvariant().Contains('T'))
+			{
+				builder.Append($".{pos.Milliseconds:000}");
+			}
+			else
+			{
+				throw new FormatException("Unrecognized format string");
+			}
+
+			return builder.ToString();
+		}
+		#endregion
+
 		#region Nested Types (Public)
-		public class MediaSliderMarker
-		{
-			public string Name { get; }
-			public decimal Time { get; }
-
-			public MediaSliderMarker(string name, decimal time)
-			{
-				Name = name;
-				Time = time;
-			}
-		}
-
-		public class MediaSliderClip
-		{
-			public string Name { get; }
-			public decimal StartTime { get; }
-			public decimal EndTime { get; }
-
-			public MediaSliderClip(string name, decimal startTime, decimal endTime)
-			{
-				Name      = name;
-				StartTime = startTime;
-				EndTime   = endTime;
-			}
-		}
-
 		public enum SnapIntervals
 		{
 			Frame,
@@ -2827,4 +3070,18 @@ namespace JLR.Utility.UWP.Controls
 		Scroll
 	}
 	#endregion
+
+	public class MediaSliderMarker
+	{
+		public string Name { get; }
+		public decimal Position { get; }
+		public decimal Duration { get; }
+
+		public MediaSliderMarker(string name, decimal position, decimal duration = 0)
+		{
+			Name     = name;
+			Position = position;
+			Duration = duration;
+		}
+	}
 }
