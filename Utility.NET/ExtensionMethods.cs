@@ -15,6 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 
 namespace JLR.Utility.NET
@@ -30,7 +31,8 @@ namespace JLR.Utility.NET
 		public static IEnumerable<string> GetSetFlagNames(this Enum value)
 		{
 			var values = Enum.GetValues(value.GetType());
-			return (from object obj in values where value.HasFlag((Enum)obj) select Enum.GetName(value.GetType(), obj)).ToList();
+			return (from object obj in values where value.HasFlag((Enum) obj) select Enum.GetName(value.GetType(), obj))
+			   .ToList();
 		}
 		#endregion
 
@@ -72,19 +74,24 @@ namespace JLR.Utility.NET
 		/// <returns>A <see cref="System.String"/> containing the results.</returns>
 		public static string Filter(this string value, FilterAction matchRule, params char[] characters)
 		{
-			return new string(
-				(from c in value where matchRule == FilterAction.Keep ? characters.Contains(c) : !characters.Contains(c) select c)
-				.ToArray());
+			return new string((
+								  from c in value
+								  where matchRule == FilterAction.Keep
+									  ? characters.Contains(c)
+									  : !characters.Contains(c)
+								  select c)
+							 .ToArray());
 		}
 
 		public static string Filter(this string value, FilterAction matchRule, UnicodeCategory categories)
 		{
 			return new string(
-				(from c in value
-				 where matchRule == FilterAction.Keep
-					 ? categories.HasFlag(Char.GetUnicodeCategory(c))
-					 : !categories.HasFlag(Char.GetUnicodeCategory(c))
-				 select c).ToArray());
+				(
+					from c in value
+					where matchRule == FilterAction.Keep
+						? categories.HasFlag(char.GetUnicodeCategory(c))
+						: !categories.HasFlag(char.GetUnicodeCategory(c))
+					select c).ToArray());
 		}
 		#endregion
 	}

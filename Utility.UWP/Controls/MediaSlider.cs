@@ -21,6 +21,7 @@ using Windows.UI.Xaml.Media.Animation;
 
 using JLR.Utility.NET;
 using JLR.Utility.NET.Math;
+using JLR.Utility.NET.Multimedia;
 
 using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.Geometry;
@@ -2903,6 +2904,13 @@ namespace JLR.Utility.UWP.Controls
 		}
 		#endregion
 
+		#region Method Overrides (System.Object)
+		public override string ToString()
+		{
+			return ToString("F", CultureInfo.CurrentCulture);
+		}
+		#endregion
+
 		#region Interface Implementation (IFormattable)
 		public string ToString(string format, IFormatProvider formatProvider)
 		{
@@ -2987,6 +2995,20 @@ namespace JLR.Utility.UWP.Controls
 			MinorTick,
 			MajorTick
 		}
+
+		public class MediaSliderMarker
+		{
+			public string Name { get; }
+			public decimal Position { get; }
+			public decimal Duration { get; }
+
+			public MediaSliderMarker(string name, decimal position, decimal duration = 0)
+			{
+				Name     = name;
+				Position = position;
+				Duration = duration;
+			}
+		}
 		#endregion
 
 		#region Nested Types (Private)
@@ -3070,18 +3092,4 @@ namespace JLR.Utility.UWP.Controls
 		Scroll
 	}
 	#endregion
-
-	public class MediaSliderMarker
-	{
-		public string Name { get; }
-		public decimal Position { get; }
-		public decimal Duration { get; }
-
-		public MediaSliderMarker(string name, decimal position, decimal duration = 0)
-		{
-			Name     = name;
-			Position = position;
-			Duration = duration;
-		}
-	}
 }

@@ -23,16 +23,15 @@
   <ItemGroup>
     <Compile Include="Controls\MediaSlider.cs" />
     <Compile Include="Controls\TransportElement.cs" />
-    <Compile Include="Dialogs\SingleStringPromptDialog.xaml.cs">
-      <DependentUpon>SingleStringPromptDialog.xaml</DependentUpon>
+    <Compile Include="Dialogs\TextPromptDialog.xaml.cs">
+      <DependentUpon>TextPromptDialog.xaml</DependentUpon>
     </Compile>
     <Compile Include="General\DisplayHelper.cs" />
     <Compile Include="General\ExtensionMethods.cs" />
-    <Compile Include="General\TemplateSelectors.cs" />
-    <Compile Include="General\ValueConverters.cs" />
-    <Compile Include="Models\MediaFile.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="ViewModels\MediaTree.cs" />
+    <Compile Include="ViewModel\ViewModel.cs" />
+    <Compile Include="ViewModel\NodeViewModel.cs" />
+    <Compile Include="ViewModel\XmlNodeViewModel.cs" />
     <EmbeddedResource Include="Properties\Utility.UWP.rd.xml" />
   </ItemGroup>
   <ItemGroup>
@@ -47,12 +46,9 @@
     </PackageReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="ClassDiagram1.cd" />
-  </ItemGroup>
-  <ItemGroup>
-    <Page Include="Dialogs\SingleStringPromptDialog.xaml">
-      <SubType>Designer</SubType>
+    <Page Include="Dialogs\TextPromptDialog.xaml">
       <Generator>MSBuild:Compile</Generator>
+      <SubType>Designer</SubType>
     </Page>
     <Page Include="Themes\MediaSlider.xaml">
       <SubType>Designer</SubType>
@@ -65,7 +61,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Utility.NET\Utility.NET.csproj">
-      <Project>{63c840df-c44f-4cda-951e-c19d0ef54ddd}</Project>
+      <Project>{6a2e2d2d-f537-435a-8b7c-e979e2ea00cb}</Project>
       <Name>Utility.NET</Name>
     </ProjectReference>
   </ItemGroup>

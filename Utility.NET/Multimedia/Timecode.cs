@@ -59,11 +59,14 @@ namespace JLR.Utility.NET.Multimedia
 	}
 
 	/// <summary>
-	/// Represents the different units in which a <see cref="Timecode"/> can be represented
+	/// Indicates the smallest unit by which a <see cref="Timecode"/> can be divided
 	/// </summary>
 	public enum UnitType
 	{
+		/// <summary>No further subdivision is possible beyond frames/milliseconds</summary>
 		None,
+
+		/// <summary>Samples per second</summary>
 		Samples,
 		Ticks
 	}
@@ -85,25 +88,26 @@ namespace JLR.Utility.NET.Multimedia
 
 		#region Fields
 		private static int          _roundingPrecision = 25;
-		private        decimal      _absoluteTime, _minValue, _maxValue;
-		private        int          _frameRate,    _unitRate;
+		private        decimal      _absoluteTime;
+		private        int          _frameRate, _unitRate;
 		private        TimeBase     _timeBase;
 		private        CountingMode _countingMode;
-		private        UnitType     _unitType;
 		#endregion
 
 		#region Static Properties
 		/// <summary>
-		/// Gets or sets the current mathematical rounding precision (number of decimal places)
+		/// Gets or sets the current rounding precision (number of decimal places)
 		/// </summary>
 		public static int RoundingPrecision
 		{
-			get { return _roundingPrecision; }
+			get => _roundingPrecision;
 			set
 			{
 				if (value < 0 || value > 28)
 				{
-					throw new ArgumentOutOfRangeException(nameof(value), "Rounding precision must be between 0 and 28 decimal places");
+					throw new ArgumentOutOfRangeException(
+						nameof(value),
+						"Rounding precision must be between 0 and 28 decimal places");
 				}
 
 				_roundingPrecision = value;
@@ -111,19 +115,25 @@ namespace JLR.Utility.NET.Multimedia
 		}
 
 		/// <summary>
-		/// Represents the zero <see cref="Timecode"/> value
+		/// Represents the <see cref="Timecode"/> zero value
 		/// </summary>
 		public static Timecode Zero => new Timecode(0M);
 		#endregion
 
 		#region Public Properties
-		public decimal MinValue   => _minValue;
-		public decimal MaxValue   => _maxValue;
-		public bool    IsNegative => AbsoluteTime < 0;
+		/// <summary>
+		/// Gets or sets the minimum valid nonzero value in absolute time
+		/// </summary>
+		public decimal MinValue { get; private set; }
+
+		/// <summary>
+		/// Gets or sets the maximum valid value in absolute time
+		/// </summary>
+		public decimal MaxValue { get; private set; }
 
 		public decimal AbsoluteTime
 		{
-			get { return _absoluteTime; }
+			get => _absoluteTime;
 			set
 			{
 				_absoluteTime = FrameRate == 0 ? 0 : value;
@@ -133,10 +143,11 @@ namespace JLR.Utility.NET.Multimedia
 
 		public int FrameRate
 		{
-			get { return _frameRate; }
+			get => _frameRate;
 			set
 			{
 				if (value == _frameRate) return;
+
 				_frameRate = value;
 				SetExtrema();
 				ValidateAbsoluteTime();
@@ -145,10 +156,11 @@ namespace JLR.Utility.NET.Multimedia
 
 		public TimeBase TimeBase
 		{
-			get { return _timeBase; }
+			get => _timeBase;
 			set
 			{
 				if (value == _timeBase) return;
+
 				_timeBase = value;
 				ValidateAndFixFormat(false);
 				SetExtrema();
@@ -158,10 +170,11 @@ namespace JLR.Utility.NET.Multimedia
 
 		public CountingMode CountingMode
 		{
-			get { return _countingMode; }
+			get => _countingMode;
 			set
 			{
 				if (value == _countingMode) return;
+
 				_countingMode = value;
 				ValidateAndFixFormat(true);
 				SetExtrema();
@@ -171,76 +184,73 @@ namespace JLR.Utility.NET.Multimedia
 
 		public int UnitRate
 		{
-			get { return _unitRate; }
+			get => _unitRate;
 			set
 			{
 				if (value == _unitRate) return;
+
 				_unitRate = value;
 				SetExtrema();
 				ValidateAbsoluteTime();
 			}
 		}
 
-		public UnitType UnitType { get { return _unitType; } set { _unitType = value; } }
+		public UnitType UnitType { get; set; }
 
 		public double TotalHours
 		{
-			get
-			{
-				return (double)decimal.Round(
-					AbsoluteTimeToAbsoluteFrames(AbsoluteTime, FrameRate, TimeBase) / (FrameRate * 3600),
-					11);
-			}
-			set { AbsoluteTime = AbsoluteFramesToAbsoluteTime((decimal)value * FrameRate * 3600, FrameRate, TimeBase); }
+			get =>
+				(double) decimal.Round(
+					AbsoluteTimeToAbsoluteFrames(AbsoluteTime, FrameRate, TimeBase) / (FrameRate * 3600), 11);
+			set => AbsoluteTime = AbsoluteFramesToAbsoluteTime((decimal) value * FrameRate * 3600, FrameRate, TimeBase);
 		}
 
 		public double TotalMinutes
 		{
-			get
-			{
-				return (double)decimal.Round(
-					AbsoluteTimeToAbsoluteFrames(AbsoluteTime, FrameRate, TimeBase) / (FrameRate * 60),
-					11);
-			}
-			set { AbsoluteTime = AbsoluteFramesToAbsoluteTime((decimal)value * FrameRate * 60, FrameRate, TimeBase); }
+			get =>
+				(double) decimal.Round(
+					AbsoluteTimeToAbsoluteFrames(AbsoluteTime, FrameRate, TimeBase) / (FrameRate * 60), 11);
+			set => AbsoluteTime = AbsoluteFramesToAbsoluteTime((decimal) value * FrameRate * 60, FrameRate, TimeBase);
 		}
 
 		public double TotalSeconds
 		{
-			get { return (double)decimal.Round(AbsoluteTime, 11); }
-			set { AbsoluteTime = (decimal)value; }
+			get => (double) decimal.Round(AbsoluteTime, 11);
+			set => AbsoluteTime = (decimal) value;
 		}
 
-		public double TotalMilliseconds { get { return TotalSeconds * 1000D; } set { AbsoluteTime = (decimal)value / 1000; } }
+		public double TotalMilliseconds
+		{
+			get => TotalSeconds * 1000D;
+			set => AbsoluteTime = (decimal) value / 1000;
+		}
 
 		public double TotalFrames
 		{
-			get { return (double)decimal.Round(AbsoluteTimeToAbsoluteFrames(AbsoluteTime, FrameRate, TimeBase), 11); }
-			set { AbsoluteTime = AbsoluteFramesToAbsoluteTime((decimal)value, FrameRate, TimeBase); }
+			get => (double) decimal.Round(AbsoluteTimeToAbsoluteFrames(AbsoluteTime, FrameRate, TimeBase), 11);
+			set => AbsoluteTime = AbsoluteFramesToAbsoluteTime((decimal) value, FrameRate, TimeBase);
 		}
 
 		public double TotalUnits
 		{
-			get { return (double)decimal.Round(AbsoluteTimeToAbsoluteUnits(AbsoluteTime, UnitRate), 11); }
-			set { AbsoluteTime = AbsoluteUnitsToAbsoluteTime((decimal)value, UnitRate); }
+			get => (double) decimal.Round(AbsoluteTimeToAbsoluteUnits(AbsoluteTime, UnitRate), 11);
+			set => AbsoluteTime = AbsoluteUnitsToAbsoluteTime((decimal) value, UnitRate);
 		}
 
 		public int Hours
 		{
 			get
 			{
-				bool isNegative;
-				int  hours, minutes, seconds, frames;
 				AbsoluteTimeToTimecode(
 					AbsoluteTime,
 					FrameRate,
 					TimeBase,
 					CountingMode,
-					out hours,
-					out minutes,
-					out seconds,
-					out frames,
-					out isNegative);
+					out var hours,
+					out _,
+					out _,
+					out _,
+					out _);
 				return hours;
 			}
 		}
@@ -249,18 +259,16 @@ namespace JLR.Utility.NET.Multimedia
 		{
 			get
 			{
-				bool isNegative;
-				int  hours, minutes, seconds, frames;
 				AbsoluteTimeToTimecode(
 					AbsoluteTime,
 					FrameRate,
 					TimeBase,
 					CountingMode,
-					out hours,
-					out minutes,
-					out seconds,
-					out frames,
-					out isNegative);
+					out _,
+					out var minutes,
+					out _,
+					out _,
+					out _);
 				return minutes;
 			}
 		}
@@ -269,40 +277,36 @@ namespace JLR.Utility.NET.Multimedia
 		{
 			get
 			{
-				bool isNegative;
-				int  hours, minutes, seconds, frames;
 				AbsoluteTimeToTimecode(
 					AbsoluteTime,
 					FrameRate,
 					TimeBase,
 					CountingMode,
-					out hours,
-					out minutes,
-					out seconds,
-					out frames,
-					out isNegative);
+					out _,
+					out _,
+					out var seconds,
+					out _,
+					out _);
 				return seconds;
 			}
 		}
 
-		public int Milliseconds => (int)((AbsoluteTime - (int)AbsoluteTime) * 1000);
+		public int Milliseconds => (int) ((AbsoluteTime - (int) AbsoluteTime) * 1000);
 
 		public int Frames
 		{
 			get
 			{
-				bool isNegative;
-				int  hours, minutes, seconds, frames;
 				AbsoluteTimeToTimecode(
 					AbsoluteTime,
 					FrameRate,
 					TimeBase,
 					CountingMode,
-					out hours,
-					out minutes,
-					out seconds,
-					out frames,
-					out isNegative);
+					out _,
+					out _,
+					out _,
+					out var frames,
+					out _);
 				return frames;
 			}
 		}
@@ -311,20 +315,18 @@ namespace JLR.Utility.NET.Multimedia
 		{
 			get
 			{
-				bool isNegative;
-				int  hours, minutes, seconds, frames, units;
 				AbsoluteTimeToTimecodeWithUnits(
 					AbsoluteTime,
 					FrameRate,
 					UnitRate,
 					TimeBase,
 					CountingMode,
-					out hours,
-					out minutes,
-					out seconds,
-					out frames,
-					out units,
-					out isNegative);
+					out _,
+					out _,
+					out _,
+					out _,
+					out var units,
+					out _);
 				return units;
 			}
 		}
@@ -338,14 +340,14 @@ namespace JLR.Utility.NET.Multimedia
 						int unitRate = DefaultUnitRate,
 						UnitType unitType = DefaultUnitType)
 		{
-			_minValue     = 0;
-			_maxValue     = 0;
+			MinValue     = 0;
+			MaxValue     = 0;
 			_absoluteTime = absoluteTime;
 			_frameRate    = frameRate;
 			_timeBase     = timeBase;
 			_countingMode = countingMode;
 			_unitRate     = unitRate;
-			_unitType     = unitType;
+			UnitType     = unitType;
 			ValidateFormat();
 			SetExtrema();
 			ValidateAbsoluteTime();
@@ -362,7 +364,9 @@ namespace JLR.Utility.NET.Multimedia
 			TimecodeToAbsoluteTime(frameRate, timeBase, countingMode, hours, minutes, seconds, frames, isNegative),
 			frameRate,
 			timeBase,
-			countingMode) { }
+			countingMode)
+		{
+		}
 
 		public Timecode(int hours,
 						int minutes,
@@ -390,7 +394,9 @@ namespace JLR.Utility.NET.Multimedia
 			timeBase,
 			countingMode,
 			unitRate,
-			unitType) { }
+			unitType)
+		{
+		}
 
 		public Timecode(long totalUnits, int unitRate = DefaultUnitRate, UnitType unitType = DefaultUnitType) : this(
 			AbsoluteUnitsToAbsoluteTime(totalUnits, unitRate),
@@ -398,7 +404,9 @@ namespace JLR.Utility.NET.Multimedia
 			DefaultTimeBase,
 			DefaultCountingMode,
 			unitRate,
-			unitType) { }
+			unitType)
+		{
+		}
 
 		public Timecode(TimeSpan duration) : this(
 			AbsoluteUnitsToAbsoluteTime(duration.Ticks, TicksPerSecond),
@@ -406,7 +414,9 @@ namespace JLR.Utility.NET.Multimedia
 			DefaultTimeBase,
 			DefaultCountingMode,
 			TicksPerSecond,
-			UnitType.Ticks) { }
+			UnitType.Ticks)
+		{
+		}
 		#endregion
 
 		#region Static Methods (Public)
@@ -431,22 +441,26 @@ namespace JLR.Utility.NET.Multimedia
 		#region Methods (Public)
 		public Timecode Add(Timecode other)
 		{
-			return new Timecode(AbsoluteTime + other.AbsoluteTime, FrameRate, TimeBase, CountingMode, UnitRate, UnitType);
+			return new Timecode(AbsoluteTime + other.AbsoluteTime, FrameRate, TimeBase, CountingMode, UnitRate,
+								UnitType);
 		}
 
 		public Timecode Subtract(Timecode other)
 		{
-			return new Timecode(AbsoluteTime - other.AbsoluteTime, FrameRate, TimeBase, CountingMode, UnitRate, UnitType);
+			return new Timecode(AbsoluteTime - other.AbsoluteTime, FrameRate, TimeBase, CountingMode, UnitRate,
+								UnitType);
 		}
 
 		public Timecode Multiply(Timecode other)
 		{
-			return new Timecode(AbsoluteTime * other.AbsoluteTime, FrameRate, TimeBase, CountingMode, UnitRate, UnitType);
+			return new Timecode(AbsoluteTime * other.AbsoluteTime, FrameRate, TimeBase, CountingMode, UnitRate,
+								UnitType);
 		}
 
 		public Timecode Divide(Timecode other)
 		{
-			return new Timecode(AbsoluteTime / other.AbsoluteTime, FrameRate, TimeBase, CountingMode, UnitRate, UnitType);
+			return new Timecode(AbsoluteTime / other.AbsoluteTime, FrameRate, TimeBase, CountingMode, UnitRate,
+								UnitType);
 		}
 
 		public Timecode Increment()
@@ -478,27 +492,30 @@ namespace JLR.Utility.NET.Multimedia
 
 		public TimeSpan ToTimeSpan()
 		{
-			return new TimeSpan((long)AbsoluteTimeToAbsoluteUnits(AbsoluteTime, TicksPerSecond));
+			return new TimeSpan((long) AbsoluteTimeToAbsoluteUnits(AbsoluteTime, TicksPerSecond));
 		}
 
 		public uint ToIntegerRepresentation()
 		{
-			bool isNegative;
-			int  hours, minutes, seconds, frames;
 			AbsoluteTimeToTimecode(
 				AbsoluteTime,
 				FrameRate,
 				TimeBase,
 				CountingMode,
-				out hours,
-				out minutes,
-				out seconds,
-				out frames,
-				out isNegative);
-			var result = BitConverter.ToUInt32(
-				new[] { (byte)frames, (byte)seconds, (byte)minutes, (byte)(isNegative ? 256 - System.Math.Abs(hours) : hours) },
-				0);
-			return result;
+				out var hours,
+				out var minutes,
+				out var seconds,
+				out var frames,
+				out var isNegative);
+
+			return BitConverter.ToUInt32(
+				new[]
+				{
+					(byte) frames,
+					(byte) seconds,
+					(byte) minutes,
+					(byte) (isNegative ? 256 - System.Math.Abs(hours) : hours)
+				}, 0);
 		}
 		#endregion
 
@@ -542,11 +559,13 @@ namespace JLR.Utility.NET.Multimedia
 			seconds.ValidateRange(0, 59);
 			frames.ValidateRange(0, frameRate - 1);
 
-			var modeDependentFrameRate = countingMode == CountingMode.Drop ? decimal.Round(frameRate / 1.001M, 2) : frameRate;
-			var dropFrameCompensation  = countingMode == CountingMode.Drop ? 2 * (int)(minutes / 10D) : 0;
+			var modeDependentFrameRate =
+				countingMode == CountingMode.Drop ? decimal.Round(frameRate / 1.001M, 2) : frameRate;
+			var dropFrameCompensation = countingMode == CountingMode.Drop ? 2 * (int) (minutes / 10D) : 0;
 
-			long result = frames + frameRate * seconds + (int)(modeDependentFrameRate * 60) * minutes + dropFrameCompensation +
-				(int)(modeDependentFrameRate * 3600) * hours;
+			long result = frames + (frameRate * seconds) + ((int) (modeDependentFrameRate * 60) * minutes) +
+						  dropFrameCompensation +
+						  ((int) (modeDependentFrameRate * 3600) * hours);
 
 			return isNegative ? 0 - result : result;
 		}
@@ -562,31 +581,34 @@ namespace JLR.Utility.NET.Multimedia
 		{
 			isNegative = frameCount < 0;
 			frameCount = System.Math.Abs(frameCount);
-			var modeDependentFrameRate = countingMode == CountingMode.Drop ? decimal.Round(frameRate / 1.001M, 2) : frameRate;
+			var modeDependentFrameRate =
+				countingMode == CountingMode.Drop ? decimal.Round(frameRate / 1.001M, 2) : frameRate;
 
-			hours = (int)decimal.Round(frameCount / (modeDependentFrameRate * 3600) % 24, RoundingPrecision);
+			hours = (int) decimal.Round((frameCount / (modeDependentFrameRate * 3600)) % 24, RoundingPrecision);
 
 			if (countingMode == CountingMode.NonDrop)
 			{
-				minutes = (int)decimal.Round((frameCount - frameRate * hours * 3600M) / (frameRate * 60M), RoundingPrecision);
-				seconds = (int)decimal.Round(
-					(frameCount - frameRate * minutes * 60M - frameRate * hours * 3600M) / frameRate,
+				minutes = (int) decimal.Round((frameCount - (frameRate * hours * 3600M)) / (frameRate * 60M),
+											  RoundingPrecision);
+				seconds = (int) decimal.Round(
+					(frameCount - (frameRate * minutes * 60M) - (frameRate * hours * 3600M)) / frameRate,
 					RoundingPrecision);
-				frames = (int)(frameCount - frameRate * seconds - frameRate * minutes * 60 - frameRate * hours * 3600);
+				frames = (int) (frameCount - (frameRate * seconds) - (frameRate * minutes * 60) - (frameRate * hours * 3600));
 			}
 			else
 			{
-				minutes = (int)decimal.Round(
-					(frameCount + 2 * (int)((frameCount - modeDependentFrameRate * hours * 3600) / (frameRate * 60)) -
-						2 * (int)((frameCount - modeDependentFrameRate * hours * 3600) / (frameRate * 3600)) -
-						modeDependentFrameRate * hours * 3600) / (frameRate * 60),
+				minutes = (int) decimal.Round(
+					((frameCount + (2 * (int) ((frameCount - (modeDependentFrameRate * hours * 3600)) / (frameRate * 60)))) -
+					 (2 * (int) ((frameCount - (modeDependentFrameRate * hours * 3600)) / (frameRate * 3600))) -
+					 (modeDependentFrameRate * hours * 3600)) / (frameRate * 60),
 					RoundingPrecision);
-				seconds = (int)decimal.Round(
-					(frameCount - modeDependentFrameRate * minutes * 60 - 2 * (minutes / 10) - modeDependentFrameRate * hours * 3600) /
+				seconds = (int) decimal.Round(
+					(frameCount - (modeDependentFrameRate * minutes * 60) - (2 * (minutes / 10)) -
+					 (modeDependentFrameRate * hours * 3600)) /
 					frameRate,
 					RoundingPrecision);
-				frames = (int)(frameCount - frameRate * seconds - (int)(modeDependentFrameRate * minutes * 60) -
-					2 * (minutes / 10) - (int)(modeDependentFrameRate * hours * 3600));
+				frames = (int) (frameCount - (frameRate * seconds) - (int) (modeDependentFrameRate * minutes * 60) -
+								(2 * (minutes / 10)) - (int) (modeDependentFrameRate * hours * 3600));
 			}
 		}
 
@@ -613,7 +635,7 @@ namespace JLR.Utility.NET.Multimedia
 												   out int frames,
 												   out bool isNegative)
 		{
-			var frameCount = (long)AbsoluteTimeToAbsoluteFrames(absoluteTime, frameRate, timeBase);
+			var frameCount = (long) AbsoluteTimeToAbsoluteFrames(absoluteTime, frameRate, timeBase);
 			FrameCountToTimecode(
 				frameCount,
 				frameRate,
@@ -637,9 +659,11 @@ namespace JLR.Utility.NET.Multimedia
 															   bool isNegative)
 		{
 			var frameCount = System.Math.Abs(
-				TimecodeToFrameCount(frameRate, countingMode, hours, minutes, seconds, frames, isNegative));
+				TimecodeToFrameCount(frameRate, countingMode, hours, minutes, seconds, frames,
+									 isNegative));
 			var absoluteTime = System.Math.Abs(AbsoluteFramesToAbsoluteTime(frameCount, frameRate, timeBase));
-			var result       = decimal.Round(absoluteTime + AbsoluteUnitsToAbsoluteTime(units, unitRate), RoundingPrecision);
+			var result = decimal.Round(absoluteTime + AbsoluteUnitsToAbsoluteTime(units, unitRate),
+									   RoundingPrecision);
 			return isNegative ? decimal.Negate(result) : result;
 		}
 
@@ -655,9 +679,10 @@ namespace JLR.Utility.NET.Multimedia
 															out int units,
 															out bool isNegative)
 		{
-			var frameCount         = (long)AbsoluteTimeToAbsoluteFrames(System.Math.Abs(absoluteTime), frameRate, timeBase);
+			var frameCount =
+				(long) AbsoluteTimeToAbsoluteFrames(System.Math.Abs(absoluteTime), frameRate, timeBase);
 			var dependentFrameRate = timeBase == TimeBase.Ntsc ? frameRate / 1.001M : frameRate;
-			units = (int)(unitRate * (System.Math.Abs(absoluteTime) - frameCount / dependentFrameRate));
+			units = (int) (unitRate * (System.Math.Abs(absoluteTime) - (frameCount / dependentFrameRate)));
 			FrameCountToTimecode(
 				frameCount,
 				frameRate,
@@ -676,18 +701,26 @@ namespace JLR.Utility.NET.Multimedia
 		{
 			if (FrameRate == 0)
 			{
-				_minValue = 0;
-				_maxValue = 0;
+				MinValue = 0;
+				MaxValue = 0;
 			}
 			else
 			{
 				if (UnitType == UnitType.None)
 				{
-					_maxValue = TimecodeToAbsoluteTime(FrameRate, TimeBase, CountingMode, 23, 59, 59, FrameRate - 1, false);
+					MaxValue = TimecodeToAbsoluteTime(
+						FrameRate,
+						TimeBase,
+						CountingMode,
+						23,
+						59,
+						59,
+						FrameRate - 1,
+						false);
 				}
 				else
 				{
-					_maxValue = TimecodeWithUnitsToAbsoluteTime(
+					MaxValue = TimecodeWithUnitsToAbsoluteTime(
 						FrameRate,
 						UnitRate,
 						TimeBase,
@@ -700,7 +733,7 @@ namespace JLR.Utility.NET.Multimedia
 						false);
 				}
 
-				_minValue = decimal.Negate(_maxValue);
+				MinValue = decimal.Negate(MaxValue);
 			}
 		}
 
@@ -714,11 +747,13 @@ namespace JLR.Utility.NET.Multimedia
 
 		private void ValidateAndFixFormat(bool prioritizeCountingMode)
 		{
-			if (CountingMode == CountingMode.Drop && TimeBase == TimeBase.Real)
-			{
-				if (prioritizeCountingMode) TimeBase = TimeBase.Ntsc;
-				else CountingMode                    = CountingMode.NonDrop;
-			}
+			if (CountingMode != CountingMode.Drop || TimeBase != TimeBase.Real)
+				return;
+
+			if (prioritizeCountingMode)
+				TimeBase = TimeBase.Ntsc;
+			else
+				CountingMode = CountingMode.NonDrop;
 		}
 
 		private void ValidateFormat()
@@ -740,6 +775,7 @@ namespace JLR.Utility.NET.Multimedia
 		{
 			if (AbsoluteTime < other.AbsoluteTime) return -1;
 			if (AbsoluteTime > other.AbsoluteTime) return 1;
+
 			return 0;
 		}
 		#endregion
@@ -758,21 +794,21 @@ namespace JLR.Utility.NET.Multimedia
 			var standardComponentsRetrieved = false;
 			var allComponentsRetrieved      = false;
 
-			for (var i = 0; i < format.Length; i++)
+			foreach (var ch in format)
 			{
-				if (char.IsDigit(format[i]) && !isEscape && !isLiteral)
+				if (char.IsDigit(ch) && !isEscape && !isLiteral)
 				{
-					termSizeString.Append(format[i]);
+					termSizeString.Append(ch);
 					continue;
 				}
 
-				if ((format[i] == '\\' && !isEscape && !isLiteral) || (format[i] == '\\' && isLiteral))
+				if ((ch == '\\' && !isEscape && !isLiteral) || (ch == '\\' && isLiteral))
 				{
 					isEscape = true;
 					continue;
 				}
 
-				if (format[i] == '\'' && !isEscape)
+				if (ch == '\'' && !isEscape)
 				{
 					isLiteral = !isLiteral;
 					continue;
@@ -780,18 +816,18 @@ namespace JLR.Utility.NET.Multimedia
 
 				if (isEscape)
 				{
-					result.Append(format[i]);
+					result.Append(ch);
 					isEscape = false;
 					continue;
 				}
 
 				if (isLiteral)
 				{
-					result.Append(format[i]);
+					result.Append(ch);
 					continue;
 				}
 
-				if (char.IsLetter(format[i]) && termSizeString.Length > 0)
+				if (char.IsLetter(ch) && termSizeString.Length > 0)
 				{
 					if (!int.TryParse(termSizeString.ToString(), out componentSize))
 					{
@@ -799,9 +835,10 @@ namespace JLR.Utility.NET.Multimedia
 					}
 				}
 
-				switch (format[i])
+				switch (ch)
 				{
 					case 'h':
+					{
 						if (!standardComponentsRetrieved && !allComponentsRetrieved)
 						{
 							AbsoluteTimeToTimecode(
@@ -821,7 +858,10 @@ namespace JLR.Utility.NET.Multimedia
 							result.Append(hours.ToString($"D{componentSize}"));
 						else result.Append(hours);
 						break;
+					}
+
 					case 'm':
+					{
 						if (!standardComponentsRetrieved && !allComponentsRetrieved)
 						{
 							AbsoluteTimeToTimecode(
@@ -841,7 +881,10 @@ namespace JLR.Utility.NET.Multimedia
 							result.Append(minutes.ToString($"D{componentSize}"));
 						else result.Append(minutes);
 						break;
+					}
+
 					case 's':
+					{
 						if (!standardComponentsRetrieved && !allComponentsRetrieved)
 						{
 							AbsoluteTimeToTimecode(
@@ -861,12 +904,18 @@ namespace JLR.Utility.NET.Multimedia
 							result.Append(seconds.ToString($"D{componentSize}"));
 						else result.Append(seconds);
 						break;
+					}
+
 					case 'q':
+					{
 						if (componentSize > 0)
 							result.Append(Milliseconds.ToString($"D{componentSize}"));
 						else result.Append(Milliseconds);
 						break;
+					}
+
 					case 'f':
+					{
 						if (!standardComponentsRetrieved && !allComponentsRetrieved)
 						{
 							AbsoluteTimeToTimecode(
@@ -886,7 +935,10 @@ namespace JLR.Utility.NET.Multimedia
 							result.Append(frames.ToString($"D{componentSize}"));
 						else result.Append(frames);
 						break;
+					}
+
 					case 'u':
+					{
 						if (!allComponentsRetrieved)
 						{
 							AbsoluteTimeToTimecodeWithUnits(
@@ -908,46 +960,76 @@ namespace JLR.Utility.NET.Multimedia
 							result.Append(units.ToString($"D{componentSize}"));
 						else result.Append(units);
 						break;
+					}
+
 					case 'H':
+					{
 						if (componentSize > 0)
 							result.Append(TotalHours.ToString($"F{componentSize}"));
 						else result.Append(TotalHours);
 						break;
+					}
+
 					case 'M':
+					{
 						if (componentSize > 0)
 							result.Append(TotalMinutes.ToString($"F{componentSize}"));
 						else result.Append(TotalMinutes);
 						break;
+					}
+
 					case 'S':
+					{
 						if (componentSize > 0)
 							result.Append(TotalSeconds.ToString($"F{componentSize}"));
 						else result.Append(TotalSeconds);
 						break;
+					}
+
 					case 'Q':
+					{
 						if (componentSize > 0)
 							result.Append(TotalMilliseconds.ToString($"F{componentSize}"));
 						else result.Append(TotalMilliseconds);
 						break;
+					}
+
 					case 'F':
+					{
 						if (componentSize > 0)
 							result.Append(TotalFrames.ToString($"F{componentSize}"));
 						else result.Append(TotalFrames);
 						break;
+					}
+
 					case 'U':
+					{
 						if (componentSize > 0)
 							result.Append(TotalUnits.ToString($"F{componentSize}"));
 						else result.Append(TotalUnits);
 						break;
+					}
+
 					case 'R':
+					{
 						result.Append(TimeBase == TimeBase.Ntsc ? decimal.Round(FrameRate / 1.001M, 2) : FrameRate);
 						break;
+					}
+
 					case 'r':
+					{
 						result.Append(UnitRate);
 						break;
+					}
+
 					case 'D':
+					{
 						result.Append("fps");
 						break;
+					}
+
 					case 'd':
+					{
 						if (UnitType == UnitType.Samples)
 							result.Append("Hz");
 						else if (UnitType == UnitType.Ticks)
@@ -955,7 +1037,10 @@ namespace JLR.Utility.NET.Multimedia
 						else
 							result.Append("units/sec");
 						break;
+					}
+
 					case 'N':
+					{
 						if (!standardComponentsRetrieved && !allComponentsRetrieved)
 						{
 							AbsoluteTimeToTimecode(
@@ -973,7 +1058,10 @@ namespace JLR.Utility.NET.Multimedia
 
 						if (AbsoluteTime != 0) result.Append(isNegative ? '-' : '+');
 						break;
+					}
+
 					case 'n':
+					{
 						if (!standardComponentsRetrieved && !allComponentsRetrieved)
 						{
 							AbsoluteTimeToTimecode(
@@ -991,12 +1079,19 @@ namespace JLR.Utility.NET.Multimedia
 
 						if (isNegative) result.Append('-');
 						break;
+					}
+
 					case '|':
+					{
 						result.Append(CountingMode == CountingMode.Drop ? ';' : ':');
 						break;
+					}
+
 					default:
-						result.Append(format[i]);
+					{
+						result.Append(ch);
 						break;
+					}
 				}
 
 				componentSize = 0;
@@ -1010,14 +1105,15 @@ namespace JLR.Utility.NET.Multimedia
 		#region Method Overrides (System.ValueType)
 		public override bool Equals(object obj)
 		{
-			if (obj is Timecode)
-				return Equals((Timecode)obj);
+			if (obj is Timecode time)
+				return Equals(time);
+
 			return false;
 		}
 
 		public override int GetHashCode()
 		{
-			return (int)AbsoluteTime ^ FrameRate ^ UnitRate;
+			return (int) AbsoluteTime ^ FrameRate ^ UnitRate;
 		}
 
 		public override string ToString()
