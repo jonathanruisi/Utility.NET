@@ -94,5 +94,23 @@ namespace JLR.Utility.NET
 					select c).ToArray());
 		}
 		#endregion
+
+		#region System.Decimal
+		/// <summary>
+		/// Converts a <see cref="decimal"/> to a <see cref="string"/>
+		/// containing its hexadecimal binary representation
+		/// </summary>
+		/// <param name="value">The <see cref="decimal"/> to convert</param>
+		/// <returns>
+		/// A <see cref="string"/> containing 4 32-bit values arranged MSB to LSB
+		/// (left to right, respectively). For example, the decimal number 456:
+		/// 00000000 00000000 00000000 000001C8
+		/// </returns>
+		public static string ToHexString(this decimal value)
+		{
+			var bits = decimal.GetBits(value);
+			return $"{bits[3]:X8} {bits[2]:X8} {bits[1]:X8} {bits[0]:X8}";
+		}
+		#endregion
 	}
 }

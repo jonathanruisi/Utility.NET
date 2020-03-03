@@ -1,15 +1,21 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Xml;
 
 namespace JLR.Utility.UWP.ViewModel
 {
 	/// <summary>
-	/// Represents a node in a hierarchical tree of <see cref="ViewModel"/> objects.
+	/// Represents a node in a hierarchical structure.
+	/// <see cref="NodeViewModel"/> types are capable of advanced
+	/// data binding scenarios in which change notification is required.
+	/// <see cref="NodeViewModel"/> types are capable of
+	/// serialization to and deserialization from XML.
 	/// </summary>
-	public abstract class NodeViewModel : ViewModel, IEnumerable<NodeViewModel>
+	public abstract class NodeViewModel : XmlViewModel, IEnumerable<NodeViewModel>
 	{
 		#region Fields
 		private NodeViewModel _parent;
@@ -84,7 +90,7 @@ namespace JLR.Utility.UWP.ViewModel
 			return result;
 		}
 		#endregion
-
+		
 		#region Event Handlers
 		private void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
 		{
@@ -113,6 +119,49 @@ namespace JLR.Utility.UWP.ViewModel
 					break;
 				}
 			}
+		}
+		#endregion
+
+		#region Method Overrides (XmlViewModel)
+		protected override void ProcessMemberElement(XmlViewModel element, string flag)
+		{
+			if (flag == "Child" && element is NodeViewModel node)
+				Children.Add(node);
+		}
+
+		public override void WriteXml(XmlWriter writer)
+		{
+			// Verify that this node's type is registered for XML serialization
+			var type = GetType();
+			ValidateTypeForXmlSerialization(type);
+
+			// Write start tag
+			writer.WriteStartElement(SerializationInfo[type]);
+
+			// If this is a root node, explicitly indicate it is not a child.
+			// This allows for derived classes to include their own type as
+			// serializable members which are not children in its hierarchy.
+			// If this is a child node and its parent is a different type,
+			// explicitly indicate that it is a child.
+			if (this == Root && Children.Count == 0)
+				writer.WriteAttributeString(ViewModelFlagName, "Member");
+			else if (Parent != null &&
+					 SerializationInfo[Parent.GetType()]
+				  != SerializationInfo[GetType()])
+				writer.WriteAttributeString(ViewModelFlagName, "Child");
+
+			// Serialize this node's attributes and non-child elements
+			WriteAttributes(writer);
+			WriteElements(writer);
+
+			// Recursively serialize all child nodes
+			foreach (var child in Children)
+			{
+				child.WriteXml(writer);
+			}
+
+			// Write end tag
+			writer.WriteEndElement();
 		}
 		#endregion
 

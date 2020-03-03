@@ -31,7 +31,7 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ViewModel\ViewModel.cs" />
     <Compile Include="ViewModel\NodeViewModel.cs" />
-    <Compile Include="ViewModel\XmlNodeViewModel.cs" />
+    <Compile Include="ViewModel\XmlViewModel.cs" />
     <EmbeddedResource Include="Properties\Utility.UWP.rd.xml" />
   </ItemGroup>
   <ItemGroup>
