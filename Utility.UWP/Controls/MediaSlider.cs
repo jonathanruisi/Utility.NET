@@ -19,9 +19,9 @@ using Windows.UI.Xaml.Input;
 using Windows.UI.Xaml.Media;
 using Windows.UI.Xaml.Media.Animation;
 
-using JLR.Utility.NET;
-using JLR.Utility.NET.Math;
-using JLR.Utility.NET.Multimedia;
+using JLR.Utility.NETFramework;
+using JLR.Utility.NETFramework.Math;
+using JLR.Utility.NETFramework.Multimedia;
 
 using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.Geometry;
@@ -353,7 +353,7 @@ namespace JLR.Utility.UWP.Controls
 			DependencyProperty.Register("TickAlignment",
 										typeof(Position),
 										typeof(MediaSlider),
-										new PropertyMetadata(NET.Position.Bottom, OnTickCanvasRenderPropertyChanged));
+										new PropertyMetadata(NETFramework.Position.Bottom, OnTickCanvasRenderPropertyChanged));
 
 		public Position PositionElementAlignment
 		{
@@ -365,7 +365,7 @@ namespace JLR.Utility.UWP.Controls
 			DependencyProperty.Register("PositionElementAlignment",
 										typeof(Position),
 										typeof(MediaSlider),
-										new PropertyMetadata(NET.Position.Top, OnTransportElementChanged));
+										new PropertyMetadata(NETFramework.Position.Top, OnTransportElementChanged));
 
 		public Position SelectionElementAlignment
 		{
@@ -377,7 +377,7 @@ namespace JLR.Utility.UWP.Controls
 			DependencyProperty.Register("SelectionElementAlignment",
 										typeof(Position),
 										typeof(MediaSlider),
-										new PropertyMetadata(NET.Position.Top, OnTransportElementChanged));
+										new PropertyMetadata(NETFramework.Position.Top, OnTransportElementChanged));
 
 		public Position SelectionHighlightAlignment
 		{
@@ -389,7 +389,7 @@ namespace JLR.Utility.UWP.Controls
 			DependencyProperty.Register("SelectionHighlightAlignment",
 										typeof(Position),
 										typeof(MediaSlider),
-										new PropertyMetadata(NET.Position.Middle, OnTickCanvasRenderPropertyChanged));
+										new PropertyMetadata(NETFramework.Position.Middle, OnTickCanvasRenderPropertyChanged));
 		#endregion
 
 		#region Sizing
@@ -2355,12 +2355,12 @@ namespace JLR.Utility.UWP.Controls
 			{
 				switch (TickAlignment)
 				{
-					case NET.Position.Top:
+					case NETFramework.Position.Top:
 						return (tickAreaRect.Top, relativeSize * tickAreaRect.Height);
-					case NET.Position.Middle:
+					case NETFramework.Position.Middle:
 						var offset = (tickAreaRect.Height - (relativeSize * tickAreaRect.Height)) / 2;
 						return (tickAreaRect.Top + offset, tickAreaRect.Bottom - offset);
-					case NET.Position.Bottom:
+					case NETFramework.Position.Bottom:
 						return (tickAreaRect.Bottom,
 								tickAreaRect.Bottom - (relativeSize * tickAreaRect.Height));
 					default:
@@ -2445,8 +2445,8 @@ namespace JLR.Utility.UWP.Controls
 			// Position the position element on the vertical axis
 			var top = PositionElementAlignment switch
 			{
-				NET.Position.Middle => tickAreaRect.Top + ((tickAreaRect.Height - height) / 2),
-				NET.Position.Bottom => tickAreaRect.Bottom - height,
+				NETFramework.Position.Middle => tickAreaRect.Top + ((tickAreaRect.Height - height) / 2),
+				NETFramework.Position.Bottom => tickAreaRect.Bottom - height,
 				_                   => tickAreaRect.Top
 			};
 
@@ -2517,8 +2517,8 @@ namespace JLR.Utility.UWP.Controls
 				// Position the selection elements on the vertical axis
 				thumbTop = SelectionElementAlignment switch
 				{
-					NET.Position.Middle => tickAreaRect.Top + ((_mainPanel.ActualHeight - thumbHeight) / 2),
-					NET.Position.Bottom => tickAreaRect.Bottom - thumbHeight,
+					NETFramework.Position.Middle => tickAreaRect.Top + ((_mainPanel.ActualHeight - thumbHeight) / 2),
+					NETFramework.Position.Bottom => tickAreaRect.Bottom - thumbHeight,
 					_                   => tickAreaRect.Top
 				};
 
@@ -2546,8 +2546,8 @@ namespace JLR.Utility.UWP.Controls
 				// Calculate selection highlight rectangle vertical start coordinate
 				var rectTop = SelectionHighlightAlignment switch
 				{
-					NET.Position.Middle => thumbTop + ((thumbHeight - rectHeight) / 2),
-					NET.Position.Bottom => thumbTop + (thumbHeight - rectHeight),
+					NETFramework.Position.Middle => thumbTop + ((thumbHeight - rectHeight) / 2),
+					NETFramework.Position.Bottom => thumbTop + (thumbHeight - rectHeight),
 					_                   => thumbTop
 				};
 

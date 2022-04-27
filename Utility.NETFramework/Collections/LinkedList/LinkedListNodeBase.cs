@@ -11,7 +11,7 @@
 // ┃  LICENSE:    https://github.com/jonathanruisi/Utility.NET/blob/master/LICENSE
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-namespace JLR.Utility.NET.Collections.LinkedList
+namespace JLR.Utility.NETFramework.Collections.LinkedList
 {
 	public abstract class LinkedListNodeBase<T> : Disposable where T : LinkedListNodeBase<T>
 	{

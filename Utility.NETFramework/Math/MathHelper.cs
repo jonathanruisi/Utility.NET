@@ -15,7 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace JLR.Utility.NET.Math
+namespace JLR.Utility.NETFramework.Math
 {
 	public static class MathHelper
 	{

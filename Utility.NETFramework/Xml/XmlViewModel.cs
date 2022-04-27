@@ -16,10 +16,10 @@ using System.IO;
 using System.Linq;
 using System.Xml.Linq;
 
-using JLR.Utility.NET.ChangeNotification;
-using JLR.Utility.NET.IO;
+using JLR.Utility.NETFramework.ChangeNotification;
+using JLR.Utility.NETFramework.IO;
 
-namespace JLR.Utility.NET.Xml
+namespace JLR.Utility.NETFramework.Xml
 {
 	public abstract class XmlViewModel<T> : XmlViewModelElement<T>
 		where T : IPropertyChangeNotification, IXNode<XElement>, new()

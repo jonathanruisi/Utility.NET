@@ -13,7 +13,7 @@
 
 using System;
 
-namespace JLR.Utility.NET.Math
+namespace JLR.Utility.NETFramework.Math
 {
 	public static class ExtensionMethods
 	{

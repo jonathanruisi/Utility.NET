@@ -16,7 +16,7 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 
-namespace JLR.Utility.NET.Collections
+namespace JLR.Utility.NETFramework.Collections
 {
 	public static class CollectionHelper
 	{

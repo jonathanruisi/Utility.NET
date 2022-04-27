@@ -13,7 +13,7 @@
 
 using System.ComponentModel;
 
-namespace JLR.Utility.NET.ChangeNotification.EventArgs
+namespace JLR.Utility.NETFramework.ChangeNotification.EventArgs
 {
 	public sealed class PropertyChangedAdvancedEventArgs : PropertyChangedEventArgs
 	{

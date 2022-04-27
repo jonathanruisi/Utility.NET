@@ -18,7 +18,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-using JLR.Utility.NET.Color;
+using JLR.Utility.NETFramework.Color;
 
 namespace JLR.Utility.WPF
 {
@@ -99,7 +99,7 @@ namespace JLR.Utility.WPF
 		}
 		#endregion
 
-		#region JLR.Utility.NET.Color
+		#region JLR.Utility.NETFramework.Color
 		public static System.Windows.Media.Color ToSystemWindowsMediaColor(this ColorSpace colorSpace)
 		{
 			if (colorSpace is Rgba rgba)

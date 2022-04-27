@@ -16,7 +16,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Runtime.InteropServices;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Wave
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Wave
 {
 	[StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi, Pack = 2)]
 	public sealed class WaveFormatExtensible : WaveFormat

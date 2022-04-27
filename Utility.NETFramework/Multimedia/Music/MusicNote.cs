@@ -14,7 +14,7 @@
 using System;
 using System.Text;
 
-namespace JLR.Utility.NET.Multimedia.Music
+namespace JLR.Utility.NETFramework.Multimedia.Music
 {
 	#region Enumerated Types
 	/// <summary>

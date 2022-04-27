@@ -13,7 +13,7 @@
 
 using System;
 
-using JLR.Utility.NET;
+using JLR.Utility.NETFramework;
 
 namespace JLR.Utility.WinApi.COM
 {

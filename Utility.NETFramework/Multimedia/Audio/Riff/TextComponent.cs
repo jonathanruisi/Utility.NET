@@ -15,7 +15,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff
 {
 	public sealed class TextComponent : RiffComponent
 	{

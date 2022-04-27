@@ -15,9 +15,9 @@ using System;
 using System.Globalization;
 using System.IO;
 
-using JLR.Utility.NET.Multimedia.Music;
+using JLR.Utility.NETFramework.Multimedia.Music;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff.Wave
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff.Wave
 {
 	public sealed class InstrumentComponent : RiffComponent
 	{

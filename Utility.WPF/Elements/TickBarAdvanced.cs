@@ -18,7 +18,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
-using JLR.Utility.NET;
+using JLR.Utility.NETFramework;
 
 namespace JLR.Utility.WPF.Elements
 {

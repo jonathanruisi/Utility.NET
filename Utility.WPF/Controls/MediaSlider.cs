@@ -20,8 +20,8 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 
-using JLR.Utility.NET;
-using JLR.Utility.NET.Math;
+using JLR.Utility.NETFramework;
+using JLR.Utility.NETFramework.Math;
 using JLR.Utility.WPF.Elements;
 
 namespace JLR.Utility.WPF.Controls
@@ -296,9 +296,9 @@ namespace JLR.Utility.WPF.Controls
 
 		public static readonly DependencyProperty TickAlignmentProperty = DependencyProperty.Register(
 			"TickAlignment",
-			typeof(JLR.Utility.NET.Position),
+			typeof(JLR.Utility.NETFramework.Position),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Bottom));
+			new FrameworkPropertyMetadata(JLR.Utility.NETFramework.Position.Bottom));
 
 		/// <summary>
 		/// Gets or sets the vertical alignment of the playhead.
@@ -315,7 +315,7 @@ namespace JLR.Utility.WPF.Controls
 			"PositionAlignment",
 			typeof(Position),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Top, OnAlignmentAndSizingPropertyChanged));
+			new FrameworkPropertyMetadata(JLR.Utility.NETFramework.Position.Top, OnAlignmentAndSizingPropertyChanged));
 
 		/// <summary>
 		/// Gets or sets the vertical alignment of the selection range sliders. Possible values include
@@ -331,7 +331,7 @@ namespace JLR.Utility.WPF.Controls
 			"SelectionRangeAlignment",
 			typeof(Position),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Top, OnAlignmentAndSizingPropertyChanged));
+			new FrameworkPropertyMetadata(JLR.Utility.NETFramework.Position.Top, OnAlignmentAndSizingPropertyChanged));
 
 		/// <summary>
 		/// Gets or sets the vertical alignment of the highlight element between the selection range sliders.
@@ -348,7 +348,7 @@ namespace JLR.Utility.WPF.Controls
 			"SelectionRangeHighlightAlignment",
 			typeof(Position),
 			typeof(MediaSlider),
-			new FrameworkPropertyMetadata(JLR.Utility.NET.Position.Middle, OnAlignmentAndSizingPropertyChanged));
+			new FrameworkPropertyMetadata(JLR.Utility.NETFramework.Position.Middle, OnAlignmentAndSizingPropertyChanged));
 
 		/// <summary>
 		/// Gets or sets the <see cref="GridLength"/> (calculated height) of the zoom bar,
@@ -1416,16 +1416,16 @@ namespace JLR.Utility.WPF.Controls
 
 			switch (PositionAlignment)
 			{
-				case JLR.Utility.NET.Position.Top:
-				case JLR.Utility.NET.Position.Left:
+				case JLR.Utility.NETFramework.Position.Top:
+				case JLR.Utility.NETFramework.Position.Left:
 					Canvas.SetTop(_positionElement, 0);
 					break;
-				case JLR.Utility.NET.Position.Middle:
-				case JLR.Utility.NET.Position.Center:
+				case JLR.Utility.NETFramework.Position.Middle:
+				case JLR.Utility.NETFramework.Position.Center:
 					Canvas.SetTop(_positionElement, (_mainPanel.ActualHeight - newHeight) / 2);
 					break;
-				case JLR.Utility.NET.Position.Bottom:
-				case JLR.Utility.NET.Position.Right:
+				case JLR.Utility.NETFramework.Position.Bottom:
+				case JLR.Utility.NETFramework.Position.Right:
 					Canvas.SetTop(_positionElement, _mainPanel.ActualHeight - newHeight);
 					break;
 			}
@@ -1441,19 +1441,19 @@ namespace JLR.Utility.WPF.Controls
 
 			switch (SelectionRangeAlignment)
 			{
-				case JLR.Utility.NET.Position.Top:
-				case JLR.Utility.NET.Position.Left:
+				case JLR.Utility.NETFramework.Position.Top:
+				case JLR.Utility.NETFramework.Position.Left:
 					Canvas.SetTop(_selStartElement, 0);
 					Canvas.SetTop(_selEndElement,   0);
 					break;
-				case JLR.Utility.NET.Position.Middle:
-				case JLR.Utility.NET.Position.Center:
+				case JLR.Utility.NETFramework.Position.Middle:
+				case JLR.Utility.NETFramework.Position.Center:
 					Canvas.SetTop(_selStartElement, (_mainPanel.ActualHeight - newRangeHeight) / 2);
 					Canvas.SetTop(_selEndElement,   (_mainPanel.ActualHeight - newRangeHeight) / 2);
 					Canvas.SetTop(_selRngElement,   (_mainPanel.ActualHeight - newHighlightHeight) / 2);
 					break;
-				case JLR.Utility.NET.Position.Bottom:
-				case JLR.Utility.NET.Position.Right:
+				case JLR.Utility.NETFramework.Position.Bottom:
+				case JLR.Utility.NETFramework.Position.Right:
 					Canvas.SetTop(_selStartElement, _mainPanel.ActualHeight - newRangeHeight);
 					Canvas.SetTop(_selEndElement,   _mainPanel.ActualHeight - newRangeHeight);
 					Canvas.SetTop(_selRngElement,   _mainPanel.ActualHeight - newHighlightHeight);
@@ -1464,16 +1464,16 @@ namespace JLR.Utility.WPF.Controls
 
 			switch (SelectionRangeHighlightAlignment)
 			{
-				case JLR.Utility.NET.Position.Top:
-				case JLR.Utility.NET.Position.Left:
+				case JLR.Utility.NETFramework.Position.Top:
+				case JLR.Utility.NETFramework.Position.Left:
 					Canvas.SetTop(_selRngElement, Canvas.GetTop(_selStartElement));
 					break;
-				case JLR.Utility.NET.Position.Middle:
-				case JLR.Utility.NET.Position.Center:
+				case JLR.Utility.NETFramework.Position.Middle:
+				case JLR.Utility.NETFramework.Position.Center:
 					Canvas.SetTop(_selRngElement, Canvas.GetTop(_selStartElement) + (newRangeHeight - newHighlightHeight) / 2);
 					break;
-				case JLR.Utility.NET.Position.Bottom:
-				case JLR.Utility.NET.Position.Right:
+				case JLR.Utility.NETFramework.Position.Bottom:
+				case JLR.Utility.NETFramework.Position.Right:
 					Canvas.SetTop(_selRngElement, Canvas.GetTop(_selStartElement) + (newRangeHeight - newHighlightHeight));
 					break;
 			}

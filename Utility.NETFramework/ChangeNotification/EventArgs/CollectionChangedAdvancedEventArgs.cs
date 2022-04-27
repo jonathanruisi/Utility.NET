@@ -15,7 +15,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
 
-namespace JLR.Utility.NET.ChangeNotification.EventArgs
+namespace JLR.Utility.NETFramework.ChangeNotification.EventArgs
 {
 	public sealed class CollectionChangedAdvancedEventArgs<T> : NotifyCollectionChangedEventArgs
 	{

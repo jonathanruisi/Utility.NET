@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-namespace JLR.Utility.NET.Collections
+namespace JLR.Utility.NETFramework.Collections
 {
 	// TODO: Document!!!
 	public class BitArray64 : IEnumerable<bool>, ICloneable, IFormattable

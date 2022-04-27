@@ -4,7 +4,7 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-using JLR.Utility.NET;
+using JLR.Utility.NETFramework;
 
 namespace JLR.Utility.UWP.ViewModel
 {

@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 
-namespace JLR.Utility.NET.Color
+namespace JLR.Utility.NETFramework.Color
 {
 	public sealed class ColorScheme : ICollection<ColorSpace>
 	{

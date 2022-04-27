@@ -13,7 +13,7 @@
 
 using System.IO;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff
 {
 	public sealed class UInt8Component : IntegerComponent<byte>
 	{

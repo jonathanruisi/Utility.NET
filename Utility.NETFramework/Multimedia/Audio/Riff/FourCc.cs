@@ -14,7 +14,7 @@
 using System;
 using System.Text;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff
 {
 	/// <summary>
 	/// A 32-bit value representing a RIFF FourCC (Four Character Code)

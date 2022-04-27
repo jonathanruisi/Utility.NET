@@ -13,9 +13,9 @@
 
 using System.Collections.Generic;
 
-using JLR.Utility.NET.Collections.LinkedList;
+using JLR.Utility.NETFramework.Collections.LinkedList;
 
-namespace JLR.Utility.NET.Collections.Tree
+namespace JLR.Utility.NETFramework.Collections.Tree
 {
 	#region Enumerated Types
 	public enum TraversalMode

@@ -14,9 +14,9 @@
 using System;
 using System.IO;
 
-using JLR.Utility.NET.Multimedia.Audio.Riff;
+using JLR.Utility.NETFramework.Multimedia.Audio.Riff;
 
-namespace JLR.Utility.NET.Multimedia.Audio
+namespace JLR.Utility.NETFramework.Multimedia.Audio
 {
 	public static class ExtensionMethods
 	{

@@ -14,7 +14,7 @@
 using System;
 using System.IO;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff.Wave
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff.Wave
 {
 	public sealed class PlaylistSegmentComponent : RiffComponent
 	{

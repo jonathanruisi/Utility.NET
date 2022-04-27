@@ -13,7 +13,7 @@
 
 using System.Xml.Linq;
 
-namespace JLR.Utility.NET.Xml
+namespace JLR.Utility.NETFramework.Xml
 {
 	/// <summary>
 	/// Provides custom formatting for serialization to and deserialization from XNode objects.

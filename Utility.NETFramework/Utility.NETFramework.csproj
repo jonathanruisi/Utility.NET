@@ -2,8 +2,8 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
-    <RootNamespace>JLR.Utility.NET</RootNamespace>
-    <AssemblyName>JLR.Utility.NET</AssemblyName>
+    <RootNamespace>JLR.Utility.NETFramework</RootNamespace>
+    <AssemblyName>JLR.Utility.NETFramework</AssemblyName>
     <Authors>Jonathan Ruisi</Authors>
     <Company />
     <Product />

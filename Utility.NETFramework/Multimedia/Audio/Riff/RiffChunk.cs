@@ -14,7 +14,7 @@
 using System;
 using System.IO;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff
 {
 	#region Enumerated Types
 	public enum FileFormatId : uint

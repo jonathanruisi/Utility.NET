@@ -17,10 +17,10 @@ using System.Globalization;
 using System.Text;
 using System.Xml.Linq;
 
-using JLR.Utility.NET.Math;
-using JLR.Utility.NET.Xml;
+using JLR.Utility.NETFramework.Math;
+using JLR.Utility.NETFramework.Xml;
 
-namespace JLR.Utility.NET.Collections
+namespace JLR.Utility.NETFramework.Collections
 {
 	public class PixelMap : IEquatable<PixelMap>, IXNode<XElement>, ICloneable
 	{

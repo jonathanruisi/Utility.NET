@@ -15,9 +15,9 @@ using System;
 using System.Xml;
 using System.Xml.Linq;
 
-using JLR.Utility.NET.Math;
+using JLR.Utility.NETFramework.Math;
 
-namespace JLR.Utility.NET.Color
+namespace JLR.Utility.NETFramework.Color
 {
 	public class Rgb : ColorSpace
 	{

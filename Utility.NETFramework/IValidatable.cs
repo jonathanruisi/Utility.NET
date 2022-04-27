@@ -16,7 +16,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace JLR.Utility.NET
+namespace JLR.Utility.NETFramework
 {
 	#region Enumerated Types
 	public enum Validity

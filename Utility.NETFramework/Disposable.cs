@@ -13,7 +13,7 @@
 
 using System;
 
-namespace JLR.Utility.NET
+namespace JLR.Utility.NETFramework
 {
 	/// <summary>
 	/// Implements some of the boilerplate code associated with the chainable dispose pattern.

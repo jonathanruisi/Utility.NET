@@ -21,12 +21,12 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.Threading;
 
-using JLR.Utility.NET.ChangeNotification;
-using JLR.Utility.NET.ChangeNotification.EventArgs;
-using JLR.Utility.NET.Debug;
-using JLR.Utility.NET.Math;
+using JLR.Utility.NETFramework.ChangeNotification;
+using JLR.Utility.NETFramework.ChangeNotification.EventArgs;
+using JLR.Utility.NETFramework.Debug;
+using JLR.Utility.NETFramework.Math;
 
-namespace JLR.Utility.NET.Collections
+namespace JLR.Utility.NETFramework.Collections
 {
 	/// <summary>
 	/// Provides property and collection change notification for nested collections

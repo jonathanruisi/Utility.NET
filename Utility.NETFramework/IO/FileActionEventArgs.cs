@@ -13,7 +13,7 @@
 
 using System;
 
-namespace JLR.Utility.NET.IO
+namespace JLR.Utility.NETFramework.IO
 {
 	#region Enumerated Types
 	/// <summary>

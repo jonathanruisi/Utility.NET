@@ -15,9 +15,9 @@ using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-using JLR.Utility.NET.ChangeNotification.EventArgs;
+using JLR.Utility.NETFramework.ChangeNotification.EventArgs;
 
-namespace JLR.Utility.NET.ChangeNotification
+namespace JLR.Utility.NETFramework.ChangeNotification
 {
 	public interface IPropertyChangeNotification : INotifyPropertyChanged, INotifyPropertyChanging { }
 

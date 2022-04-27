@@ -15,9 +15,9 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-using JLR.Utility.NET.IO;
+using JLR.Utility.NETFramework.IO;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff
 {
 	//TODO: Debug this class - it may not work properly...
 	public sealed unsafe class RawDataComponent : RiffComponent

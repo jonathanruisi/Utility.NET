@@ -16,7 +16,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace JLR.Utility.NET.Debug
+namespace JLR.Utility.NETFramework.Debug
 {
 	public sealed class PrintTableColumn<T>
 	{

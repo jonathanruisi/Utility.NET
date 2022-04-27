@@ -17,7 +17,7 @@ using System.IO;
 using System.Linq;
 using System.Text;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff
 {
 	public class ListChunk : RiffChunk
 	{

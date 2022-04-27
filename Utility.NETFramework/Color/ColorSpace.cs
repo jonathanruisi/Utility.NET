@@ -20,10 +20,10 @@ using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
 
-using JLR.Utility.NET.Math;
-using JLR.Utility.NET.Xml;
+using JLR.Utility.NETFramework.Math;
+using JLR.Utility.NETFramework.Xml;
 
-namespace JLR.Utility.NET.Color
+namespace JLR.Utility.NETFramework.Color
 {
 	#region Enumerated Types
 	/// <summary>

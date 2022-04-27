@@ -18,8 +18,8 @@ using System.Windows;
 using System.Windows.Data;
 using System.Windows.Media;
 
-using JLR.Utility.NET;
-using JLR.Utility.NET.Color;
+using JLR.Utility.NETFramework;
+using JLR.Utility.NETFramework.Color;
 
 namespace JLR.Utility.WPF
 {

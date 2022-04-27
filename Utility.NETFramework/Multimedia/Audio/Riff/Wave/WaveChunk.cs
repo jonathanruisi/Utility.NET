@@ -16,10 +16,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-using JLR.Utility.NET.Collections.Tree;
-using JLR.Utility.NET.IO;
+using JLR.Utility.NETFramework.Collections.Tree;
+using JLR.Utility.NETFramework.IO;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff.Wave
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff.Wave
 {
 	#region Enumerated Types
 	public enum WaveChunkId : uint

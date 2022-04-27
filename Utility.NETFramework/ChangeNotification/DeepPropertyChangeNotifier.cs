@@ -13,7 +13,7 @@
 
 using System.ComponentModel;
 
-namespace JLR.Utility.NET.ChangeNotification
+namespace JLR.Utility.NETFramework.ChangeNotification
 {
 	public abstract class DeepPropertyChangeNotifier : PropertyChangeNotifier
 	{

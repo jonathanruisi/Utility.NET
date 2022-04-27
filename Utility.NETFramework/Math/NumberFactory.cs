@@ -13,7 +13,7 @@
 
 using System;
 
-namespace JLR.Utility.NET.Math
+namespace JLR.Utility.NETFramework.Math
 {
 	/// <summary>
 	/// Contains static methods for easy creation of data sets

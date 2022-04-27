@@ -15,7 +15,7 @@ using System;
 using System.Windows;
 using System.Windows.Media;
 
-using JLR.Utility.NET.Color;
+using JLR.Utility.NETFramework.Color;
 
 namespace JLR.Utility.WPF.Elements
 {

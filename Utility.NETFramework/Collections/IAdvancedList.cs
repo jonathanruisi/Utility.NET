@@ -14,7 +14,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace JLR.Utility.NET.Collections
+namespace JLR.Utility.NETFramework.Collections
 {
 	public interface IAdvancedList<T> : IList<T>
 	{

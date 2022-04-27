@@ -14,10 +14,10 @@
 using System;
 using System.Xml.Linq;
 
-using JLR.Utility.NET.ChangeNotification;
-using JLR.Utility.NET.Collections;
+using JLR.Utility.NETFramework.ChangeNotification;
+using JLR.Utility.NETFramework.Collections;
 
-namespace JLR.Utility.NET.Xml
+namespace JLR.Utility.NETFramework.Xml
 {
 	/// <summary>
 	/// Represents a collection of objects that can be easily bound to user interface controls,

@@ -18,7 +18,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 
-namespace JLR.Utility.NET.Debug
+namespace JLR.Utility.NETFramework.Debug
 {
 	public static class DebugHelper
 	{

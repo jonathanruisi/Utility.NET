@@ -13,7 +13,7 @@
 
 using System;
 
-namespace JLR.Utility.NET
+namespace JLR.Utility.NETFramework
 {
 	/// <summary>
 	/// Represents a range of values bounded by a <see cref="Minimum"/> and <see cref="Maximum"/> value.

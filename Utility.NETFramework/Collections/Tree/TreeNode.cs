@@ -14,7 +14,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace JLR.Utility.NET.Collections.Tree
+namespace JLR.Utility.NETFramework.Collections.Tree
 {
 	#region Tree
 	public class Tree<T> : TreeNode<T>

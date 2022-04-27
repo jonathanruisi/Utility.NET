@@ -14,7 +14,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace JLR.Utility.NET.Collections.LinkedList
+namespace JLR.Utility.NETFramework.Collections.LinkedList
 {
 	public class LinkedListNode<T> : LinkedListNodeBase<LinkedListNode<T>>, IEquatable<T>
 	{

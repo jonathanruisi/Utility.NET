@@ -15,9 +15,9 @@ using System;
 using System.IO;
 using System.Runtime.InteropServices;
 
-using JLR.Utility.NET.Multimedia.Audio.Riff;
+using JLR.Utility.NETFramework.Multimedia.Audio.Riff;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Wave
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Wave
 {
 	#region Enumerated Types
 	public enum WaveFormatTag : ushort

@@ -17,7 +17,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace JLR.Utility.NET.IO
+namespace JLR.Utility.NETFramework.IO
 {
 	#region Enumerated Types
 	[Flags]

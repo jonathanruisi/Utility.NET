@@ -1,4 +1,4 @@
-﻿namespace JLR.Utility.NET.Math
+﻿namespace JLR.Utility.NETFramework.Math
 {
 	public enum EqualityMethods
 	{

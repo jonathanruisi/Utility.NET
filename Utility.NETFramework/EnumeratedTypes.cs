@@ -11,7 +11,7 @@
 // ┃  LICENSE:    https://github.com/jonathanruisi/Utility.NET/blob/master/LICENSE
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-namespace JLR.Utility.NET
+namespace JLR.Utility.NETFramework
 {
 	/// <summary>
 	/// Defines terms for rows and columns

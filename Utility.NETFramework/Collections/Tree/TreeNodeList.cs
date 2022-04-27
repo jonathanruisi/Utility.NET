@@ -11,9 +11,9 @@
 // ┃  LICENSE:    https://github.com/jonathanruisi/Utility.NET/blob/master/LICENSE
 // ┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-using JLR.Utility.NET.Collections.LinkedList;
+using JLR.Utility.NETFramework.Collections.LinkedList;
 
-namespace JLR.Utility.NET.Collections.Tree
+namespace JLR.Utility.NETFramework.Collections.Tree
 {
 	public sealed class TreeNodeList<T> : LinkedListBase<T> where T : TreeNodeBase<T>
 	{

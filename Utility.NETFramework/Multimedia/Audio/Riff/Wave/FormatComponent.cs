@@ -14,9 +14,9 @@
 using System;
 using System.IO;
 
-using JLR.Utility.NET.Multimedia.Audio.Wave;
+using JLR.Utility.NETFramework.Multimedia.Audio.Wave;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff.Wave
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff.Wave
 {
 	public sealed class FormatComponent : RiffComponent
 	{

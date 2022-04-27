@@ -15,10 +15,10 @@ using System;
 using System.IO;
 using System.Linq;
 
-using JLR.Utility.NET.Collections.Tree;
-using JLR.Utility.NET.IO;
+using JLR.Utility.NETFramework.Collections.Tree;
+using JLR.Utility.NETFramework.IO;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff
 {
 	#region IRiffComponent
 	public interface IRiffComponent : IValidatable

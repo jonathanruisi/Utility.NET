@@ -15,7 +15,7 @@ using System;
 using System.Collections;
 using System.Collections.Specialized;
 
-namespace JLR.Utility.NET.ChangeNotification.EventArgs
+namespace JLR.Utility.NETFramework.ChangeNotification.EventArgs
 {
 	public static class CollectionChangedEventArgsBuilder
 	{

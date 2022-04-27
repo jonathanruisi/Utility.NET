@@ -14,9 +14,9 @@
 using System;
 using System.Text;
 
-using JLR.Utility.NET.Math;
+using JLR.Utility.NETFramework.Math;
 
-namespace JLR.Utility.NET.Multimedia
+namespace JLR.Utility.NETFramework.Multimedia
 {
 	#region Enumerated Types
 	/// <summary>

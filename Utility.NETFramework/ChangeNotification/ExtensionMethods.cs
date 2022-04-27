@@ -15,9 +15,9 @@ using System;
 using System.ComponentModel;
 using System.Linq.Expressions;
 
-using JLR.Utility.NET.ChangeNotification.EventArgs;
+using JLR.Utility.NETFramework.ChangeNotification.EventArgs;
 
-namespace JLR.Utility.NET.ChangeNotification
+namespace JLR.Utility.NETFramework.ChangeNotification
 {
 	public static class ExtensionMethods
 	{

@@ -15,7 +15,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 
-namespace JLR.Utility.NET
+namespace JLR.Utility.NETFramework
 {
 	/// <summary>
 	/// Represents a range of values bounded by a minimum and maximum value.

@@ -13,7 +13,7 @@
 
 using System;
 
-namespace JLR.Utility.NET.Multimedia.Audio.Riff
+namespace JLR.Utility.NETFramework.Multimedia.Audio.Riff
 {
 	[Serializable]
 	public class RiffException : Exception

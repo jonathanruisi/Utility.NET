@@ -16,7 +16,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace JLR.Utility.NET.Collections.LinkedList
+namespace JLR.Utility.NETFramework.Collections.LinkedList
 {
 	#region Enumerated Types
 	public enum IterationMode

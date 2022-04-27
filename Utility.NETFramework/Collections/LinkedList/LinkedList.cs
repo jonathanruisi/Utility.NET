@@ -17,7 +17,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 
-namespace JLR.Utility.NET.Collections.LinkedList
+namespace JLR.Utility.NETFramework.Collections.LinkedList
 {
 	public class LinkedList<T> : LinkedListBase<LinkedListNode<T>>, ILinkedList<T>, ICollection
 	{

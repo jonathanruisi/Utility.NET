@@ -18,7 +18,7 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Text;
 
-namespace JLR.Utility.NET
+namespace JLR.Utility.NETFramework
 {
 	public static class ExtensionMethods
 	{
