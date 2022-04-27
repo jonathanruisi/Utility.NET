@@ -60,8 +60,8 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Utility.NET\Utility.NETFramework.csproj">
-      <Project>{4DCC55C7-3182-44F7-BF82-7058B9F00521}</Project>
+    <ProjectReference Include="..\Utility.NETFramework\Utility.NETFramework.csproj">
+      <Project>{c41fc83c-1b14-4509-8b16-78feab908018}</Project>
       <Name>Utility.NETFramework</Name>
     </ProjectReference>
   </ItemGroup>

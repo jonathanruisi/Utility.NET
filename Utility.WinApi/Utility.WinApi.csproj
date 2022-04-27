@@ -85,8 +85,8 @@
     <WCFMetadata Include="Connected Services\" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Utility.NET\Utility.NETFramework.csproj">
-      <Project>{4dcc55c7-3182-44f7-bf82-7058b9f00521}</Project>
+    <ProjectReference Include="..\Utility.NETFramework\Utility.NETFramework.csproj">
+      <Project>{c41fc83c-1b14-4509-8b16-78feab908018}</Project>
       <Name>Utility.NETFramework</Name>
     </ProjectReference>
   </ItemGroup>
