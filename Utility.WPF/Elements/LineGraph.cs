@@ -609,6 +609,7 @@ namespace JLR.Utility.WPF.Elements
 		#region Private Methods
 		private void UpdateTitleText()
 		{
+#pragma warning disable CS0618 // Type or member is obsolete
 			_titleText = new FormattedText(
 				Title,
 				CultureInfo.CurrentCulture,
@@ -616,10 +617,12 @@ namespace JLR.Utility.WPF.Elements
 				new Typeface(TitleFontFamily, FontStyles.Normal, TitleFontWeight, FontStretches.Normal),
 				TitleFontSize,
 				TitleBrush);
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
 
 		private void UpdateAxisLabelText()
 		{
+#pragma warning disable CS0618 // Type or member is obsolete
 			_xAxisLabelText = new FormattedText(
 				XAxisLabel,
 				CultureInfo.CurrentCulture,
@@ -627,7 +630,9 @@ namespace JLR.Utility.WPF.Elements
 				new Typeface(AxisLabelFontFamily, FontStyles.Normal, AxisLabelFontWeight, FontStretches.Normal),
 				AxisLabelFontSize,
 				AxisLabelBrush);
+#pragma warning restore CS0618 // Type or member is obsolete
 
+#pragma warning disable CS0618 // Type or member is obsolete
 			_yAxisLabelText = new FormattedText(
 				YAxisLabel,
 				CultureInfo.CurrentCulture,
@@ -635,6 +640,7 @@ namespace JLR.Utility.WPF.Elements
 				new Typeface(AxisLabelFontFamily, FontStyles.Normal, AxisLabelFontWeight, FontStretches.Normal),
 				AxisLabelFontSize,
 				AxisLabelBrush);
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
 
 		private void UpdateAxisValueText()
@@ -643,6 +649,7 @@ namespace JLR.Utility.WPF.Elements
 			var formatStr = "F" + XAxisValueLabelPrecision;
 			for (var i = XMin; i < XMax; i += XMajorGrid)
 			{
+#pragma warning disable CS0618 // Type or member is obsolete
 				_xAxisValueTextList.Add(
 					new FormattedText(
 						i.ToString(formatStr),
@@ -651,12 +658,14 @@ namespace JLR.Utility.WPF.Elements
 						new Typeface(AxisValueFontFamily, FontStyles.Normal, AxisValueFontWeight, FontStretches.Normal),
 						AxisValueFontSize,
 						AxisValueBrush));
+#pragma warning restore CS0618 // Type or member is obsolete
 			}
 
 			_yAxisValueTextList.Clear();
 			formatStr = "F" + YAxisValueLabelPrecision;
 			for (var i = YMin; i < YMax; i += YMajorGrid)
 			{
+#pragma warning disable CS0618 // Type or member is obsolete
 				_yAxisValueTextList.Add(
 					new FormattedText(
 						i.ToString(formatStr),
@@ -665,6 +674,7 @@ namespace JLR.Utility.WPF.Elements
 						new Typeface(AxisValueFontFamily, FontStyles.Normal, AxisValueFontWeight, FontStretches.Normal),
 						AxisValueFontSize,
 						AxisValueBrush));
+#pragma warning restore CS0618 // Type or member is obsolete
 			}
 		}
 		#endregion

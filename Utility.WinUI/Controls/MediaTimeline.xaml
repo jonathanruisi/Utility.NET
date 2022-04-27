@@ -1,0 +1,140 @@
+﻿<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:controls="using:JLR.Utility.WinUI.Controls"
+    xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
+    xmlns:geometry="using:Microsoft.Graphics.Canvas.Geometry">
+
+    <ControlTemplate x:Key="MediaTimelineDefaultTemplate" TargetType="controls:MediaTimeline">
+        <Border Background="{TemplateBinding Background}"
+                BorderBrush="{TemplateBinding BorderBrush}"
+                BorderThickness="{TemplateBinding BorderThickness}"
+                CornerRadius="{TemplateBinding CornerRadius}"
+                Margin="{TemplateBinding Padding}">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="0.05"/>
+                    <RowDefinition Height="{Binding RelativeSource={RelativeSource Mode=TemplatedParent}, Path=ZoomBarHeight}"/>
+                </Grid.RowDefinitions>
+
+                <Canvas Grid.Row="0">
+                    <win2d:CanvasControl x:Name="PART_TimelineCanvas"
+                                         Canvas.ZIndex="0"/>
+                    <controls:TransportElement x:Name="PART_SelectionThumb"
+                                               Canvas.ZIndex="1"
+                                               MouseOverCursorShape="Hand"
+                                               MouseDragCursorShape="SizeWestEast"
+                                               Template="{TemplateBinding SelectionThumbElementTemplate}"/>
+                    <controls:TransportElement x:Name="PART_SelectionStart"
+                                               Canvas.ZIndex="1"
+                                               MouseOverCursorShape="Hand"
+                                               MouseDragCursorShape="SizeWestEast"
+                                               Template="{TemplateBinding SelectionStartElementTemplate}"/>
+                    <controls:TransportElement x:Name="PART_SelectionEnd"
+                                               Canvas.ZIndex="1"
+                                               MouseOverCursorShape="Hand"
+                                               MouseDragCursorShape="SizeWestEast"
+                                               Template="{TemplateBinding SelectionEndElementTemplate}"/>
+                    <controls:TransportElement x:Name="PART_Position"
+                                               Canvas.ZIndex="2"
+                                               MouseOverCursorShape="Hand"
+                                               MouseDragCursorShape="SizeWestEast"
+                                               Template="{TemplateBinding PositionElementTemplate}"/>
+                </Canvas>
+
+                <Canvas Grid.Row="2" Background="{TemplateBinding ZoomAreaBackground}">
+                    <controls:TransportElement x:Name="PART_ZoomThumb"
+                                               Canvas.ZIndex="0"
+                                               MouseOverCursorShape="Hand"
+                                               MouseDragCursorShape="SizeWestEast"
+                                               Template="{TemplateBinding ZoomThumbElementTemplate}"/>
+                    <controls:TransportElement x:Name="PART_ZoomStart"
+                                               Canvas.ZIndex="1"
+                                               MouseOverCursorShape="Hand"
+                                               MouseDragCursorShape="SizeWestEast"
+                                               Template="{TemplateBinding ZoomStartElementTemplate}"/>
+                    <controls:TransportElement x:Name="PART_ZoomEnd"
+                                               Canvas.ZIndex="1"
+                                               MouseOverCursorShape="Hand"
+                                               MouseDragCursorShape="SizeWestEast"
+                                               Template="{TemplateBinding ZoomEndElementTemplate}"/>
+                </Canvas>
+            </Grid>
+        </Border>
+    </ControlTemplate>
+
+    <Style TargetType="controls:MediaTimeline">
+        <Setter Property="CursorShape" Value="UpArrow"/>
+        <Setter Property="Background" Value="Transparent"/>
+        <Setter Property="TickAreaBackground" Value="#80FFFFFF"/>
+        <Setter Property="MarkerAreaBackground" Value="#606060"/>
+        <Setter Property="TrackAreaBackground" Value="#404040"/>
+        <Setter Property="ZoomAreaBackground" Value="#202020"/>
+        <Setter Property="BorderBrush" Value="Transparent"/>
+        <Setter Property="BorderThickness" Value="0"/>
+        <Setter Property="Margin" Value="0"/>
+        <Setter Property="Padding" Value="0"/>
+        <Setter Property="ZoomBarHeight" Value="0.15*"/>
+        <Setter Property="MarkerHeight" Value="20"/>
+        <Setter Property="TrackHeight" Value="16"/>
+        <Setter Property="FramesPerSecond" Value="30"/>
+        <Setter Property="IsPositionAdjustmentEnabled" Value="True"/>
+        <Setter Property="IsSelectionAdjustmentEnabled" Value="True"/>
+        <Setter Property="IsZoomAdjustmentEnabled" Value="True"/>
+        <Setter Property="PositionFollowMode" Value="NoFollow"/>
+        <Setter Property="SnapToNearest" Value="MinorTick"/>
+        <Setter Property="TickAlignment" Value="Bottom"/>
+        <Setter Property="PositionElementAlignment" Value="Bottom"/>
+        <Setter Property="SelectionInOutElementsAlignment" Value="Top"/>
+        <Setter Property="SelectionThumbElementAlignment" Value="Top"/>
+        <Setter Property="PositionElementRelativeHeight" Value="0.667"/>
+        <Setter Property="SelectionInOutElementsRelativeHeight" Value="0.667"/>
+        <Setter Property="SelectionThumbElementRelativeHeight" Value="0.25"/>
+        <Setter Property="SelectionHighlightBrush" Value="#80000000"/>
+        <Setter Property="SelectionHighlightAlignment" Value="Top"/>
+        <Setter Property="SelectionHighlightRelativeHeight" Value="0.25"/>
+        <Setter Property="OriginTickBrush" Value="White"/>
+        <Setter Property="OriginTickThickness" Value="4"/>
+        <Setter Property="OriginTickRelativeHeight" Value="0.667"/>
+        <Setter Property="OriginTickZIndex" Value="0"/>
+        <Setter Property="MajorTickBrush" Value="White"/>
+        <Setter Property="MajorTickThickness" Value="2"/>
+        <Setter Property="MajorTickRelativeHeight" Value="0.333"/>
+        <Setter Property="MajorTickZIndex" Value="0"/>
+        <Setter Property="MinorTickBrush" Value="White"/>
+        <Setter Property="MinorTickThickness" Value="1"/>
+        <Setter Property="MinorTickRelativeHeight" Value="0.165"/>
+        <Setter Property="MinorTickZIndex" Value="0"/>
+        <Setter Property="MarkerBrush" Value="DodgerBlue"/>
+        <Setter Property="SelectedMarkerBrush" Value="White"/>
+        <Setter Property="MarkerLineThickness" Value="2.0"/>
+        <Setter Property="MarkerLineStyle">
+            <Setter.Value>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </Setter.Value>
+        </Setter>
+        <Setter Property="TrackItemSpanBrush" Value="#C0800000"/>
+        <Setter Property="SelectedTrackItemSpanBrush" Value="White"/>
+        <Setter Property="TrackItemLabelBrush" Value="White"/>
+        <Setter Property="SelectedTrackItemLabelBrush" Value="Black"/>
+        <Setter Property="FontFamily" Value="Arial"/>
+        <Setter Property="FontSize" Value="12"/>
+        <Setter Property="FontStretch" Value="Normal"/>
+        <Setter Property="FontStyle" Value="Normal"/>
+        <Setter Property="FontWeight" Value="Bold"/>
+        <Setter Property="AlternateFontFamily" Value="Arial Narrow"/>
+        <Setter Property="AlternateFontSize" Value="9"/>
+        <Setter Property="AlternateFontStretch" Value="Condensed"/>
+        <Setter Property="AlternateFontStyle" Value="Normal"/>
+        <Setter Property="AlternateFontWeight" Value="SemiLight"/>
+        <Setter Property="PositionElementTemplate" Value="{StaticResource Position_Style1_TopAligned_Template}"/>
+        <Setter Property="SelectionStartElementTemplate" Value="{StaticResource SelectionStart_Style2_Template}"/>
+        <Setter Property="SelectionEndElementTemplate" Value="{StaticResource SelectionEnd_Style2_Template}"/>
+        <Setter Property="SelectionThumbElementTemplate" Value="{StaticResource SelectionThumb_Style2_Template}"/>
+        <Setter Property="ZoomStartElementTemplate" Value="{StaticResource ZoomStart_Style1_Template}"/>
+        <Setter Property="ZoomEndElementTemplate" Value="{StaticResource ZoomEnd_Style1_Template}"/>
+        <Setter Property="ZoomThumbElementTemplate" Value="{StaticResource ZoomThumb_Style1_Template}"/>
+        <Setter Property="Template" Value="{StaticResource MediaTimelineDefaultTemplate}"/>
+    </Style>
+</ResourceDictionary>
