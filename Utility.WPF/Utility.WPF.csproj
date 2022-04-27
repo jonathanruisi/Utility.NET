@@ -119,9 +119,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Utility.NET\Utility.NET.csproj">
+    <ProjectReference Include="..\Utility.NET\Utility.NETFramework.csproj">
       <Project>{4dcc55c7-3182-44f7-bf82-7058b9f00521}</Project>
-      <Name>Utility.NET</Name>
+      <Name>Utility.NETFramework</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

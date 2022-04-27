@@ -60,9 +60,9 @@
     </Page>
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\Utility.NET\Utility.NET.csproj">
-      <Project>{6a2e2d2d-f537-435a-8b7c-e979e2ea00cb}</Project>
-      <Name>Utility.NET</Name>
+    <ProjectReference Include="..\Utility.NET\Utility.NETFramework.csproj">
+      <Project>{4DCC55C7-3182-44F7-BF82-7058B9F00521}</Project>
+      <Name>Utility.NETFramework</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
