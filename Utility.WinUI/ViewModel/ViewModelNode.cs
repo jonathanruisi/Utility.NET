@@ -36,7 +36,7 @@ namespace JLR.Utility.WinUI.ViewModel
                 _parent?.Children.Remove(this);
                 newValue?.Children.Add(this);
                 _parent = newValue;
-            });
+            }, true);
         }
 
         /// <summary>
