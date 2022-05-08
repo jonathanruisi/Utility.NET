@@ -78,7 +78,7 @@ namespace JLR.Utility.WinUI.ViewModel
         #endregion
 
         #region Public Methods
-        public static async Task<ViewModelElement> ReadFromAsync(StorageFile file)
+        public static async Task<ViewModelElement> FromXmlFileAsync(StorageFile file)
         {
             if (file == null || !file.IsAvailable)
                 return null;
@@ -97,7 +97,7 @@ namespace JLR.Utility.WinUI.ViewModel
 
                 reader = XmlReader.Create(await file.OpenStreamForReadAsync(), settings);
                 reader.MoveToContent();
-                result = ReadFrom(reader);
+                result = FromXml(reader);
             }
             finally
             {
@@ -118,7 +118,7 @@ namespace JLR.Utility.WinUI.ViewModel
         /// </returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="InvalidOperationException"></exception>
-        public static ViewModelElement ReadFrom(XmlReader reader)
+        public static ViewModelElement FromXml(XmlReader reader)
         {
             if (reader == null)
                 throw new ArgumentNullException(nameof(reader));
@@ -406,11 +406,31 @@ namespace JLR.Utility.WinUI.ViewModel
         }
         #endregion
 
+        #region Protected Methods
+        /// <summary>
+        /// Call this method from a derived class when a
+        /// <see cref="SerializedPropertyChangedMessage"/> needs to
+        /// be sent for a change within a member collection.
+        /// </summary>
+        /// <param name="collectionName">
+        /// The name of the collection that changed.
+        /// </param>
+        protected void NotifySerializedCollectionChanged(string collectionName)
+        {
+            var serializationInfo = SerializationInfo[GetType()];
+            if (serializationInfo.MemberCollections.Values.Any(x => x.PropertyName == collectionName))
+                Messenger.Send(new SerializedPropertyChangedMessage(GetType(), collectionName));
+        }
+        #endregion
+
         #region Method Overrides (ObservableObject)
         protected override void OnPropertyChanged(PropertyChangedEventArgs e)
         {
             base.OnPropertyChanged(e);
-            Messenger.Send(new ViewModelGeneralChangeNotificationMessage(GetType(), e.PropertyName));
+
+            var serializationInfo = SerializationInfo[GetType()];
+            if (serializationInfo.MemberProperties.Values.Any(x => x.PropertyName == e.PropertyName))
+                Messenger.Send(new SerializedPropertyChangedMessage(GetType(), e.PropertyName));
         }
         #endregion
 
@@ -423,14 +443,20 @@ namespace JLR.Utility.WinUI.ViewModel
     }
 
     /// <summary>
-    /// A message used to broadcast the fact that ANY property or
-    /// collection has changed within a <see cref="ViewModelElement"/>.
+    /// A message used to broadcast a change notification
+    /// for <see cref="ViewModelElement"/> properties and collections
+    /// that are marked for serialization.
     /// </summary>
-    public sealed class ViewModelGeneralChangeNotificationMessage
+    /// <remarks>
+    /// These messages can be useful in determining if the
+    /// <see cref="ViewModelElement"/> in memory no longer
+    /// matches its serialized state.
+    /// </remarks>
+    public sealed class SerializedPropertyChangedMessage
     {
         public Type SenderType { get; }
         public string PropertyName { get; }
-        public ViewModelGeneralChangeNotificationMessage(Type senderType, string propertyName)
+        public SerializedPropertyChangedMessage(Type senderType, string propertyName)
         {
             SenderType = senderType;
             PropertyName = propertyName;

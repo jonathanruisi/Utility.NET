@@ -86,6 +86,7 @@ namespace JLR.Utility.WinUI.ViewModel
                 {
                     result.MemberCollections.Add(collectionAttribute.XmlName, new ViewModelSerializationCollectionInfo
                     {
+                        PropertyName = property.Name,
                         Getter = (Func<ViewModelElement, IList>)property.PropertyGetter<IList>(),
                         XmlChildName = collectionAttribute.XmlChildName,
                         ChildType = property.PropertyType.GetGenericArguments().Single(),
@@ -108,6 +109,7 @@ namespace JLR.Utility.WinUI.ViewModel
 
                     result.MemberProperties.Add(xmlName, new ViewModelSerializationPropertyInfo
                     {
+                        PropertyName = property.Name,
                         PropertyType = property.PropertyType,
                         TargetNodeType = propertyAttribute.TargetNodeType,
                         Getter = (Func<ViewModelElement, object>)property.PropertyGetter<object>(),
@@ -133,6 +135,11 @@ namespace JLR.Utility.WinUI.ViewModel
             /// <see cref="XmlNodeType.Element"/> node types are valid.
             /// </remarks>
             public XmlNodeType TargetNodeType { get; internal set; }
+
+            /// <summary>
+            /// Gets the name of the property (as it appears in the code).
+            /// </summary>
+            public string PropertyName { get; internal set; }
 
             /// <summary>
             /// Gets the type of the property.
@@ -166,6 +173,12 @@ namespace JLR.Utility.WinUI.ViewModel
 
         public sealed class ViewModelSerializationCollectionInfo
         {
+            /// <summary>
+            /// Gets the name of the collection
+            /// (its property name as it appears in the code).
+            /// </summary>
+            public string PropertyName { get; internal set; }
+
             /// <summary>
             /// Gets the XML name of items within the collection.
             /// </summary>

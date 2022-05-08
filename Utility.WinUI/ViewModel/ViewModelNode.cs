@@ -110,7 +110,7 @@ namespace JLR.Utility.WinUI.ViewModel
                     newNode._parent = this;
             }
 
-            Messenger.Send(new ViewModelGeneralChangeNotificationMessage(GetType(), nameof(Children)));
+            NotifySerializedCollectionChanged(nameof(Children));
         }
         #endregion
 
