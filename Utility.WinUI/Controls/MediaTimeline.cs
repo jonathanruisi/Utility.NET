@@ -1761,6 +1761,26 @@ namespace JLR.Utility.WinUI.Controls
             _blockSelectionChangedEvent = false;
             SelectionEnd = marker.Position + marker.Duration;
         }
+
+        public void Reset()
+        {
+            Position = 0;
+            SelectionStart = 0;
+            SelectionEnd = 0;
+            Markers.Clear();
+            SelectedMarker = null;
+            Start = 0;
+            End = MinimumVisibleRange;
+            FramesPerSecond = 30;
+            ZoomOutFull();
+
+            IsPositionAdjustmentEnabled = false;
+            IsZoomAdjustmentEnabled = false;
+            IsSelectionAdjustmentEnabled = false;
+            IsSelectionEnabled = false;
+            PositionFollowMode = FollowMode.Advance;
+            SnapToNearest = SnapInterval.Frame;
+        }
         #endregion
 
         #region Dependency Property Callbacks
