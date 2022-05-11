@@ -150,7 +150,7 @@ namespace JLR.Utility.WinUI.Controls
             _selectedTrackItemLabelBrush,
             _selectionHighlightBrush;
 
-        private List<(decimal start, decimal end)> _selections;
+        private readonly List<(decimal start, decimal end)> _selections;
         private readonly LinkedList<(int major, int minor, int subdivisionCount)> _intervals;
         private LinkedListNode<(int major, int minor, int subdivisionCount)> _currentInterval;
         #endregion
@@ -243,7 +243,7 @@ namespace JLR.Utility.WinUI.Controls
         /// </remarks>
         public ReadOnlyCollection<(decimal start, decimal end)> Selections
         {
-            get => new ReadOnlyCollection<(decimal start, decimal end)>(_selections);
+            get => new(_selections);
         }
         #endregion
 
@@ -397,7 +397,7 @@ namespace JLR.Utility.WinUI.Controls
         public ObservableCollection<ITimelineMarker> Markers
         {
             get => (ObservableCollection<ITimelineMarker>)GetValue(MarkersProperty);
-            private set => SetValue(MarkersProperty, value);
+            set => SetValue(MarkersProperty, value);
         }
 
         public static readonly DependencyProperty MarkersProperty =
@@ -1787,7 +1787,7 @@ namespace JLR.Utility.WinUI.Controls
         #region General
         private static void OnStartChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || timeline._isBoundaryUpdateInProgress)
+            if (d is not MediaTimeline timeline || timeline._isBoundaryUpdateInProgress)
                 return;
 
             timeline._isBoundaryUpdateInProgress = true;
@@ -1812,7 +1812,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnEndChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || timeline._isBoundaryUpdateInProgress)
+            if (d is not MediaTimeline timeline || timeline._isBoundaryUpdateInProgress)
                 return;
 
             timeline._isBoundaryUpdateInProgress = true;
@@ -1837,7 +1837,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnSelectionStartChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || timeline._isBoundaryUpdateInProgress)
+            if (d is not MediaTimeline timeline || timeline._isBoundaryUpdateInProgress)
                 return;
 
             timeline._isBoundaryUpdateInProgress = true;
@@ -1853,7 +1853,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnSelectionEndChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || timeline._isBoundaryUpdateInProgress)
+            if (d is not MediaTimeline timeline || timeline._isBoundaryUpdateInProgress)
                 return;
 
             timeline._isBoundaryUpdateInProgress = true;
@@ -1869,7 +1869,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnZoomStartChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || timeline._isBoundaryUpdateInProgress)
+            if (d is not MediaTimeline timeline || timeline._isBoundaryUpdateInProgress)
                 return;
 
             timeline._isBoundaryUpdateInProgress = true;
@@ -1885,7 +1885,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnZoomEndChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || timeline._isBoundaryUpdateInProgress)
+            if (d is not MediaTimeline timeline || timeline._isBoundaryUpdateInProgress)
                 return;
 
             timeline._isBoundaryUpdateInProgress = true;
@@ -1901,7 +1901,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnPositionChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || timeline._isBoundaryUpdateInProgress)
+            if (d is not MediaTimeline timeline || timeline._isBoundaryUpdateInProgress)
                 return;
 
             timeline._isBoundaryUpdateInProgress = true;
@@ -1915,7 +1915,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnFramesPerSecondChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || !timeline.IsLoaded)
+            if (d is not MediaTimeline timeline || !timeline.IsLoaded)
                 return;
 
             timeline.InitializeTimescale();
@@ -1925,7 +1925,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnSelectedMarkerChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline))
+            if (d is not MediaTimeline timeline)
                 return;
 
             timeline._timelineCanvas?.Invalidate();
@@ -1936,7 +1936,7 @@ namespace JLR.Utility.WinUI.Controls
         #region Behavior
         private static void OnIsAdjustmentEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline))
+            if (d is not MediaTimeline timeline)
                 return;
 
             if (e.Property == IsPositionAdjustmentEnabledProperty && timeline._positionElement != null)
@@ -1963,7 +1963,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnIsSelectionEnabledChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline))
+            if (d is not MediaTimeline timeline)
                 return;
 
             timeline.UpdateSelectionElementLayout();
@@ -1972,7 +1972,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnCursorShapePropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline) || !timeline.IsLoaded)
+            if (d is not MediaTimeline timeline || !timeline.IsLoaded)
                 return;
 
             timeline.ProtectedCursor = InputSystemCursor.Create(timeline.CursorShape);
@@ -1982,7 +1982,7 @@ namespace JLR.Utility.WinUI.Controls
         #region Template
         private static void OnTransportElementChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline))
+            if (d is not MediaTimeline timeline)
                 return;
 
             if (e.Property == PositionElementAlignmentProperty ||
@@ -2022,7 +2022,7 @@ namespace JLR.Utility.WinUI.Controls
         #region Render Properties
         private static void OnTimelineCanvasRenderPropertyChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is MediaTimeline timeline))
+            if (d is not MediaTimeline timeline)
                 return;
 
             timeline._timelineCanvas?.Invalidate();
@@ -2571,7 +2571,7 @@ namespace JLR.Utility.WinUI.Controls
             var y2 = (float)(markerAreaRect.Top + markerAreaRect.Height);
 
             // Create marker geometry
-            var path = new CanvasPathBuilder(sender.Device);
+            using var path = new CanvasPathBuilder(sender.Device);
             path.BeginFigure(5.0f, y0);
             path.AddLine(5.0f, y1);
             path.AddLine(0.0f, y2);
@@ -2707,17 +2707,19 @@ namespace JLR.Utility.WinUI.Controls
             // Draw selection highlights
             using (args.DrawingSession.CreateLayer(1.0f))
             {
-                foreach (var selection in _selections.Where(x => x.start <= ZoomEnd && x.end >= ZoomStart))
+                foreach (var (start, end) in _selections.Where(x => x.start <= ZoomEnd && x.end >= ZoomStart))
                 {
-                    var adjustedStart = selection.start >= ZoomStart ? selection.start : ZoomStart;
-                    var adjustedEnd = selection.end <= ZoomEnd ? selection.end : ZoomEnd;
-                    var coordsX = CalculateHorizontalRenderCoordinates(adjustedStart, adjustedEnd, ref tickAreaRect);
-                    var coordsY = CalculateVerticalRenderCoordinates(SelectionHighlightRelativeHeight,
-                                                                     SelectionHighlightAlignment,
-                                                                     ref tickAreaRect);
+                    var adjustedStart = start >= ZoomStart ? start : ZoomStart;
+                    var adjustedEnd = end <= ZoomEnd ? end : ZoomEnd;
+                    var (x, width) = CalculateHorizontalRenderCoordinates(adjustedStart,
+                                                                          adjustedEnd,
+                                                                          ref tickAreaRect);
+                    var (y, height) = CalculateVerticalRenderCoordinates(SelectionHighlightRelativeHeight,
+                                                                         SelectionHighlightAlignment,
+                                                                         ref tickAreaRect);
 
                     args.DrawingSession.FillRectangle(
-                        new Rect(coordsX.x, coordsY.y, coordsX.width, coordsY.height),
+                        new Rect(x, y, width, height),
                         _selectionHighlightBrush);
                 }
             }
@@ -2745,14 +2747,14 @@ namespace JLR.Utility.WinUI.Controls
                 foreach (var segment in visibleSegments)
                 {
                     // Calculate rectangle where this segment will be drawn
-                    var coordsX = CalculateHorizontalRenderCoordinates(
+                    var (x, width) = CalculateHorizontalRenderCoordinates(
                         segment.Position > ZoomStart ? segment.Position : ZoomStart,
                         segment.Position + segment.Duration < ZoomEnd
                             ? segment.Position + segment.Duration
                             : ZoomEnd,
                         ref trackAreaRect);
 
-                    var segmentRect = new Rect(coordsX.x, trackTopCoords[segment.Track - 1], coordsX.width, TrackHeight);
+                    var segmentRect = new Rect(x, trackTopCoords[segment.Track - 1], width, TrackHeight);
                     var brush = segment == SelectedMarker ? _selectedTrackItemSpanBrush : _trackItemSpanBrush;
 
                     // Draw segment rectangle
@@ -2807,7 +2809,6 @@ namespace JLR.Utility.WinUI.Controls
                     textLayout.LineSpacing = textLayout.LineSpacingBaseline + 1;
 
                     // Generate alternate text label for this segment
-                    CanvasTextLayout textLayoutAlt = null;
                     if (AlternateFontFamily != null && AlternateFontSize > 0)
                     {
                         var textFormatAlt = new CanvasTextFormat
@@ -2827,11 +2828,11 @@ namespace JLR.Utility.WinUI.Controls
                             WordWrapping = CanvasWordWrapping.EmergencyBreak
                         };
 
-                        textLayoutAlt = new CanvasTextLayout(sender.Device,
-                                                             segment.Name,
-                                                             textFormatAlt,
-                                                             (float)segmentRect.Width,
-                                                             (float)segmentRect.Height);
+                        var textLayoutAlt = new CanvasTextLayout(sender.Device,
+                                                                 segment.Name,
+                                                                 textFormatAlt,
+                                                                 (float)segmentRect.Width,
+                                                                 (float)segmentRect.Height);
 
                         textLayoutAlt.LineSpacingBaseline = (float)textLayoutAlt.DrawBounds.Height;
                         textLayoutAlt.LineSpacing = textLayoutAlt.LineSpacingBaseline + 1;
@@ -2841,7 +2842,7 @@ namespace JLR.Utility.WinUI.Controls
                     {
                         args.DrawingSession.DrawTextLayout(
                             textLayout,
-                            (float)coordsX.x,
+                            (float)x,
                             (float)(segmentRect.Bottom - (segmentRect.Height / 2) - (textLayout.LayoutBounds.Height / 2)),
                             SelectedMarker == segment ? _selectedTrackItemLabelBrush : _trackItemLabelBrush);
                     }
@@ -2858,15 +2859,17 @@ namespace JLR.Utility.WinUI.Controls
 
                     var x = (float)CalculateHorizontalRenderCoordinates(marker.Position, marker.Position, ref tickAreaRect).x;
                     var brush = marker == SelectedMarker ? _selectedMarkerBrush : _markerBrush;
-
                     args.DrawingSession.FillGeometry(markerGeometry, x, (float)markerAreaRect.Top, brush);
                     args.DrawingSession.DrawLine(x, (float)tickAreaRect.Top,
-                                                     x, (float)trackAreaRect.Bottom,
-                                                     brush,
-                                                     (float)MarkerLineThickness,
-                                                     MarkerLineStyle);
+                                                 x, (float)trackAreaRect.Bottom,
+                                                 brush,
+                                                 (float)MarkerLineThickness,
+                                                 MarkerLineStyle);
                 }
             }
+
+            // Make sure everything is disposed at this point
+            markerGeometry.Dispose();
 
             // Local function to add a major tick to its list and advance to the next
             void AddMajorTick()
@@ -2911,11 +2914,10 @@ namespace JLR.Utility.WinUI.Controls
             }
         }
 
-        private Rect MarkerAreaRect =>
-            new Rect(0, 0, _mainPanel.ActualWidth, MarkerHeight);
+        private Rect MarkerAreaRect => new(0, 0, _mainPanel.ActualWidth, MarkerHeight);
 
-        private Rect TickAreaRect =>
-            new Rect(new Point(0, MarkerAreaRect.Bottom), new Point(_mainPanel.ActualWidth, TrackAreaRect.Top));
+        private Rect TickAreaRect => new(new Point(0, MarkerAreaRect.Bottom),
+                                         new Point(_mainPanel.ActualWidth, TrackAreaRect.Top));
 
         private double MinorTickSpacing =>
             ConvertTimeIntervalToPixels(
@@ -2927,7 +2929,7 @@ namespace JLR.Utility.WinUI.Controls
                 GetSnapIntervalValue(
                     SnapInterval.MajorTick)) - MajorTickThickness;
 
-        private bool IsCtrlKeyPressed =>
+        private static bool IsCtrlKeyPressed =>
             PInvoke.User32.GetKeyState((int)PInvoke.User32.VirtualKey.VK_CONTROL) < 0;
         #endregion
 
@@ -2947,14 +2949,14 @@ namespace JLR.Utility.WinUI.Controls
             }
 
             var tickAreaRect = TickAreaRect;
-            var coordsX = CalculateHorizontalRenderCoordinates(Position, Position, ref tickAreaRect);
-            var coordsY = CalculateVerticalRenderCoordinates(PositionElementRelativeHeight,
-                                                             PositionElementAlignment,
-                                                             ref tickAreaRect);
+            var (x, _) = CalculateHorizontalRenderCoordinates(Position, Position, ref tickAreaRect);
+            var (y, height) = CalculateVerticalRenderCoordinates(PositionElementRelativeHeight,
+                                                                 PositionElementAlignment,
+                                                                 ref tickAreaRect);
 
-            Canvas.SetLeft(_positionElement, coordsX.x - (_positionElement.ActualWidth / 2));
-            Canvas.SetTop(_positionElement, coordsY.y);
-            _positionElement.Height = coordsY.height;
+            Canvas.SetLeft(_positionElement, x - (_positionElement.ActualWidth / 2));
+            Canvas.SetTop(_positionElement, y);
+            _positionElement.Height = height;
             _positionElement.Visibility = Visibility.Visible;
         }
 
@@ -2980,8 +2982,8 @@ namespace JLR.Utility.WinUI.Controls
                 // Position the selection start element on the horizontal axis
                 if (SelectionStart >= ZoomStart && SelectionStart <= ZoomEnd)
                 {
-                    var coordsX = CalculateHorizontalRenderCoordinates(SelectionStart, SelectionStart, ref tickAreaRect);
-                    Canvas.SetLeft(_selectionStartElement, coordsX.x - _selectionStartElement.ActualWidth);
+                    var (x, _) = CalculateHorizontalRenderCoordinates(SelectionStart, SelectionStart, ref tickAreaRect);
+                    Canvas.SetLeft(_selectionStartElement, x - _selectionStartElement.ActualWidth);
                     _selectionStartElement.Visibility = Visibility.Visible;
                 }
                 else
@@ -2992,8 +2994,8 @@ namespace JLR.Utility.WinUI.Controls
                 // Position the selection end element on the horizontal axis
                 if (SelectionEnd >= ZoomStart && SelectionEnd <= ZoomEnd)
                 {
-                    var coordsX = CalculateHorizontalRenderCoordinates(SelectionEnd, SelectionEnd, ref tickAreaRect);
-                    Canvas.SetLeft(_selectionEndElement, coordsX.x);
+                    var (x, _) = CalculateHorizontalRenderCoordinates(SelectionEnd, SelectionEnd, ref tickAreaRect);
+                    Canvas.SetLeft(_selectionEndElement, x);
                     _selectionEndElement.Visibility = Visibility.Visible;
                 }
                 else
@@ -3002,14 +3004,14 @@ namespace JLR.Utility.WinUI.Controls
                 }
 
                 // Position the selection start and end elements on the vertical axis
-                var coordsY = CalculateVerticalRenderCoordinates(SelectionInOutElementsRelativeHeight,
-                                                                 SelectionInOutElementsAlignment,
-                                                                 ref tickAreaRect);
+                var (y, height) = CalculateVerticalRenderCoordinates(SelectionInOutElementsRelativeHeight,
+                                                                     SelectionInOutElementsAlignment,
+                                                                     ref tickAreaRect);
 
-                Canvas.SetTop(_selectionStartElement, coordsY.y);
-                Canvas.SetTop(_selectionEndElement, coordsY.y);
-                _selectionStartElement.Height = coordsY.height;
-                _selectionEndElement.Height = coordsY.height;
+                Canvas.SetTop(_selectionStartElement, y);
+                Canvas.SetTop(_selectionEndElement, y);
+                _selectionStartElement.Height = height;
+                _selectionEndElement.Height = height;
             }
 
             // Update the selection thumb
@@ -3020,15 +3022,15 @@ namespace JLR.Utility.WinUI.Controls
             {
                 var adjustedStart = SelectionStart >= ZoomStart ? SelectionStart : ZoomStart;
                 var adjustedEnd = SelectionEnd <= ZoomEnd ? SelectionEnd : ZoomEnd;
-                var coordsX = CalculateHorizontalRenderCoordinates(adjustedStart, adjustedEnd, ref tickAreaRect);
-                var coordsY = CalculateVerticalRenderCoordinates(SelectionThumbElementRelativeHeight,
-                                                                 SelectionThumbElementAlignment,
-                                                                 ref tickAreaRect);
+                var (x, width) = CalculateHorizontalRenderCoordinates(adjustedStart, adjustedEnd, ref tickAreaRect);
+                var (y, height) = CalculateVerticalRenderCoordinates(SelectionThumbElementRelativeHeight,
+                                                                     SelectionThumbElementAlignment,
+                                                                     ref tickAreaRect);
 
-                Canvas.SetLeft(_selectionThumbElement, coordsX.x);
-                Canvas.SetTop(_selectionThumbElement, coordsY.y);
-                _selectionThumbElement.Width = coordsX.width;
-                _selectionThumbElement.Height = coordsY.height;
+                Canvas.SetLeft(_selectionThumbElement, x);
+                Canvas.SetTop(_selectionThumbElement, y);
+                _selectionThumbElement.Width = width;
+                _selectionThumbElement.Height = height;
                 _selectionThumbElement.Visibility = Visibility.Visible;
             }
             else
@@ -3234,8 +3236,8 @@ namespace JLR.Utility.WinUI.Controls
                 SnapInterval.Hour => SecondsPerHour,
                 SnapInterval.Day => SecondsPerDay,
                 SnapInterval.MinorTick => (decimal)_currentInterval.Value.minor /
-                                                       _currentInterval.Value.subdivisionCount *
-                                                       _currentInterval.Value.major,
+                                                   _currentInterval.Value.subdivisionCount *
+                                                   _currentInterval.Value.major,
                 SnapInterval.MajorTick => _currentInterval.Value.major,
                 _ => throw new ArgumentOutOfRangeException(nameof(interval), interval, null)
             };
@@ -3410,7 +3412,7 @@ namespace JLR.Utility.WinUI.Controls
                 {
                     case TickType.Origin:
                     {
-                        if (y.Key == TickType.Major || y.Key == TickType.Minor)
+                        if (y.Key is TickType.Major or TickType.Minor)
                             result = 1;
                         break;
                     }
@@ -3432,7 +3434,7 @@ namespace JLR.Utility.WinUI.Controls
 
                     case TickType.Minor:
                     {
-                        if (y.Key == TickType.Origin || y.Key == TickType.Major)
+                        if (y.Key is TickType.Origin or TickType.Major)
                             result = -1;
                         break;
                     }

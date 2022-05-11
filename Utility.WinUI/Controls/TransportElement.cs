@@ -67,7 +67,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private static void OnCursorShapeChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is TransportElement element))
+            if (d is not TransportElement element)
                 return;
 
             if (e.Property == MouseDragCursorShapeProperty)
