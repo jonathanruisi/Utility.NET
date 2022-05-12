@@ -397,7 +397,7 @@ namespace JLR.Utility.WinUI.Controls
         public ObservableCollection<ITimelineMarker> Markers
         {
             get => (ObservableCollection<ITimelineMarker>)GetValue(MarkersProperty);
-            set => SetValue(MarkersProperty, value);
+            private set => SetValue(MarkersProperty, value);
         }
 
         public static readonly DependencyProperty MarkersProperty =
@@ -1768,16 +1768,13 @@ namespace JLR.Utility.WinUI.Controls
             SelectionStart = 0;
             SelectionEnd = 0;
             Markers.Clear();
-            SelectedMarker = null;
             Start = 0;
             End = MinimumVisibleRange;
-            FramesPerSecond = 30;
             ZoomOutFull();
 
             IsPositionAdjustmentEnabled = false;
             IsZoomAdjustmentEnabled = false;
             IsSelectionAdjustmentEnabled = false;
-            IsSelectionEnabled = false;
             PositionFollowMode = FollowMode.Advance;
             SnapToNearest = SnapInterval.Frame;
         }
