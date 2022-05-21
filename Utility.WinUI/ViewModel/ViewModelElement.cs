@@ -358,21 +358,25 @@ namespace JLR.Utility.WinUI.ViewModel
             {
                 var attributeString = kvp.Value.UseCustomWriter
                     ? CustomPropertyWriter(kvp.Key, kvp.Value.Getter(this))
-                    : kvp.Value.Getter(this).ToString();
-                writer.WriteAttributeString(kvp.Key, attributeString);
+                    : kvp.Value.Getter(this)?.ToString();
+
+                if (!string.IsNullOrEmpty(attributeString))
+                    writer.WriteAttributeString(kvp.Key, attributeString);
             }
 
             // Write elements
             foreach (var kvp in info.MemberProperties.Where(x => x.Value.TargetNodeType == XmlNodeType.Element))
             {
-                if (kvp.Value.Getter(this) is ViewModelElement observableElement)
-                    observableElement.WriteXml(writer);
+                if (kvp.Value.Getter(this) is ViewModelElement vme)
+                    vme.WriteXml(writer);
                 else
                 {
                     var elementString = kvp.Value.UseCustomWriter
                         ? CustomPropertyWriter(kvp.Key, kvp.Value.Getter(this))
-                        : kvp.Value.Getter(this).ToString();
-                    writer.WriteElementString(kvp.Key, elementString);
+                        : kvp.Value.Getter(this)?.ToString();
+
+                    if (!string.IsNullOrEmpty(elementString))
+                        writer.WriteElementString(kvp.Key, elementString);
                 }
             }
 
@@ -387,14 +391,16 @@ namespace JLR.Utility.WinUI.ViewModel
 
                 foreach (var item in kvp.Value.Getter(this))
                 {
-                    if (item is ViewModelElement observableElement)
-                        observableElement.WriteXml(writer);
+                    if (item is ViewModelElement vme)
+                        vme.WriteXml(writer);
                     else
                     {
                         var itemString = kvp.Value.UseCustomWriter
                             ? CustomPropertyWriter(kvp.Value.XmlChildName, item)
-                            : item.ToString();
-                        writer.WriteElementString(kvp.Value.XmlChildName, itemString);
+                            : item?.ToString();
+
+                        if (!string.IsNullOrEmpty(itemString))
+                            writer.WriteElementString(kvp.Value.XmlChildName, itemString);
                     }
                 }
 
