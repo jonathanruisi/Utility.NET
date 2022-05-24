@@ -1762,6 +1762,28 @@ namespace JLR.Utility.WinUI.Controls
             SelectionEnd = marker.Position + marker.Duration;
         }
 
+        public T GetClosestMarkerBeforeCurrentPosition<T>(decimal minDistance = 0.0M)
+            where T : class, ITimelineMarker
+        {
+            var markers = from marker in Markers.OfType<T>()
+                          where Position > marker.Position + minDistance
+                          orderby Position - marker.Position
+                          select marker;
+
+            return markers.Any() ? markers.First() : null;
+        }
+
+        public T GetClosestMarkerAfterCurrentPosition<T>(decimal minDistance = 0.0M)
+            where T : class, ITimelineMarker
+        {
+            var markers = from marker in Markers.OfType<T>()
+                          where Position < marker.Position - minDistance
+                          orderby marker.Position - Position
+                          select marker;
+
+            return markers.Any() ? markers.First() : null;
+        }
+
         public void Reset()
         {
             Position = 0;
@@ -1770,11 +1792,13 @@ namespace JLR.Utility.WinUI.Controls
             Markers.Clear();
             Start = 0;
             End = MinimumVisibleRange;
+            ClearSelections();
             ZoomOutFull();
 
             IsPositionAdjustmentEnabled = false;
             IsZoomAdjustmentEnabled = false;
             IsSelectionAdjustmentEnabled = false;
+            IsSelectionEnabled = false;
             PositionFollowMode = FollowMode.Advance;
             SnapToNearest = SnapInterval.Frame;
         }
