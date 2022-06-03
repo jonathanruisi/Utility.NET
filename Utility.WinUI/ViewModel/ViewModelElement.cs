@@ -26,9 +26,10 @@ namespace JLR.Utility.WinUI.ViewModel
     {
         #region Fields
         private string _name;
-        private static bool IsSubclassInfoLoaded = false;
-        private static Dictionary<Type, ViewModelSerializationInfo> SerializationInfo;
-        private static Dictionary<string, Type> DeserializationInfo;
+        private bool _isSelected;
+        private static readonly bool IsSubclassInfoLoaded = false;
+        private static readonly Dictionary<Type, ViewModelSerializationInfo> SerializationInfo;
+        private static readonly Dictionary<string, Type> DeserializationInfo;
         #endregion
 
         #region Properties
@@ -40,6 +41,16 @@ namespace JLR.Utility.WinUI.ViewModel
         {
             get => _name;
             set => SetProperty(ref _name, value, true);
+        }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether or not this element
+        /// is currently selected somewhere in the user interface.
+        /// </summary>
+        public bool IsSelected
+        {
+            get => _isSelected;
+            set => SetProperty(ref _isSelected, value, true);
         }
 
         /// <summary>
@@ -73,6 +84,7 @@ namespace JLR.Utility.WinUI.ViewModel
         protected ViewModelElement() : base(StrongReferenceMessenger.Default)
         {
             _name = string.Empty;
+            _isSelected = false;
             WriteEmptyCollectionElements = false;
         }
         #endregion

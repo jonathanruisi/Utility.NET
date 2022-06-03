@@ -59,10 +59,9 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <summary>
         /// Exposes an enumerator which iterates over all nodes that share this node's parent
         /// </summary>
-        public IEnumerable<ViewModelNode> Siblings =>
-            from sibling in _parent?.Children
-            where sibling != this && sibling.Depth == Depth
-            select sibling;
+        public IEnumerable<ViewModelNode> Siblings => from sibling in _parent?.Children
+                                                      where sibling != this && sibling.Depth == Depth
+                                                      select sibling;
         #endregion
 
         #region Constructor
