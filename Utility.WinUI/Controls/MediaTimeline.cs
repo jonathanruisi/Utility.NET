@@ -48,6 +48,21 @@ namespace JLR.Utility.WinUI.Controls
     }
 
     /// <summary>
+    /// Specifies which property is being modified by user interaction.
+    /// </summary>
+    public enum ValueDragType
+    {
+        None,
+        Position,
+        SelectionStart,
+        SelectionEnd,
+        Selection,
+        ZoomStart,
+        ZoomEnd,
+        Zoom
+    }
+
+    /// <summary>
     /// Specifies the unit to which various timeline elements will snap.
     /// </summary>
     public enum SnapInterval
@@ -1282,47 +1297,19 @@ namespace JLR.Utility.WinUI.Controls
         #endregion
 
         #region Input
-        public event EventHandler PositionDragStarted;
-        public event EventHandler PositionDragCompleted;
-        public event EventHandler SelectionDragStarted;
-        public event EventHandler SelectionDragCompleted;
-        public event EventHandler ZoomDragStarted;
-        public event EventHandler ZoomDragCompleted;
+        public event EventHandler<ValueDragType> TimelineValueDragStarted;
+        public event EventHandler<ValueDragType> TimelineValueDragCompleted;
 
-        private void RaisePositionDragStarted()
+        private void RaiseDragStarted(ValueDragType dragType)
         {
-            var handler = PositionDragStarted;
-            handler?.Invoke(this, null);
+            var handler = TimelineValueDragStarted;
+            handler?.Invoke(this, dragType);
         }
 
-        private void RaisePositionDragCompleted()
+        private void RaiseDragCompleted(ValueDragType dragType)
         {
-            var handler = PositionDragCompleted;
-            handler?.Invoke(this, null);
-        }
-
-        private void RaiseSelectionDragStarted()
-        {
-            var handler = SelectionDragStarted;
-            handler?.Invoke(this, null);
-        }
-
-        private void RaiseSelectionDragCompleted()
-        {
-            var handler = SelectionDragCompleted;
-            handler?.Invoke(this, null);
-        }
-
-        private void RaiseZoomDragStarted()
-        {
-            var handler = ZoomDragStarted;
-            handler?.Invoke(this, null);
-        }
-
-        private void RaiseZoomDragCompleted()
-        {
-            var handler = ZoomDragCompleted;
-            handler?.Invoke(this, null);
+            var handler = TimelineValueDragCompleted;
+            handler?.Invoke(this, dragType);
         }
         #endregion
         #endregion
@@ -2262,7 +2249,7 @@ namespace JLR.Utility.WinUI.Controls
                 else if (!_wasCtrlKeyPressed && IsPositionAdjustmentEnabled)
                 {
                     _mainPanel.CapturePointer(e.Pointer);
-                    RaisePositionDragStarted();
+                    RaiseDragStarted(ValueDragType.Position);
                     var closestMarker = closestMarkers.FirstOrDefault();
                     if (closestMarker != null && Math.Abs(closestMarker.Position - pos) < Math.Abs(snapPos - pos))
                         Position = closestMarker.Position;
@@ -2277,7 +2264,7 @@ namespace JLR.Utility.WinUI.Controls
             if (e.GetCurrentPoint(_mainPanel).Properties.PointerUpdateKind ==
                 PointerUpdateKind.LeftButtonReleased && !_wasCtrlKeyPressed)
             {
-                RaisePositionDragCompleted();
+                RaiseDragCompleted(ValueDragType.Position);
             }
 
             _wasCtrlKeyPressed = false;
@@ -2293,7 +2280,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private void ZoomPanel_PointerCaptureLost(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
-            RaiseZoomDragCompleted();
+            RaiseDragCompleted(ValueDragType.Zoom);
         }
         #endregion
 
@@ -2314,17 +2301,37 @@ namespace JLR.Utility.WinUI.Controls
                 _leftMouseStartX = point.Position.X;
 
                 if (sender.Equals(_positionElement))
-                    RaisePositionDragStarted();
-                else if (sender.Equals(_selectionStartElement) || sender.Equals(_selectionEndElement) || sender.Equals(_selectionThumbElement))
+                    RaiseDragStarted(ValueDragType.Position);
+                else if (sender.Equals(_selectionStartElement))
                 {
                     _wasCtrlKeyPressed = IsCtrlKeyPressed;
                     if (_wasCtrlKeyPressed)
                         IsSelectionEnabled = false;
                     else
-                        RaiseSelectionDragStarted();
+                        RaiseDragStarted(ValueDragType.SelectionStart);
                 }
-                else if (sender.Equals(_zoomStartElement) || sender.Equals(_zoomEndElement) || sender.Equals(_zoomThumbElement))
-                    RaiseZoomDragStarted();
+                else if (sender.Equals(_selectionEndElement))
+                {
+                    _wasCtrlKeyPressed = IsCtrlKeyPressed;
+                    if (_wasCtrlKeyPressed)
+                        IsSelectionEnabled = false;
+                    else
+                        RaiseDragStarted(ValueDragType.SelectionEnd);
+                }
+                else if (sender.Equals(_selectionThumbElement))
+                {
+                    _wasCtrlKeyPressed = IsCtrlKeyPressed;
+                    if (_wasCtrlKeyPressed)
+                        IsSelectionEnabled = false;
+                    else
+                        RaiseDragStarted(ValueDragType.Selection);
+                }
+                else if (sender.Equals(_zoomStartElement))
+                    RaiseDragStarted(ValueDragType.ZoomStart);
+                else if (sender.Equals(_zoomEndElement))
+                    RaiseDragStarted(ValueDragType.ZoomEnd);
+                else if (sender.Equals(_zoomThumbElement))
+                    RaiseDragStarted(ValueDragType.Zoom);
             }
 
             // Prevent this event from bubbling up to the parent Panel
@@ -2334,16 +2341,19 @@ namespace JLR.Utility.WinUI.Controls
         private void TransportElement_PointerCaptureLost(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
             if (sender.Equals(_positionElement))
-                RaisePositionDragCompleted();
-            else if ((sender.Equals(_selectionStartElement) ||
-                      sender.Equals(_selectionEndElement) ||
-                      sender.Equals(_selectionThumbElement)) &&
-                     !_wasCtrlKeyPressed)
-                RaiseSelectionDragCompleted();
-            else if (sender.Equals(_zoomStartElement) ||
-                     sender.Equals(_zoomEndElement) ||
-                     sender.Equals(_zoomThumbElement))
-                RaiseZoomDragCompleted();
+                RaiseDragCompleted(ValueDragType.Position);
+            else if (sender.Equals(_selectionStartElement) && !_wasCtrlKeyPressed)
+                RaiseDragCompleted(ValueDragType.SelectionStart);
+            else if (sender.Equals(_selectionEndElement) && !_wasCtrlKeyPressed)
+                RaiseDragCompleted(ValueDragType.SelectionEnd);
+            else if (sender.Equals(_selectionThumbElement) && !_wasCtrlKeyPressed)
+                RaiseDragCompleted(ValueDragType.Selection);
+            else if (sender.Equals(_zoomStartElement))
+                RaiseDragCompleted(ValueDragType.ZoomStart);
+            else if (sender.Equals(_zoomEndElement))
+                RaiseDragCompleted(ValueDragType.ZoomEnd);
+            else if (sender.Equals(_zoomThumbElement))
+                RaiseDragCompleted(ValueDragType.Zoom);
 
             // Prevent this event from bubbling up to the parent Panel
             e.Handled = true;
