@@ -75,7 +75,7 @@
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Margin" Value="0"/>
         <Setter Property="Padding" Value="0"/>
-        <Setter Property="ZoomBarHeight" Value="0.15*"/>
+        <Setter Property="ZoomBarHeight" Value="0.25*"/>
         <Setter Property="MarkerHeight" Value="20"/>
         <Setter Property="TrackHeight" Value="16"/>
         <Setter Property="FramesPerSecond" Value="30"/>
@@ -88,7 +88,7 @@
         <Setter Property="PositionElementAlignment" Value="Bottom"/>
         <Setter Property="SelectionInOutElementsAlignment" Value="Top"/>
         <Setter Property="SelectionThumbElementAlignment" Value="Top"/>
-        <Setter Property="PositionElementRelativeHeight" Value="0.667"/>
+        <Setter Property="PositionElementRelativeHeight" Value="0.8"/>
         <Setter Property="SelectionInOutElementsRelativeHeight" Value="0.667"/>
         <Setter Property="SelectionThumbElementRelativeHeight" Value="0.25"/>
         <Setter Property="SelectionHighlightBrush" Value="#80000000"/>
@@ -128,7 +128,7 @@
         <Setter Property="AlternateFontStretch" Value="Condensed"/>
         <Setter Property="AlternateFontStyle" Value="Normal"/>
         <Setter Property="AlternateFontWeight" Value="SemiLight"/>
-        <Setter Property="PositionElementTemplate" Value="{StaticResource Position_Style1_TopAligned_Template}"/>
+        <Setter Property="PositionElementTemplate" Value="{StaticResource Position_Style2_TopAligned_Template}"/>
         <Setter Property="SelectionStartElementTemplate" Value="{StaticResource SelectionStart_Style2_Template}"/>
         <Setter Property="SelectionEndElementTemplate" Value="{StaticResource SelectionEnd_Style2_Template}"/>
         <Setter Property="SelectionThumbElementTemplate" Value="{StaticResource SelectionThumb_Style2_Template}"/>

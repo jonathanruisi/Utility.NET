@@ -65,6 +65,64 @@
         </Path>
     </ControlTemplate>
 
+    <ControlTemplate x:Key="Position_Style2_TopAligned_Template">
+        <Path StrokeThickness="2" Stretch="Fill">
+            <Path.Stroke>
+                <SolidColorBrush x:Name="strokeBrush"/>
+            </Path.Stroke>
+            <Path.Fill>
+                <SolidColorBrush x:Name="fillBrush"/>
+            </Path.Fill>
+
+            <Path.Data>
+                <PathGeometry>
+                    <PathFigure IsClosed="True" IsFilled="True" StartPoint="6,2">
+                        <LineSegment Point="6,6"/>
+                        <LineSegment Point="1,10"/>
+                        <LineSegment Point="-1,10"/>
+                        <LineSegment Point="-6,6"/>
+                        <LineSegment Point="-6,2"/>
+                    </PathFigure>
+                </PathGeometry>
+            </Path.Data>
+
+            <VisualStateManager.VisualStateGroups>
+                <VisualStateGroup x:Name="MouseStates">
+                    <VisualState x:Name="Normal">
+                        <Storyboard>
+                            <ColorAnimation Storyboard.TargetName="strokeBrush"
+											Storyboard.TargetProperty="Color"
+											To="#C00080FF" Duration="0:0:0.25"/>
+                            <ColorAnimation Storyboard.TargetName="fillBrush"
+											Storyboard.TargetProperty="Color"
+											To="#C00080FF" Duration="0:0:0.25"/>
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="MouseOver">
+                        <Storyboard>
+                            <ColorAnimation Storyboard.TargetName="strokeBrush"
+											Storyboard.TargetProperty="Color"
+											To="#FFFFFFFF" Duration="0:0:0.25"/>
+                            <ColorAnimation Storyboard.TargetName="fillBrush"
+											Storyboard.TargetProperty="Color"
+											To="#C00080FF" Duration="0:0:0.25"/>
+                        </Storyboard>
+                    </VisualState>
+                    <VisualState x:Name="LeftButtonPressed">
+                        <Storyboard>
+                            <ColorAnimation Storyboard.TargetName="strokeBrush"
+											Storyboard.TargetProperty="Color"
+											To="#FF0080FF" Duration="0:0:0.25"/>
+                            <ColorAnimation Storyboard.TargetName="fillBrush"
+											Storyboard.TargetProperty="Color"
+											To="#FFFFFFFF" Duration="0:0:0.25"/>
+                        </Storyboard>
+                    </VisualState>
+                </VisualStateGroup>
+            </VisualStateManager.VisualStateGroups>
+        </Path>
+    </ControlTemplate>
+
     <ControlTemplate x:Key="SelectionStart_Style1_Template">
         <Path StrokeThickness="0" Stretch="Fill">
             <Path.Fill>

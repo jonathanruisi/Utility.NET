@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Specialized;
 using System.Linq;
 
+using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Brushes;
 using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
@@ -104,11 +105,9 @@ namespace JLR.Utility.WinUI.Controls
         decimal Duration { get; }
 
         /// <summary>
-        /// Identifier of the track/category to which the marker belongs.
-        /// This is only applicable for timelines with
-        /// more than one collection of markers.
+        /// Identifies the category/track to which the marker belongs.
         /// </summary>
-        int Track { get; }
+        int Group { get; }
     }
     #endregion
 
@@ -138,6 +137,7 @@ namespace JLR.Utility.WinUI.Controls
         private bool _blockSelectionChangedEvent,
                      _blockZoomChangedEvent;
         private double _leftMouseStartX;
+        private ValueDragType _lastUsedTransportControl;
         private Panel _mainPanel, _zoomPanel;
         private CanvasControl _timelineCanvas;
 
@@ -182,6 +182,7 @@ namespace JLR.Utility.WinUI.Controls
 
             Loaded += MediaTimeline_Loaded;
             Unloaded += MediaTimeline_Unloaded;
+            PointerWheelChanged += MediaTimeline_PointerWheelChanged;
         }
         #endregion
 
@@ -2124,10 +2125,10 @@ namespace JLR.Utility.WinUI.Controls
                 _zoomThumbElement = zoomThumb;
                 if (VisualTreeHelper.GetParent(zoomThumb) is Panel parent)
                 {
-                    _zoomPanel                     = parent;
-                    _zoomPanel.SizeChanged        += ZoomPanel_SizeChanged;
-                    _zoomPanel.PointerPressed     += ZoomPanel_PointerPressed;
-                    _zoomPanel.PointerCaptureLost += ZoomPanel_PointerCaptureLost;
+                    _zoomPanel                      = parent;
+                    _zoomPanel.SizeChanged         += ZoomPanel_SizeChanged;
+                    _zoomPanel.PointerPressed      += ZoomPanel_PointerPressed;
+                    _zoomPanel.PointerCaptureLost  += ZoomPanel_PointerCaptureLost;
                 }
 
                 _zoomThumbElement.PointerPressed     += TransportElement_PointerPressed;
@@ -2182,6 +2183,45 @@ namespace JLR.Utility.WinUI.Controls
         #endregion
 
         #region Input
+        #region Control
+        private void MediaTimeline_PointerWheelChanged(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
+        {
+            var delta = e.GetCurrentPoint(this).Properties.MouseWheelDelta / 120;
+
+            if (IsCtrlKeyPressed)
+            {
+                var visibleDurationIncrement = Duration / 50;
+                VisibleDuration -= visibleDurationIncrement * delta;
+
+                if (IsShiftKeyPressed && _lastUsedTransportControl != ValueDragType.None)
+                {
+                    // Zoom on and center last used timeline control (if CTRL is pressed)
+                    if (_lastUsedTransportControl == ValueDragType.Position)
+                        CenterVisibleWindow(Position);
+                    else if (_lastUsedTransportControl == ValueDragType.SelectionStart && IsSelectionEnabled)
+                        CenterVisibleWindow(SelectionStart);
+                    else if (_lastUsedTransportControl == ValueDragType.SelectionEnd && IsSelectionEnabled)
+                        CenterVisibleWindow(SelectionEnd);
+                    else if (_lastUsedTransportControl == ValueDragType.Selection && IsSelectionEnabled)
+                        CenterVisibleWindow(SelectionStart + ((SelectionEnd - SelectionStart) / 2M));
+                }
+                else
+                {
+                    // Zoom on center of current visible timeline segment
+                    CenterVisibleWindow(ZoomStart + ((ZoomEnd - ZoomStart) / 2M));
+                }
+            }
+            else
+            {
+                // Scroll current visible timeline segment forward or backward in time
+                if (IsShiftKeyPressed)
+                    OffsetVisibleWindow(delta * GetSnapIntervalValue(SnapInterval.MinorTick));
+                else
+                    OffsetVisibleWindow(delta * GetSnapIntervalValue(SnapInterval.MajorTick));
+            }
+        }
+        #endregion
+
         #region Panel
         private void MainPanel_PointerPressed(object sender, Microsoft.UI.Xaml.Input.PointerRoutedEventArgs e)
         {
@@ -2191,7 +2231,7 @@ namespace JLR.Utility.WinUI.Controls
             var point = e.GetCurrentPoint(_mainPanel);
             var pos = ConvertScreenCoordinateToPosition(point.Position.X);
             var snapPos = GetNearestSnapValue(pos, true, SnapToNearest);
-            var halfSnap = GetSnapIntervalValue(SnapToNearest) / 2;
+            var halfSnap = GetSnapIntervalValue(SnapInterval.MinorTick) / 2;
 
             if (point.Properties.PointerUpdateKind != PointerUpdateKind.LeftButtonPressed)
                 return;
@@ -2210,7 +2250,8 @@ namespace JLR.Utility.WinUI.Controls
 
             if (MarkerAreaRect.Contains(point.Position))
             {
-                var closestMarker = closestMarkers.Where(x => x.Track == 0).FirstOrDefault();
+                var closestMarker = closestMarkers.Where(x => x.Duration == 0M).FirstOrDefault();
+
                 if (_wasCtrlKeyPressed && closestMarker != null)
                     SetSelectionFromMarker(closestMarker);
                 else
@@ -2219,9 +2260,9 @@ namespace JLR.Utility.WinUI.Controls
             else if (TrackAreaRect.Contains(point.Position))
             {
                 // Determine which track was clicked
-                int track = 1;
+                int track = 0;
                 var trackTopCoord = TrackAreaRect.Top;
-                for (; track <= TrackCount; track++)
+                for (; track < TrackCount; track++)
                 {
                     if (point.Position.Y >= trackTopCoord &&
                         point.Position.Y <= trackTopCoord + TrackHeight)
@@ -2230,7 +2271,8 @@ namespace JLR.Utility.WinUI.Controls
                     trackTopCoord += TrackHeight + TrackSpacing;
                 }
 
-                var closestMarker = closestMarkers.Where(x => x.Track == track).FirstOrDefault();
+                var closestMarker = closestMarkers.Where(x => x.Duration > 0 && x.Group == track).FirstOrDefault();
+
                 if (_wasCtrlKeyPressed && closestMarker != null)
                     SetSelectionFromMarker(closestMarker);
                 else
@@ -2240,6 +2282,7 @@ namespace JLR.Utility.WinUI.Controls
             {
                 if (_wasCtrlKeyPressed && IsSelectionAdjustmentEnabled)
                 {
+                    _lastUsedTransportControl = ValueDragType.Selection;
                     _blockSelectionChangedEvent = true;
                     IsSelectionEnabled = true;
                     SelectionStart = snapPos;
@@ -2248,9 +2291,11 @@ namespace JLR.Utility.WinUI.Controls
                 }
                 else if (!_wasCtrlKeyPressed && IsPositionAdjustmentEnabled)
                 {
+                    _lastUsedTransportControl = ValueDragType.Position;
                     _mainPanel.CapturePointer(e.Pointer);
                     RaiseDragStarted(ValueDragType.Position);
                     var closestMarker = closestMarkers.FirstOrDefault();
+
                     if (closestMarker != null && Math.Abs(closestMarker.Position - pos) < Math.Abs(snapPos - pos))
                         Position = closestMarker.Position;
                     else
@@ -2301,14 +2346,20 @@ namespace JLR.Utility.WinUI.Controls
                 _leftMouseStartX = point.Position.X;
 
                 if (sender.Equals(_positionElement))
+                {
+                    _lastUsedTransportControl = ValueDragType.Position;
                     RaiseDragStarted(ValueDragType.Position);
+                }
                 else if (sender.Equals(_selectionStartElement))
                 {
                     _wasCtrlKeyPressed = IsCtrlKeyPressed;
                     if (_wasCtrlKeyPressed)
                         IsSelectionEnabled = false;
                     else
+                    {
+                        _lastUsedTransportControl = ValueDragType.SelectionStart;
                         RaiseDragStarted(ValueDragType.SelectionStart);
+                    }
                 }
                 else if (sender.Equals(_selectionEndElement))
                 {
@@ -2316,7 +2367,10 @@ namespace JLR.Utility.WinUI.Controls
                     if (_wasCtrlKeyPressed)
                         IsSelectionEnabled = false;
                     else
+                    {
+                        _lastUsedTransportControl = ValueDragType.SelectionEnd;
                         RaiseDragStarted(ValueDragType.SelectionEnd);
+                    }
                 }
                 else if (sender.Equals(_selectionThumbElement))
                 {
@@ -2324,7 +2378,10 @@ namespace JLR.Utility.WinUI.Controls
                     if (_wasCtrlKeyPressed)
                         IsSelectionEnabled = false;
                     else
+                    {
+                        _lastUsedTransportControl = ValueDragType.Selection;
                         RaiseDragStarted(ValueDragType.Selection);
+                    }
                 }
                 else if (sender.Equals(_zoomStartElement))
                     RaiseDragStarted(ValueDragType.ZoomStart);
@@ -2373,7 +2430,7 @@ namespace JLR.Utility.WinUI.Controls
             var pos = point.Position.X - _leftMouseStartX;
             var delta = Math.Abs(pos);
 
-            if (delta < snapPixels / 2)
+            if (pos == 0 || delta < snapPixels / 2)
                 return;
 
             // Calculate the number of snap intervals by which the value will be adjusted
@@ -2386,19 +2443,25 @@ namespace JLR.Utility.WinUI.Controls
                     newValue = Position - newValue >= ZoomStart
                         ? GetNearestSnapValue(Position - newValue, true, SnapToNearest)
                         : GetNearestSnapValue(ZoomStart, true, SnapToNearest);
-
-                    if (newValue != Position)
-                        Position = newValue;
                 }
                 else if (pos > 0)
                 {
                     newValue = Position + newValue <= ZoomEnd
                         ? GetNearestSnapValue(Position + newValue, true, SnapToNearest)
                         : GetNearestSnapValue(ZoomEnd, true, SnapToNearest);
-
-                    if (newValue != Position)
-                        Position = newValue;
                 }
+
+                AdjustNewPositionForNearbyMarkerSnap();
+                if (IsSelectionEnabled)
+                {
+                    if (Math.Abs(newValue - SelectionStart) <= GetSnapIntervalValue(SnapInterval.MinorTick))
+                        newValue = SelectionStart;
+                    if (Math.Abs(newValue - SelectionEnd) <= GetSnapIntervalValue(SnapInterval.MinorTick))
+                        newValue = SelectionEnd;
+                }
+
+                if (newValue != Position)
+                    Position = newValue;
             }
             else if (sender.Equals(_selectionStartElement))
             {
@@ -2407,19 +2470,19 @@ namespace JLR.Utility.WinUI.Controls
                     newValue = SelectionStart - newValue >= ZoomStart
                         ? GetNearestSnapValue(SelectionStart - newValue, true, SnapToNearest)
                         : GetNearestSnapValue(ZoomStart, true, SnapToNearest);
-
-                    if (newValue != SelectionStart)
-                        SelectionStart = newValue;
                 }
                 else if (pos > 0)
                 {
                     newValue = SelectionStart + newValue <= ZoomEnd
                         ? GetNearestSnapValue(SelectionStart + newValue, true, SnapToNearest)
                         : GetNearestSnapValue(ZoomEnd, true, SnapToNearest);
-
-                    if (newValue != SelectionStart)
-                        SelectionStart = newValue;
                 }
+
+                AdjustNewPositionForNearbyMarkerSnap();
+                if (Math.Abs(newValue - Position) <= GetSnapIntervalValue(SnapInterval.MinorTick))
+                    newValue = Position;
+                if (newValue != SelectionStart)
+                    SelectionStart = newValue;
             }
             else if (sender.Equals(_selectionEndElement))
             {
@@ -2428,19 +2491,19 @@ namespace JLR.Utility.WinUI.Controls
                     newValue = SelectionEnd - newValue >= ZoomStart
                         ? GetNearestSnapValue(SelectionEnd - newValue, true, SnapToNearest)
                         : GetNearestSnapValue(ZoomStart, true, SnapToNearest);
-
-                    if (newValue != SelectionEnd)
-                        SelectionEnd = newValue;
                 }
                 else if (pos > 0)
                 {
                     newValue = SelectionEnd + newValue <= ZoomEnd
                         ? GetNearestSnapValue(SelectionEnd + newValue, true, SnapToNearest)
                         : GetNearestSnapValue(ZoomEnd, true, SnapToNearest);
-
-                    if (newValue != SelectionEnd)
-                        SelectionEnd = newValue;
                 }
+
+                AdjustNewPositionForNearbyMarkerSnap();
+                if (Math.Abs(newValue - Position) <= GetSnapIntervalValue(SnapInterval.MinorTick))
+                    newValue = Position;
+                if (newValue != SelectionEnd)
+                    SelectionEnd = newValue;
             }
             else if (sender.Equals(_selectionThumbElement))
             {
@@ -2473,6 +2536,25 @@ namespace JLR.Utility.WinUI.Controls
                         _blockSelectionChangedEvent = false;
                         SelectionEnd = newEnd;
                     }
+                }
+            }
+
+            // Local function that adjusts position
+            // if a nearby marker is within snapping range
+            void AdjustNewPositionForNearbyMarkerSnap()
+            {
+                var snapToMarker =
+                    Markers.Where(x => Math.Abs(newValue - x.Position) <= GetSnapIntervalValue(SnapInterval.MinorTick) ||
+                                       Math.Abs(newValue - (x.Position + x.Duration)) <= GetSnapIntervalValue(SnapInterval.MinorTick))
+                           .OrderBy(x => Math.Min(Math.Abs(newValue - x.Position), Math.Abs(newValue - (x.Position + x.Duration))))
+                           .FirstOrDefault();
+
+                if (snapToMarker != null)
+                {
+                    if (snapToMarker.Duration > 0 &&
+                        Math.Abs(newValue - (snapToMarker.Position + snapToMarker.Duration)) < Math.Abs(newValue - snapToMarker.Position))
+                        newValue = snapToMarker.Position + snapToMarker.Duration;
+                    else newValue = snapToMarker.Position;
                 }
             }
         }
@@ -2514,7 +2596,7 @@ namespace JLR.Utility.WinUI.Controls
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             var prevTrackCount = TrackCount;
-            TrackCount = Markers.Select(x => x.Track).Where(x => x > 0).Distinct().Count();
+            TrackCount = Markers.Where(x => x.Duration > 0).Select(x => x.Group).Distinct().Count();
 
             if (TrackCount != prevTrackCount)
             {
@@ -2770,7 +2852,6 @@ namespace JLR.Utility.WinUI.Controls
                 // Find visible active track segments
                 var visibleSegments = from clip in Markers
                                       where clip.Duration > 0 &&
-                                            clip.Track > 0 &&
                                             clip.Position < ZoomEnd &&
                                             clip.Position + clip.Duration > ZoomStart
                                       select clip;
@@ -2785,7 +2866,7 @@ namespace JLR.Utility.WinUI.Controls
                             : ZoomEnd,
                         ref trackAreaRect);
 
-                    var segmentRect = new Rect(x, trackTopCoords[segment.Track - 1], width, TrackHeight);
+                    var segmentRect = new Rect(x, trackTopCoords[segment.Group], width, TrackHeight);
                     var brush = segment == SelectedMarker ? _selectedTrackItemSpanBrush : _trackItemSpanBrush;
 
                     // Draw segment rectangle
@@ -2883,7 +2964,7 @@ namespace JLR.Utility.WinUI.Controls
             // Draw markers
             using (args.DrawingSession.CreateLayer(1.0f))
             {
-                foreach (var marker in Markers.Where(x => x.Duration == 0 && x.Track == 0))
+                foreach (var marker in Markers.Where(x => x.Duration == 0))
                 {
                     if (marker.Position < ZoomStart || marker.Position > ZoomEnd)
                         continue;
@@ -2962,6 +3043,9 @@ namespace JLR.Utility.WinUI.Controls
 
         private static bool IsCtrlKeyPressed =>
             PInvoke.User32.GetKeyState((int)PInvoke.User32.VirtualKey.VK_CONTROL) < 0;
+
+        private static bool IsShiftKeyPressed =>
+            PInvoke.User32.GetKeyState((int)PInvoke.User32.VirtualKey.VK_SHIFT) < 0;
         #endregion
 
         #region Private Methods
