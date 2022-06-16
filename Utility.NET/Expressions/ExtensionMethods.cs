@@ -33,7 +33,9 @@ namespace JLR.Utility.NET.Expressions
         public static Delegate PropertyGetter<T>(this PropertyInfo propertyInfo)
         {
             var instance = Expression.Parameter(typeof(object));
+#pragma warning disable CS8604 // Possible null reference argument.
             var instanceConv = Expression.Convert(instance, propertyInfo.DeclaringType);
+#pragma warning restore CS8604 // Possible null reference argument.
             var body = Expression.Property(instanceConv, propertyInfo.Name);
             var bodyConv = Expression.Convert(body, typeof(T));
             return Expression.Lambda(bodyConv, instance).Compile();
@@ -52,10 +54,14 @@ namespace JLR.Utility.NET.Expressions
         public static Delegate PropertySetter(this PropertyInfo propertyInfo)
         {
             var instance = Expression.Parameter(typeof(object));
+#pragma warning disable CS8604 // Possible null reference argument.
             var instanceConv = Expression.Convert(instance, propertyInfo.DeclaringType);
+#pragma warning restore CS8604 // Possible null reference argument.
             var arg = Expression.Parameter(typeof(object));
             var argConv = Expression.Convert(arg, propertyInfo.PropertyType);
+#pragma warning disable CS8604 // Possible null reference argument.
             var call = Expression.Call(instanceConv, propertyInfo.GetSetMethod(), argConv);
+#pragma warning restore CS8604 // Possible null reference argument.
             return Expression.Lambda(call, instance, arg).Compile();
         }
     }
