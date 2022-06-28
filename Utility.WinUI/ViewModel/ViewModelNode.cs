@@ -95,7 +95,7 @@ namespace JLR.Utility.WinUI.ViewModel
         #endregion
 
         #region Event Handlers
-        private void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        protected virtual void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             if (e.OldItems != null)
             {
