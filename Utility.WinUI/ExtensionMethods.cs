@@ -8,6 +8,8 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Media;
 
+using Windows.Foundation;
+
 using WinRT.Interop;
 
 namespace JLR.Utility.WinUI
@@ -60,6 +62,13 @@ namespace JLR.Utility.WinUI
                     throw new InvalidOperationException(
                         "This type of brush cannot be converted to ICanvasBrush via this method");
             }
+        }
+        #endregion
+
+        #region Windows.Foundation.Rect
+        public static Point GetCenterPoint(this Rect rect)
+        {
+            return new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
         }
         #endregion
     }
