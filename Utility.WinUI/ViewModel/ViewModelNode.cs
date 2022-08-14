@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
+using JLR.Utility.WinUI.Messaging;
+
 using Microsoft.Toolkit.Mvvm.Messaging;
 
 namespace JLR.Utility.WinUI.ViewModel
@@ -97,18 +99,27 @@ namespace JLR.Utility.WinUI.ViewModel
         #region Event Handlers
         private void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            var collectionChangedMessage = new CollectionChangedMessage<ViewModelNode>(this, nameof(Children));
+
             if (e.OldItems != null)
             {
                 foreach (ViewModelNode oldNode in e.OldItems)
+                {
                     oldNode._parent = null;
+                    collectionChangedMessage.OldValue.Add(oldNode);
+                }
             }
 
             if (e.NewItems != null)
             {
                 foreach (ViewModelNode newNode in e.NewItems)
+                {
                     newNode._parent = this;
+                    collectionChangedMessage.NewValue.Add(newNode);
+                }
             }
 
+            Messenger.Send(collectionChangedMessage);
             NotifySerializedCollectionChanged(nameof(Children));
         }
         #endregion
