@@ -64,8 +64,8 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <returns>An initialized <see cref="ViewModelSerializationInfo"/> object.</returns>
         public static ViewModelSerializationInfo Create(Type type)
         {
-            var classAttribute = (ViewModelObjectAttribute)Attribute.GetCustomAttribute(
-                type, typeof(ViewModelObjectAttribute));
+            var classAttribute = (ViewModelTypeAttribute)Attribute.GetCustomAttribute(
+                type, typeof(ViewModelTypeAttribute));
 
             var result = new ViewModelSerializationInfo
             {
@@ -76,8 +76,8 @@ namespace JLR.Utility.WinUI.ViewModel
             var properties = type.GetProperties();
             foreach (var property in properties)
             {
-                var propertyAttribute = (ViewModelObjectAttribute)Attribute.GetCustomAttribute(property,
-                    typeof(ViewModelObjectAttribute));
+                var propertyAttribute = (ViewModelPropertyAttribute)Attribute.GetCustomAttribute(property,
+                    typeof(ViewModelPropertyAttribute));
 
                 if (propertyAttribute == null)
                     continue;
@@ -102,8 +102,8 @@ namespace JLR.Utility.WinUI.ViewModel
                     // XmlName defined in that class' XmlObservableAttribute.
                     if (property.PropertyType.IsSubclassOf(typeof(ViewModelElement)))
                     {
-                        var attribute = (ViewModelObjectAttribute)Attribute.GetCustomAttribute(
-                            property.PropertyType, typeof(ViewModelObjectAttribute));
+                        var attribute = (ViewModelTypeAttribute)Attribute.GetCustomAttribute(
+                            property.PropertyType, typeof(ViewModelTypeAttribute));
                         xmlName = attribute.XmlName;
                     }
 

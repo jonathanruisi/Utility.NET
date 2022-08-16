@@ -8,10 +8,39 @@ using System.Xml;
 namespace JLR.Utility.WinUI.ViewModel
 {
     /// <summary>
-    /// Specifies the name used to represent an <see cref="ViewModelElement"/> in XML.
+    /// Customizes the serialization and deserialization of a
+    /// <see cref="ViewModelElement"/> to/from XML.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
-    public class ViewModelObjectAttribute : Attribute
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+    public class ViewModelTypeAttribute : Attribute
+    {
+        /// <summary>
+        /// Gets the name used to represent the target in XML.
+        /// </summary>
+        /// <remarks>
+        /// This value will be ignored when applied to a
+        /// property of type <see cref="ViewModelElement"/>.
+        /// In this case, the <see cref="ViewModelElement"/>
+        /// type's <see cref="XmlName"/> value will be used instead.
+        /// </remarks>
+        public string XmlName { get; }
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="ViewModelTypeAttribute"/> class.
+        /// </summary>
+        /// <param name="xmlName">Name used to represent the target in XML.</param>
+        public ViewModelTypeAttribute(string xmlName)
+        {
+            XmlName = xmlName;
+        }
+    }
+
+    /// <summary>
+    /// Customizes the serialization and deserialization of a
+    /// <see cref="ViewModelElement"/> member property to/from XML.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
+    public class ViewModelPropertyAttribute : Attribute
     {
         /// <summary>
         /// Gets the name used to represent the target in XML.
@@ -48,7 +77,7 @@ namespace JLR.Utility.WinUI.ViewModel
         public bool UseCustomWriter { get; }
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="ViewModelObjectAttribute"/> class.
+        /// Initializes a new instance of the <see cref="ViewModelPropertyAttribute"/> class.
         /// </summary>
         /// <param name="xmlName">Name used to represent the target in XML.</param>
         /// <param name="targetNodeType">
@@ -68,10 +97,10 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <see cref="ViewModelElement.CustomPropertyWriter"/>
         /// during serialization.
         /// </param>
-        public ViewModelObjectAttribute(string xmlName,
-                                        XmlNodeType targetNodeType,
-                                        bool useCustomParser = false,
-                                        bool useCustomWriter = false)
+        public ViewModelPropertyAttribute(string xmlName,
+                                          XmlNodeType targetNodeType,
+                                          bool useCustomParser = false,
+                                          bool useCustomWriter = false)
         {
             if (targetNodeType != XmlNodeType.Attribute && targetNodeType != XmlNodeType.Element)
             {
@@ -90,7 +119,7 @@ namespace JLR.Utility.WinUI.ViewModel
     /// as well as the possible XML names of items within the collection.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
-    public sealed class ViewModelCollectionAttribute : ViewModelObjectAttribute
+    public sealed class ViewModelCollectionAttribute : ViewModelPropertyAttribute
     {
         /// <summary>
         /// Gets the XML name of items within the collection.
