@@ -36,7 +36,7 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <summary>
         /// Gets or sets the name of the element.
         /// </summary>
-        [ViewModelObject(nameof(Name), XmlNodeType.Attribute)]
+        [ViewModelProperty(nameof(Name), XmlNodeType.Attribute)]
         public string Name
         {
             get => _name;
