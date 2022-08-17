@@ -8,10 +8,10 @@ using System.Xml;
 using System.Xml.Schema;
 using System.Xml.Serialization;
 
-using JLR.Utility.NET.Reflection;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Messaging;
 
-using Microsoft.Toolkit.Mvvm.ComponentModel;
-using Microsoft.Toolkit.Mvvm.Messaging;
+using JLR.Utility.NET.Reflection;
 
 using Windows.Storage;
 

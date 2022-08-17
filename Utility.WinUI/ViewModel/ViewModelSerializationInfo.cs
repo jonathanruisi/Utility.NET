@@ -99,7 +99,7 @@ namespace JLR.Utility.WinUI.ViewModel
                     var xmlName = propertyAttribute.XmlName;
 
                     // For properties of type ViewModelElement, make sure they use the
-                    // XmlName defined in that class' XmlObservableAttribute.
+                    // XmlName defined in that class' XmlTypeAttribute.
                     if (property.PropertyType.IsSubclassOf(typeof(ViewModelElement)))
                     {
                         var attribute = (ViewModelTypeAttribute)Attribute.GetCustomAttribute(

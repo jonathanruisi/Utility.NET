@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-using Microsoft.Toolkit.Mvvm.Messaging.Messages;
+using CommunityToolkit.Mvvm.Messaging.Messages;
 
 namespace JLR.Utility.WinUI.Messaging
 {
