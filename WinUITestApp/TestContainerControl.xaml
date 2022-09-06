@@ -1,0 +1,156 @@
+﻿<UserControl
+    x:Class="WinUITestApp.TestContainerControl"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WinUITestApp"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:controls="using:JLR.Utility.WinUI.Controls"
+    xmlns:geometry="using:Microsoft.Graphics.Canvas.Geometry"
+    mc:Ignorable="d">
+
+    <UserControl.Resources>
+        <!-- Marker -->
+        <controls:MarkerStyle x:Key="DefaultMarkerStyle"
+                                  StrokeThickness="0"
+                                  TailStrokeThickness="1.0">
+            <controls:MarkerStyle.Geometry>
+                <PathGeometry>
+                    <PathGeometry.Figures>
+                        <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,0">
+                            <PathFigure.Segments>
+                                <LineSegment Point="10,0"/>
+                                <LineSegment Point="10,6.67"/>
+                                <LineSegment Point="5,10"/>
+                                <LineSegment Point="0,6.67"/>
+                            </PathFigure.Segments>
+                        </PathFigure>
+                    </PathGeometry.Figures>
+                </PathGeometry>
+            </controls:MarkerStyle.Geometry>
+
+            <controls:MarkerStyle.Fill>
+                <SolidColorBrush Color="DarkOrange"/>
+            </controls:MarkerStyle.Fill>
+
+            <controls:MarkerStyle.TailStroke>
+                <SolidColorBrush Color="DarkOrange"/>
+            </controls:MarkerStyle.TailStroke>
+
+            <controls:MarkerStyle.TailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:MarkerStyle.TailStrokeStyle>
+        </controls:MarkerStyle>
+
+        <!-- Marker (Selected) -->
+        <controls:MarkerStyle x:Key="DefaultSelectedMarkerStyle"
+                                  StrokeThickness="1.0"
+                                  TailStrokeThickness="2.0">
+            <controls:MarkerStyle.Geometry>
+                <PathGeometry>
+                    <PathGeometry.Figures>
+                        <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,0">
+                            <PathFigure.Segments>
+                                <LineSegment Point="10,0"/>
+                                <LineSegment Point="10,6.67"/>
+                                <LineSegment Point="5,10"/>
+                                <LineSegment Point="0,6.67"/>
+                            </PathFigure.Segments>
+                        </PathFigure>
+                    </PathGeometry.Figures>
+                </PathGeometry>
+            </controls:MarkerStyle.Geometry>
+
+            <controls:MarkerStyle.Fill>
+                <SolidColorBrush Color="DarkOrange"/>
+            </controls:MarkerStyle.Fill>
+
+            <controls:MarkerStyle.Stroke>
+                <SolidColorBrush Color="White"/>
+            </controls:MarkerStyle.Stroke>
+
+            <controls:MarkerStyle.TailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:MarkerStyle.TailStroke>
+
+            <controls:MarkerStyle.TailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:MarkerStyle.TailStrokeStyle>
+        </controls:MarkerStyle>
+
+        <!-- Track Span -->
+        <controls:TimespanMarkerStyle x:Key="DefaultTimespanMarkerStyle"
+                                          SpanStrokeThickness="0"
+                                          SpanStartTailStrokeThickness="1.0"
+                                          SpanEndTailStrokeThickness="0">
+            <controls:TimespanMarkerStyle.SpanFill>
+                <SolidColorBrush Color="DarkOrange"/>
+            </controls:TimespanMarkerStyle.SpanFill>
+
+            <controls:TimespanMarkerStyle.SpanLabel>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanLabel>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStroke>
+                <SolidColorBrush Color="DarkOrange"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+        </controls:TimespanMarkerStyle>
+
+        <!-- Track Span (Selected) -->
+        <controls:TimespanMarkerStyle x:Key="DefaultSelectedTimespanMarkerStyle"
+                                          SpanStrokeThickness="1.0"
+                                          SpanStartTailStrokeThickness="2.0"
+                                          SpanEndTailStrokeThickness="2.0">
+            <controls:TimespanMarkerStyle.SpanFill>
+                <SolidColorBrush Color="DarkOrange"/>
+            </controls:TimespanMarkerStyle.SpanFill>
+
+            <controls:TimespanMarkerStyle.SpanLabel>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanLabel>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanEndTailStroke>
+                <SolidColorBrush Color="White"/>
+            </controls:TimespanMarkerStyle.SpanEndTailStroke>
+
+            <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+
+            <controls:TimespanMarkerStyle.SpanEndTailStrokeStyle>
+                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+            </controls:TimespanMarkerStyle.SpanEndTailStrokeStyle>
+        </controls:TimespanMarkerStyle>
+    </UserControl.Resources>
+
+    <Grid HorizontalAlignment="Stretch" VerticalAlignment="Stretch">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="100"/>
+            <RowDefinition Height="0.1*"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="0.1*"/>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="0.1*"/>
+        </Grid.ColumnDefinitions>
+
+        <controls:MediaTimeline x:Name="Timeline" Grid.Row="1" Grid.Column="1">
+            <controls:MediaTimeline.MarkerStyleGroups>
+                <controls:MarkerStyleGroup x:Key="Default"
+                                           Style="{StaticResource DefaultMarkerStyle}"
+                                           SelectedStyle="{StaticResource DefaultSelectedMarkerStyle}"
+                                           TimespanMarkerStyle="{StaticResource DefaultTimespanMarkerStyle}"
+                                           SelectedTimespanMarkerStyle="{StaticResource DefaultSelectedTimespanMarkerStyle}"/>
+            </controls:MediaTimeline.MarkerStyleGroups>
+        </controls:MediaTimeline>
+    </Grid>
+</UserControl>
