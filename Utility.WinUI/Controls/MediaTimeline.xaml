@@ -76,7 +76,7 @@
         <Setter Property="Margin" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="ZoomBarHeight" Value="0.25*"/>
-        <Setter Property="MarkerHeight" Value="20"/>
+        <Setter Property="MarkerBarHeight" Value="20"/>
         <Setter Property="TrackHeight" Value="16"/>
         <Setter Property="FramesPerSecond" Value="30"/>
         <Setter Property="IsPositionAdjustmentEnabled" Value="True"/>
@@ -106,18 +106,6 @@
         <Setter Property="MinorTickThickness" Value="1"/>
         <Setter Property="MinorTickRelativeHeight" Value="0.165"/>
         <Setter Property="MinorTickZIndex" Value="0"/>
-        <Setter Property="MarkerBrush" Value="DodgerBlue"/>
-        <Setter Property="SelectedMarkerBrush" Value="White"/>
-        <Setter Property="MarkerLineThickness" Value="2.0"/>
-        <Setter Property="MarkerLineStyle">
-            <Setter.Value>
-                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="TrackItemSpanBrush" Value="#C0800000"/>
-        <Setter Property="SelectedTrackItemSpanBrush" Value="White"/>
-        <Setter Property="TrackItemLabelBrush" Value="White"/>
-        <Setter Property="SelectedTrackItemLabelBrush" Value="Black"/>
         <Setter Property="FontFamily" Value="Arial"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="FontStretch" Value="Normal"/>
