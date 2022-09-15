@@ -77,6 +77,17 @@ namespace JLR.Utility.WinUI.ViewModel
         public bool UseCustomWriter { get; }
 
         /// <summary>
+        /// Gets a value indicating how serialization / deserialization
+        /// is handled for this property. If<c>true</c>, serialization
+        /// of this property will be handled by
+        /// <see cref="ViewModelElement.HijackSerialization"/> and
+        /// deserialization by <see cref="ViewModelElement.HijackDeserialization"/>.
+        /// If <c>false</c>, serialization/deserialization is handled internally
+        /// by <see cref="ViewModelElement"/>.
+        /// </summary>
+        public bool HijackSerdes { get; }
+
+        /// <summary>
         /// Initializes a new instance of the <see cref="ViewModelPropertyAttribute"/> class.
         /// </summary>
         /// <param name="xmlName">Name used to represent the target in XML.</param>
@@ -97,10 +108,16 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <see cref="ViewModelElement.CustomPropertyWriter"/>
         /// during serialization.
         /// </param>
+        /// <param name="hijackSerdes">
+        /// Indicates whether or not to use
+        /// <see cref="ViewModelElement.HijackSerialization"/> and
+        /// <see cref="ViewModelElement.HijackDeserialization"/>.
+        /// </param>
         public ViewModelPropertyAttribute(string xmlName,
                                           XmlNodeType targetNodeType,
                                           bool useCustomParser = false,
-                                          bool useCustomWriter = false)
+                                          bool useCustomWriter = false,
+                                          bool hijackSerdes = false)
         {
             if (targetNodeType != XmlNodeType.Attribute && targetNodeType != XmlNodeType.Element)
             {
@@ -111,6 +128,7 @@ namespace JLR.Utility.WinUI.ViewModel
             TargetNodeType = targetNodeType;
             UseCustomParser = useCustomParser;
             UseCustomWriter = useCustomWriter;
+            HijackSerdes = hijackSerdes;
         }
     }
 
@@ -149,11 +167,22 @@ namespace JLR.Utility.WinUI.ViewModel
         /// for each item in the collection.
         /// </para>
         /// </param>
+        /// <param name="hijackSerdes">
+        /// Indicates whether or not to use
+        /// <see cref="ViewModelElement.HijackSerialization"/> and
+        /// <see cref="ViewModelElement.HijackDeserialization"/> on this
+        /// collection during serialization and deserialization respectively.
+        /// <para>
+        /// The respective method will be called
+        /// for each item in the collection.
+        /// </para>
+        /// </param>
         public ViewModelCollectionAttribute(string xmlName,
                                             string xmlChildName = null,
                                             bool useCustomParser = false,
-                                            bool useCustomWriter = false)
-            : base(xmlName, XmlNodeType.Element, useCustomParser, useCustomWriter)
+                                            bool useCustomWriter = false,
+                                            bool hijackSerdes = false)
+            : base(xmlName, XmlNodeType.Element, useCustomParser, useCustomWriter, hijackSerdes)
         {
             XmlChildName = xmlChildName;
         }

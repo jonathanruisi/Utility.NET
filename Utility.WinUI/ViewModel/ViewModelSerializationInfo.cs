@@ -91,7 +91,8 @@ namespace JLR.Utility.WinUI.ViewModel
                         XmlChildName = collectionAttribute.XmlChildName,
                         ChildType = property.PropertyType.GetGenericArguments().Single(),
                         UseCustomParser = collectionAttribute.UseCustomParser,
-                        UseCustomWriter = collectionAttribute.UseCustomWriter
+                        UseCustomWriter = collectionAttribute.UseCustomWriter,
+                        HijackSerdes = collectionAttribute.HijackSerdes
                     });
                 }
                 else
@@ -115,7 +116,8 @@ namespace JLR.Utility.WinUI.ViewModel
                         Getter = (Func<ViewModelElement, object>)property.PropertyGetter<object>(),
                         Setter = (Action<ViewModelElement, object>)property.PropertySetter(),
                         UseCustomParser = propertyAttribute.UseCustomParser,
-                        UseCustomWriter = propertyAttribute.UseCustomWriter
+                        UseCustomWriter = propertyAttribute.UseCustomWriter,
+                        HijackSerdes = propertyAttribute.HijackSerdes
                     });
                 }
             }
@@ -169,6 +171,13 @@ namespace JLR.Utility.WinUI.ViewModel
             /// on this property during serialization.
             /// </summary>
             public bool UseCustomWriter { get; internal set; }
+
+            /// <summary>
+            /// Indicates whether or not to use
+            /// <see cref="ViewModelElement.HijackSerialization"/> and
+            /// <see cref="ViewModelElement.HijackDeserialization"/>.
+            /// </summary>
+            public bool HijackSerdes { get; internal set; }
         }
 
         public sealed class ViewModelSerializationCollectionInfo
@@ -215,6 +224,18 @@ namespace JLR.Utility.WinUI.ViewModel
             /// for each item in the collection.
             /// </remarks>
             public bool UseCustomWriter { get; internal set; }
+
+            /// <summary>
+            /// Indicates whether or not to use
+            /// <see cref="ViewModelElement.HijackSerialization"/> and
+            /// <see cref="ViewModelElement.HijackDeserialization"/> on this
+            /// collection during serialization and deserialization respectively.
+            /// </summary>
+            /// <remarks>
+            /// The respective method will be called
+            /// for each item in the collection.
+            /// </remarks>
+            public bool HijackSerdes { get; internal set; }
         }
         #endregion
     }

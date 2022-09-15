@@ -209,6 +209,13 @@ namespace JLR.Utility.WinUI.ViewModel
         {
             return null;
         }
+
+        protected virtual object HijackDeserialization(string propertyName, ref XmlReader reader)
+        {
+            return null;
+        }
+
+        protected virtual void HijackSerialization(string propertyName, object value, ref XmlWriter writer) { }
         #endregion
 
         #region Interface Implementation (IXmlSerializable)
@@ -239,10 +246,15 @@ namespace JLR.Utility.WinUI.ViewModel
             {
                 do
                 {
+                    object value;
                     var propertyInfo = info.MemberProperties[reader.Name];
-                    var value = propertyInfo.UseCustomParser
-                        ? CustomPropertyParser(reader.Name, reader.ReadContentAsString())
-                        : reader.ReadContentAs(propertyInfo.PropertyType, null);
+
+                    if (propertyInfo.HijackSerdes)
+                        value = HijackDeserialization(reader.Name, ref reader);
+                    else if (propertyInfo.UseCustomParser)
+                        value = CustomPropertyParser(reader.Name, reader.ReadContentAsString());
+                    else
+                        value = reader.ReadContentAs(propertyInfo.PropertyType, null);
 
                     if (value == null)
                     {
@@ -276,28 +288,35 @@ namespace JLR.Utility.WinUI.ViewModel
                     // Element is an item in the collection
                     if (reader.NodeType != XmlNodeType.EndElement)
                     {
-                        if (collectionInfo.ChildType.IsSubclassOf(typeof(ViewModelElement)))
+                        object value;
+                        if (collectionInfo.HijackSerdes)
+                        {
+                            value = HijackDeserialization(collectionInfo.XmlChildName, ref reader);
+                        }
+                        else if (collectionInfo.ChildType.IsSubclassOf(typeof(ViewModelElement)))
                         {
                             var element = SerializationInfo[DeserializationInfo[elementName]].Constructor();
                             element.ReadXml(reader);
-                            collectionInfo.Getter(this).Add(element);
+                            value = element;
+                        }
+                        else if (collectionInfo.UseCustomParser)
+                        {
+                            value = CustomPropertyParser(collectionInfo.XmlChildName, reader.ReadElementContentAsString());
                         }
                         else
                         {
-                            var value = collectionInfo.UseCustomParser
-                                ? CustomPropertyParser(collectionInfo.XmlChildName, reader.ReadElementContentAsString())
-                                : reader.ReadElementContentAs(collectionInfo.ChildType, null);
-
-                            if (value == null)
-                            {
-                                throw new InvalidOperationException(
-                                    $"Unable to parse node \"{reader.Name}\" " +
-                                    $"in element \"{elementName}\" " +
-                                    $"to type \"{collectionInfo.ChildType.Name}\".");
-                            }
-
-                            collectionInfo.Getter(this).Add(value);
+                            value = reader.ReadElementContentAs(collectionInfo.ChildType, null);
                         }
+
+                        if (value == null)
+                        {
+                            throw new InvalidOperationException(
+                                $"Unable to parse node \"{reader.Name}\" " +
+                                $"in element \"{elementName}\" " +
+                                $"to type \"{collectionInfo.ChildType.Name}\".");
+                        }
+
+                        collectionInfo.Getter(this).Add(value);
                     }
                     // Element marks the end of the collection
                     else
@@ -320,29 +339,37 @@ namespace JLR.Utility.WinUI.ViewModel
                 // Element is a known property
                 if (info.MemberProperties.ContainsKey(elementName))
                 {
+                    object value;
                     var propertyInfo = info.MemberProperties[elementName];
-                    if (propertyInfo.PropertyType.IsSubclassOf(typeof(ViewModelElement)))
+
+                    if (propertyInfo.HijackSerdes)
+                    {
+                        value = HijackDeserialization(elementName, ref reader);
+                    }
+                    else if (propertyInfo.PropertyType.IsSubclassOf(typeof(ViewModelElement)))
                     {
                         var element = SerializationInfo[DeserializationInfo[elementName]].Constructor();
                         element.ReadXml(reader);
-                        propertyInfo.Setter(this, element);
+                        value = element;
+                    }
+                    else if (propertyInfo.UseCustomParser)
+                    {
+                        value = CustomPropertyParser(elementName, reader.ReadElementContentAsString());
                     }
                     else
                     {
-                        var value = propertyInfo.UseCustomParser
-                            ? CustomPropertyParser(elementName, reader.ReadElementContentAsString())
-                            : reader.ReadElementContentAs(propertyInfo.PropertyType, null);
-
-                        if (value == null)
-                        {
-                            throw new InvalidOperationException(
-                                $"Unable to parse node \"{reader.Name}\" " +
-                                $"in element \"{elementName}\" " +
-                                $"to type \"{propertyInfo.PropertyType.Name}\".");
-                        }
-
-                        propertyInfo.Setter(this, value);
+                        value = reader.ReadElementContentAs(propertyInfo.PropertyType, null);
                     }
+
+                    if (value == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Unable to parse node \"{reader.Name}\" " +
+                            $"in element \"{elementName}\" " +
+                            $"to type \"{propertyInfo.PropertyType.Name}\".");
+                    }
+
+                    propertyInfo.Setter(this, value);
 
                     continue;
                 }
@@ -368,19 +395,32 @@ namespace JLR.Utility.WinUI.ViewModel
             // Write attributes
             foreach (var kvp in info.MemberProperties.Where(x => x.Value.TargetNodeType == XmlNodeType.Attribute))
             {
-                var attributeString = kvp.Value.UseCustomWriter
+                if (kvp.Value.HijackSerdes)
+                {
+                    HijackSerialization(kvp.Key, kvp.Value.Getter(this), ref writer);
+                }
+                else
+                {
+                    var attributeString = kvp.Value.UseCustomWriter
                     ? CustomPropertyWriter(kvp.Key, kvp.Value.Getter(this))
                     : kvp.Value.Getter(this)?.ToString();
 
-                if (!string.IsNullOrEmpty(attributeString))
-                    writer.WriteAttributeString(kvp.Key, attributeString);
+                    if (!string.IsNullOrEmpty(attributeString))
+                        writer.WriteAttributeString(kvp.Key, attributeString);
+                }
             }
 
             // Write elements
             foreach (var kvp in info.MemberProperties.Where(x => x.Value.TargetNodeType == XmlNodeType.Element))
             {
-                if (kvp.Value.Getter(this) is ViewModelElement vme)
+                if (kvp.Value.HijackSerdes)
+                {
+                    HijackSerialization(kvp.Key, kvp.Value.Getter(this), ref writer);
+                }
+                else if (kvp.Value.Getter(this) is ViewModelElement vme)
+                {
                     vme.WriteXml(writer);
+                }
                 else
                 {
                     var elementString = kvp.Value.UseCustomWriter
@@ -403,8 +443,14 @@ namespace JLR.Utility.WinUI.ViewModel
 
                 foreach (var item in kvp.Value.Getter(this))
                 {
-                    if (item is ViewModelElement vme)
+                    if (kvp.Value.HijackSerdes)
+                    {
+                        HijackSerialization(kvp.Value.XmlChildName, item, ref writer);
+                    }
+                    else if (item is ViewModelElement vme)
+                    {
                         vme.WriteXml(writer);
+                    }
                     else
                     {
                         var itemString = kvp.Value.UseCustomWriter
