@@ -6,6 +6,7 @@
     <Nullable>enable</Nullable>
     <RootNamespace>JLR.$(MSBuildProjectName.Replace(" ", "_"))</RootNamespace>
     <AssemblyName>JLR.$(MSBuildProjectName)</AssemblyName>
+    <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
 
 </Project>
