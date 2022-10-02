@@ -173,7 +173,7 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <summary>
         /// When overridden in a derived class, this method is called
         /// during XML deserialization when parsing a property
-        /// marked with <see cref="ViewModelObjectAttribute.UseCustomParser"/>
+        /// marked with <see cref="ViewModelPropertyAttribute.UseCustomParser"/>
         /// = <b><c>true</c></b>.
         /// </summary>
         /// <param name="propertyName">The name of the property to parse.</param>
@@ -191,7 +191,7 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <summary>
         /// When overridden in a derived class, this method is called
         /// during XML serialization when writing a property
-        /// marked with <see cref="ViewModelObjectAttribute.UseCustomWriter"/>
+        /// marked with <see cref="ViewModelPropertyAttribute.UseCustomWriter"/>
         /// = <b><c>true</c></b>.
         /// </summary>
         /// <param name="propertyName">
@@ -210,11 +210,37 @@ namespace JLR.Utility.WinUI.ViewModel
             return null;
         }
 
+        /// <summary>
+        /// When overridden in a derived class, this method is called
+        /// during XML deserialization when parsing a property marked with
+        /// <see cref="ViewModelPropertyAttribute.HijackSerdes"/> = <b><c>true</c></b>.
+        /// </summary>
+        /// <param name="propertyName">
+        /// The name of the property that needs to be read.
+        /// </param>
+        /// <param name="reader">
+        /// The <see cref="XmlReader"/> currently pointing to the start tag of the object to be read.
+        /// </param>
+        /// <returns>
+        /// The fully constructed object which will be assigned to <paramref name="propertyName"/>.
+        /// </returns>
         protected virtual object HijackDeserialization(string propertyName, ref XmlReader reader)
         {
             return null;
         }
 
+        /// <summary>
+        /// When overridden in a derived class, this method is called
+        /// during XML serialization when writing a property marked with
+        /// <see cref="ViewModelPropertyAttribute.HijackSerdes"/> = <b><c>true</c></b>.
+        /// </summary>
+        /// <param name="propertyName">
+        /// The <b><u>XML name</u></b> of the property to be written.
+        /// </param>
+        /// <param name="value">The object to be written.</param>
+        /// <param name="writer">
+        /// The <see cref="XmlWriter"/> with which to write the object's contents.
+        /// </param>
         protected virtual void HijackSerialization(string propertyName, object value, ref XmlWriter writer) { }
         #endregion
 
@@ -483,7 +509,7 @@ namespace JLR.Utility.WinUI.ViewModel
         {
             var serializationInfo = SerializationInfo[GetType()];
             if (serializationInfo.MemberCollections.Values.Any(x => x.PropertyName == collectionName))
-                Messenger.Send(new SerializedPropertyChangedMessage(GetType(), collectionName));
+                Messenger.Send(new SerializedPropertyChangedMessage(this, collectionName));
         }
         #endregion
 
@@ -494,7 +520,7 @@ namespace JLR.Utility.WinUI.ViewModel
 
             var serializationInfo = SerializationInfo[GetType()];
             if (serializationInfo.MemberProperties.Values.Any(x => x.PropertyName == e.PropertyName))
-                Messenger.Send(new SerializedPropertyChangedMessage(GetType(), e.PropertyName));
+                Messenger.Send(new SerializedPropertyChangedMessage(this, e.PropertyName));
         }
         #endregion
 
@@ -518,11 +544,11 @@ namespace JLR.Utility.WinUI.ViewModel
     /// </remarks>
     public sealed class SerializedPropertyChangedMessage
     {
-        public Type SenderType { get; }
+        public ViewModelElement Sender { get; }
         public string PropertyName { get; }
-        public SerializedPropertyChangedMessage(Type senderType, string propertyName)
+        public SerializedPropertyChangedMessage(ViewModelElement sender, string propertyName)
         {
-            SenderType = senderType;
+            Sender = sender;
             PropertyName = propertyName;
         }
     }
