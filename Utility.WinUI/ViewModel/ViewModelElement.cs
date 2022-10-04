@@ -90,7 +90,74 @@ namespace JLR.Utility.WinUI.ViewModel
         #endregion
 
         #region Public Methods
-        public static async Task<ViewModelElement> FromXmlFileAsync(StorageFile file)
+        /// <summary>
+        /// Saves the XML representation of this <see cref="ViewModelElement"/>
+        /// to a specified <see cref="StorageFile"/>.
+        /// </summary>
+        /// <returns>
+        /// <b><c>true</c></b> if successful, <b><c>false</c></b> otherwise.
+        /// </returns>
+        public virtual async Task<bool> SaveAsync(StorageFile file)
+        {
+            if (file == null || !file.IsAvailable)
+                return false;
+
+            // Create a temporary backup of the current save file,
+            // if it exists, then erase the current save file.
+            StorageFile backupFile = null;
+            File.Delete(file.Path + ".bak");
+            if (File.Exists(file.Path))
+            {
+                backupFile = await file.CopyAsync(await file.GetParentAsync(), file.Name + ".bak");
+                await FileIO.WriteTextAsync(file, string.Empty);
+            }
+
+            var success = true;
+            XmlWriter writer = null;
+            try
+            {
+                var settings = new XmlWriterSettings
+                {
+                    Async = true,
+                    Indent = true,
+                    IndentChars = "\t",
+                    OmitXmlDeclaration = true,
+                    ConformanceLevel = ConformanceLevel.Document,
+                    CloseOutput = true
+                };
+
+                writer = XmlWriter.Create(await file.OpenStreamForWriteAsync(), settings);
+                WriteXml(writer);
+                await writer.FlushAsync();
+            }
+            catch (Exception)
+            {
+                success = false;
+            }
+            finally
+            {
+                writer?.Close();
+            }
+
+            if (success)
+            {
+                // Delete the temporary backup file
+                if (backupFile != null)
+                    await backupFile.DeleteAsync(StorageDeleteOption.PermanentDelete);
+
+                return true;
+            }
+            else
+            {
+                // Restore the previous save file from the backup
+                if (backupFile != null)
+                    await backupFile.MoveAndReplaceAsync(file);
+
+                return false;
+            }
+        }
+
+        public static async Task<ViewModelElement> FromFileAsync(StorageFile file)
         {
             if (file == null || !file.IsAvailable)
                 return null;
