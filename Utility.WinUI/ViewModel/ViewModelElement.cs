@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
@@ -63,10 +64,8 @@ namespace JLR.Utility.WinUI.ViewModel
         #region Constructors
         static ViewModelElement()
         {
-            if (SerializationInfo == null)
-                SerializationInfo = new Dictionary<Type, ViewModelSerializationInfo>();
-            if (DeserializationInfo == null)
-                DeserializationInfo = new Dictionary<string, Type>();
+            SerializationInfo ??= new Dictionary<Type, ViewModelSerializationInfo>();
+            DeserializationInfo ??= new Dictionary<string, Type>();
 
             if (!IsSubclassInfoLoaded)
             {
@@ -409,7 +408,15 @@ namespace JLR.Utility.WinUI.ViewModel
                                 $"to type \"{collectionInfo.ChildType.Name}\".");
                         }
 
-                        collectionInfo.Getter(this).Add(value);
+                        // TODO: Figure out a way to handle generic arguments here
+                        if (value is KeyValuePair<object, object> kvp)
+                        {
+                            ((IDictionary)collectionInfo.Getter(this)).Add(kvp.Key, kvp.Value);
+                        }
+                        else
+                        {
+                            ((IList)collectionInfo.Getter(this)).Add(value);
+                        }
                     }
                     // Element marks the end of the collection
                     else

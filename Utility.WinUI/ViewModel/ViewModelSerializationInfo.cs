@@ -87,9 +87,9 @@ namespace JLR.Utility.WinUI.ViewModel
                     result.MemberCollections.Add(collectionAttribute.XmlName, new ViewModelSerializationCollectionInfo
                     {
                         PropertyName = property.Name,
-                        Getter = (Func<ViewModelElement, IList>)property.PropertyGetter<IList>(),
+                        Getter = (Func<ViewModelElement, ICollection>)property.PropertyGetter<ICollection>(),
                         XmlChildName = collectionAttribute.XmlChildName,
-                        ChildType = property.PropertyType.GetGenericArguments().Single(),
+                        ChildType = property.PropertyType.GetGenericArguments().First(),
                         UseCustomParser = collectionAttribute.UseCustomParser,
                         UseCustomWriter = collectionAttribute.UseCustomWriter,
                         HijackSerdes = collectionAttribute.HijackSerdes
@@ -201,7 +201,7 @@ namespace JLR.Utility.WinUI.ViewModel
             /// <summary>
             /// Gets a delegate for the collection's getter.
             /// </summary>
-            public Func<ViewModelElement, IList> Getter { get; internal set; }
+            public Func<ViewModelElement, ICollection> Getter { get; internal set; }
 
             /// <summary>
             /// Gets a value indicating whether or not to use

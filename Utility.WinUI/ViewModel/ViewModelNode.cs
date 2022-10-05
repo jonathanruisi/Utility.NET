@@ -49,7 +49,7 @@ namespace JLR.Utility.WinUI.ViewModel
 
         /// <summary>
         /// Gets the depth of this node within the tree relative to the root node.
-		/// A value of zero indicates that this node is the root.
+        /// A value of zero indicates that this node is the root.
         /// </summary>
         public int Depth => _parent?.Depth + 1 ?? 0;
 
@@ -77,7 +77,7 @@ namespace JLR.Utility.WinUI.ViewModel
         #region Public Methods
         /// <summary>
         /// Removes the first occurence of the specified <see cref="ViewModelNode"/> instance,
-		/// if it exists, from any depth within this node's subtree.
+        /// if it exists, from any depth within this node's subtree.
         /// </summary>
         /// <param name="node">The <see cref="ViewModelNode"/> to remove</param>
         /// <returns><code>true</code> if the specified node was removed, <code>false</code> otherwise</returns>
@@ -99,7 +99,11 @@ namespace JLR.Utility.WinUI.ViewModel
         #region Event Handlers
         private void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var collectionChangedMessage = new CollectionChangedMessage<ViewModelNode>(this, nameof(Children));
+            var collectionChangedMessage = new CollectionChangedMessage<ViewModelNode>(this, nameof(Children), e.Action)
+            {
+                OldStartingIndex = e.OldStartingIndex,
+                NewStartingIndex = e.NewStartingIndex
+            };
 
             if (e.OldItems != null)
             {
