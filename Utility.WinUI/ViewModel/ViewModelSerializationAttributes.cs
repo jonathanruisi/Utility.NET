@@ -119,7 +119,7 @@ namespace JLR.Utility.WinUI.ViewModel
                                           bool useCustomWriter = false,
                                           bool hijackSerdes = false)
         {
-            if (targetNodeType != XmlNodeType.Attribute && targetNodeType != XmlNodeType.Element)
+            if (targetNodeType is not XmlNodeType.Attribute and not XmlNodeType.Element)
             {
                 throw new ArgumentException("Valid node types are limited to \"Attribute\" and \"Element\" only");
             }

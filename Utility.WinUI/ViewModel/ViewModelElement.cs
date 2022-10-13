@@ -156,33 +156,21 @@ namespace JLR.Utility.WinUI.ViewModel
             }
         }
 
-        public static async Task<ViewModelElement> FromFileAsync(StorageFile file)
+        public static async Task<XmlReader> GetXmlReaderForFileAsync(StorageFile file)
         {
             if (file == null || !file.IsAvailable)
                 return null;
 
-            XmlReader reader = null;
-            ViewModelElement result = null;
-
-            try
+            var settings = new XmlReaderSettings
             {
-                var settings = new XmlReaderSettings
-                {
-                    IgnoreComments = true,
-                    IgnoreProcessingInstructions = true,
-                    IgnoreWhitespace = true
-                };
+                IgnoreComments = true,
+                IgnoreProcessingInstructions = true,
+                IgnoreWhitespace = true
+            };
 
-                reader = XmlReader.Create(await file.OpenStreamForReadAsync(), settings);
-                reader.MoveToContent();
-                result = FromXml(reader);
-            }
-            finally
-            {
-                reader?.Close();
-            }
-
-            return result;
+            var reader = XmlReader.Create(await file.OpenStreamForReadAsync(), settings);
+            reader.MoveToContent();
+            return reader;
         }
 
         /// <summary>

@@ -43,7 +43,7 @@ namespace JLR.Utility.WinUI.Dialogs
 
         private static void OnTextChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
         {
-            if (!(d is TextPromptDialog dlg))
+            if (d is not TextPromptDialog dlg)
                 return;
 
             dlg.IsPrimaryButtonEnabled = !string.IsNullOrEmpty(e.NewValue as string);

@@ -116,7 +116,7 @@
 				return _primes.Contains(value);
 
 			var primeFactors = PrimeFactors(value);
-			return value > 2 && primeFactors[primeFactors.Count - 1].factor == value;
+			return value > 2 && primeFactors[^1].factor == value;
 		}
 
 		/// <summary>
