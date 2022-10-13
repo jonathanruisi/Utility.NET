@@ -123,7 +123,7 @@ namespace JLR.Utility.WinUI.ViewModel
                 }
             }
 
-            Messenger.Send(collectionChangedMessage);
+            Messenger.Send(collectionChangedMessage, nameof(Children));
             NotifySerializedCollectionChanged(nameof(Children));
         }
         #endregion
