@@ -1,13 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-windows10.0.22000.0</TargetFramework>
+    <TargetFramework>net6.0-windows10.0.22621.0</TargetFramework>
     <RootNamespace>JLR.Utility.WinUI</RootNamespace>
     <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
-    <SupportedOSPlatformVersion>10.0.19041.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
+    <None Remove="Controls\LogElement.xaml" />
     <None Remove="Controls\MediaTimeline.xaml" />
     <None Remove="Controls\TransportElement.xaml" />
     <None Remove="Dialogs\TextPromptDialog.xaml" />
@@ -24,6 +25,12 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Utility.NET\Utility.NET.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Page Update="Controls\LogElement.xaml">
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
   </ItemGroup>
 
   <ItemGroup>
