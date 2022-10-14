@@ -8,7 +8,7 @@
     <Platforms>AnyCPU;x64</Platforms>
   </PropertyGroup>
   <ItemGroup>
-    <None Remove="Controls\LogElement.xaml" />
+    <None Remove="Controls\DebugLogControl.xaml" />
     <None Remove="Controls\MediaTimeline.xaml" />
     <None Remove="Controls\TransportElement.xaml" />
     <None Remove="Dialogs\TextPromptDialog.xaml" />
@@ -28,7 +28,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Page Update="Controls\LogElement.xaml">
+    <Page Update="Controls\DebugLogControl.xaml">
       <Generator>MSBuild:Compile</Generator>
     </Page>
   </ItemGroup>
