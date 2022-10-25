@@ -2848,7 +2848,7 @@ namespace JLR.Utility.WinUI.Controls
 
                     if (style.SpanStrokeThickness > 0)
                         args.DrawingSession.DrawRectangle(segmentRect,
-                            style.SpanStrokeBrush, style.SpanStrokeThickness, style.SpanStrokeStyle);
+                            style.SpanStrokeBrush, (float)style.SpanStrokeThickness, style.SpanStrokeStyle);
 
                     // Draw marker line(s)
                     if (segment.Position >= ZoomStart &&
@@ -2858,7 +2858,7 @@ namespace JLR.Utility.WinUI.Controls
                         args.DrawingSession.DrawLine((float)segmentRect.Left, (float)tickAreaRect.Top,
                                                      (float)segmentRect.Left, (float)segmentRect.Top,
                                                      style.SpanEndTailStrokeBrush,
-                                                     style.SpanStartTailStrokeThickness,
+                                                     (float)style.SpanStartTailStrokeThickness,
                                                      style.SpanStartTailStrokeStyle);
                     }
 
@@ -2870,7 +2870,7 @@ namespace JLR.Utility.WinUI.Controls
                         args.DrawingSession.DrawLine((float)segmentRect.Right, (float)tickAreaRect.Top,
                                                      (float)segmentRect.Right, (float)segmentRect.Top,
                                                      style.SpanEndTailStrokeBrush,
-                                                     style.SpanEndTailStrokeThickness,
+                                                     (float)style.SpanEndTailStrokeThickness,
                                                      style.SpanEndTailStrokeStyle);
                     }
 

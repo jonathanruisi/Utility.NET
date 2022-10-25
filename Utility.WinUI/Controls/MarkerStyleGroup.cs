@@ -27,11 +27,11 @@ namespace JLR.Utility.WinUI.Controls
         public Brush Fill { get; set; }
 
         public Brush Stroke { get; set; }
-        public float StrokeThickness { get; set; }
+        public double StrokeThickness { get; set; }
         public CanvasStrokeStyle StrokeStyle { get; set; }
 
         public Brush TailStroke { get; set; }
-        public float TailStrokeThickness { get; set; }
+        public double TailStrokeThickness { get; set; }
         public CanvasStrokeStyle TailStrokeStyle { get; set; }
 
         internal CanvasGeometry CanvasGeometry { get; set; }
@@ -47,15 +47,15 @@ namespace JLR.Utility.WinUI.Controls
         public Brush SpanLabel { get; set; }
 
         public Brush SpanStroke { get; set; }
-        public float SpanStrokeThickness { get; set; }
+        public double SpanStrokeThickness { get; set; }
         public CanvasStrokeStyle SpanStrokeStyle { get; set; }
 
         public Brush SpanStartTailStroke { get; set; }
-        public float SpanStartTailStrokeThickness { get; set; }
+        public double SpanStartTailStrokeThickness { get; set; }
         public CanvasStrokeStyle SpanStartTailStrokeStyle { get; set; }
 
         public Brush SpanEndTailStroke { get; set; }
-        public float SpanEndTailStrokeThickness { get; set; }
+        public double SpanEndTailStrokeThickness { get; set; }
         public CanvasStrokeStyle SpanEndTailStrokeStyle { get; set; }
 
         internal ICanvasBrush SpanFillBrush { get; set; }
@@ -156,15 +156,15 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
-        public float StrokeThickness
+        public double StrokeThickness
         {
-            get => (float)GetValue(StrokeThicknessProperty);
+            get => (double)GetValue(StrokeThicknessProperty);
             set => SetValue(StrokeThicknessProperty, value);
         }
 
         public static readonly DependencyProperty StrokeThicknessProperty =
             DependencyProperty.Register("StrokeThickness",
-                                        typeof(float),
+                                        typeof(double),
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
@@ -192,15 +192,15 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
-        public float TailStrokeThickness
+        public double TailStrokeThickness
         {
-            get => (float)GetValue(TailStrokeThicknessProperty);
+            get => (double)GetValue(TailStrokeThicknessProperty);
             set => SetValue(TailStrokeThicknessProperty, value);
         }
 
         public static readonly DependencyProperty TailStrokeThicknessProperty =
             DependencyProperty.Register("TailStrokeThickness",
-                                        typeof(float),
+                                        typeof(double),
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
@@ -261,15 +261,15 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
-        public float SpanStrokeThickness
+        public double SpanStrokeThickness
         {
-            get => (float)GetValue(SpanStrokeThicknessProperty);
+            get => (double)GetValue(SpanStrokeThicknessProperty);
             set => SetValue(SpanStrokeThicknessProperty, value);
         }
 
         public static readonly DependencyProperty SpanStrokeThicknessProperty =
             DependencyProperty.Register("SpanStrokeThickness",
-                                        typeof(float),
+                                        typeof(double),
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
@@ -297,15 +297,15 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
-        public float SpanStartTailStrokeThickness
+        public double SpanStartTailStrokeThickness
         {
-            get => (float)GetValue(SpanStartTailStrokeThicknessProperty);
+            get => (double)GetValue(SpanStartTailStrokeThicknessProperty);
             set => SetValue(SpanStartTailStrokeThicknessProperty, value);
         }
 
         public static readonly DependencyProperty SpanStartTailStrokeThicknessProperty =
             DependencyProperty.Register("SpanStartTailStrokeThickness",
-                                        typeof(float),
+                                        typeof(double),
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
@@ -333,15 +333,15 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
-        public float SpanEndTailStrokeThickness
+        public double SpanEndTailStrokeThickness
         {
-            get => (float)GetValue(SpanEndTailStrokeThicknessProperty);
+            get => (double)GetValue(SpanEndTailStrokeThicknessProperty);
             set => SetValue(SpanEndTailStrokeThicknessProperty, value);
         }
 
         public static readonly DependencyProperty SpanEndTailStrokeThicknessProperty =
             DependencyProperty.Register("SpanEndTailStrokeThickness",
-                                        typeof(float),
+                                        typeof(double),
                                         typeof(MarkerStyle),
                                         new PropertyMetadata(null));
 
