@@ -73,10 +73,13 @@ namespace JLR.Utility.WinUI
         }
         #endregion
 
-        #region Windows.Storage.StorageFile
-        public static string GetFileExtension(this StorageFile file)
+        #region Windows.Storage.IStorageItem
+        public static string GetFileExtension(this IStorageItem file)
         {
-            return file.Name.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Last().ToLower();
+            if (file.Name.Contains('.'))
+                return file.Name.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Last().ToLower();
+
+            return string.Empty;
         }
         #endregion
     }
