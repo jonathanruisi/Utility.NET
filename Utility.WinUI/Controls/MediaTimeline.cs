@@ -108,7 +108,7 @@ namespace JLR.Utility.WinUI.Controls
         /// <summary>
         /// Identifies the category/track to which the marker belongs.
         /// </summary>
-        int Track { get; }
+        int Group { get; }
 
         /// <summary>
         /// Gets the name of the <see cref="MarkerStyleGroup"/> which
@@ -2178,7 +2178,7 @@ namespace JLR.Utility.WinUI.Controls
                     trackTopCoord += TrackHeight + TrackSpacing;
                 }
 
-                var closestMarker = closestMarkers.Where(x => x.Duration > 0 && x.Track == track).FirstOrDefault();
+                var closestMarker = closestMarkers.Where(x => x.Duration > 0 && x.Group == track).FirstOrDefault();
 
                 if (_wasCtrlKeyPressed && closestMarker != null)
                     SetSelectionFromMarker(closestMarker);
@@ -2503,7 +2503,7 @@ namespace JLR.Utility.WinUI.Controls
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             var prevTrackCount = TrackCount;
-            TrackCount = Markers.Where(x => x.Duration > 0).Select(x => x.Track).Distinct().Count();
+            TrackCount = Markers.Where(x => x.Duration > 0).Select(x => x.Group).Distinct().Count();
 
             if (TrackCount != prevTrackCount)
             {
@@ -2841,7 +2841,7 @@ namespace JLR.Utility.WinUI.Controls
                             : ZoomEnd,
                         ref trackAreaRect);
 
-                    var segmentRect = new Rect(x, trackTopCoords[segment.Track], width, TrackHeight);
+                    var segmentRect = new Rect(x, trackTopCoords[segment.Group], width, TrackHeight);
 
                     // Draw segment rectangle
                     args.DrawingSession.FillRectangle(segmentRect, style.SpanFillBrush);
