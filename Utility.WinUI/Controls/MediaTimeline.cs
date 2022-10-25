@@ -2178,7 +2178,7 @@ namespace JLR.Utility.WinUI.Controls
                     trackTopCoord += TrackHeight + TrackSpacing;
                 }
 
-                var closestMarker = closestMarkers.Where(x => x.Duration > 0 && x.Group == track).FirstOrDefault();
+                var closestMarker = closestMarkers.Where(x => x.Duration > 0 && x.Track == track).FirstOrDefault();
 
                 if (_wasCtrlKeyPressed && closestMarker != null)
                     SetSelectionFromMarker(closestMarker);
@@ -2503,7 +2503,7 @@ namespace JLR.Utility.WinUI.Controls
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             var prevTrackCount = TrackCount;
-            TrackCount = Markers.Where(x => x.Duration > 0).Select(x => x.Group).Distinct().Count();
+            TrackCount = Markers.Where(x => x.Duration > 0).Select(x => x.Track).Distinct().Count();
 
             if (TrackCount != prevTrackCount)
             {
