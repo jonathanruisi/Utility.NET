@@ -15,9 +15,9 @@
                     <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,0">
                         <PathFigure.Segments>
                             <LineSegment Point="10,0"/>
-                            <LineSegment Point="10,6.67"/>
-                            <LineSegment Point="5,10"/>
-                            <LineSegment Point="0,6.67"/>
+                            <LineSegment Point="10,8"/>
+                            <LineSegment Point="5,15"/>
+                            <LineSegment Point="0,8"/>
                         </PathFigure.Segments>
                     </PathFigure>
                 </PathGeometry.Figures>
@@ -41,27 +41,12 @@
     <controls:MarkerStyle x:Key="SelectedMarkerStyle_Default"
                                  StrokeThickness="1.0"
                                  TailStrokeThickness="2.0">
-        <controls:MarkerStyle.Geometry>
-            <PathGeometry>
-                <PathGeometry.Figures>
-                    <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,0">
-                        <PathFigure.Segments>
-                            <LineSegment Point="10,0"/>
-                            <LineSegment Point="10,6.67"/>
-                            <LineSegment Point="5,10"/>
-                            <LineSegment Point="0,6.67"/>
-                        </PathFigure.Segments>
-                    </PathFigure>
-                </PathGeometry.Figures>
-            </PathGeometry>
-        </controls:MarkerStyle.Geometry>
-
         <controls:MarkerStyle.Fill>
-            <SolidColorBrush Color="DarkOrange"/>
+            <SolidColorBrush Color="White"/>
         </controls:MarkerStyle.Fill>
 
         <controls:MarkerStyle.Stroke>
-            <SolidColorBrush Color="White"/>
+            <SolidColorBrush Color="DarkOrange"/>
         </controls:MarkerStyle.Stroke>
 
         <controls:MarkerStyle.TailStroke>
@@ -97,16 +82,20 @@
 
     <!-- Track Span (Selected) -->
     <controls:TimespanMarkerStyle x:Key="SelectedTimespanMarkerStyle_Default"
-                                         SpanStrokeThickness="1.0"
+                                         SpanStrokeThickness="2.0"
                                          SpanStartTailStrokeThickness="2.0"
                                          SpanEndTailStrokeThickness="2.0">
         <controls:TimespanMarkerStyle.SpanFill>
-            <SolidColorBrush Color="DarkOrange"/>
+            <SolidColorBrush Color="White"/>
         </controls:TimespanMarkerStyle.SpanFill>
 
         <controls:TimespanMarkerStyle.SpanLabel>
-            <SolidColorBrush Color="White"/>
+            <SolidColorBrush Color="DarkOrange"/>
         </controls:TimespanMarkerStyle.SpanLabel>
+
+        <controls:TimespanMarkerStyle.SpanStroke>
+            <SolidColorBrush Color="DarkOrange"/>
+        </controls:TimespanMarkerStyle.SpanStroke>
 
         <controls:TimespanMarkerStyle.SpanStartTailStroke>
             <SolidColorBrush Color="White"/>
@@ -116,6 +105,10 @@
             <SolidColorBrush Color="White"/>
         </controls:TimespanMarkerStyle.SpanEndTailStroke>
 
+        <controls:TimespanMarkerStyle.SpanStrokeStyle>
+            <geometry:CanvasStrokeStyle DashStyle="Solid"/>
+        </controls:TimespanMarkerStyle.SpanStrokeStyle>
+        
         <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
             <geometry:CanvasStrokeStyle DashStyle="Dash"/>
         </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
@@ -189,16 +182,18 @@
         <Setter Property="CursorShape" Value="UpArrow"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="TickAreaBackground" Value="#80FFFFFF"/>
-        <Setter Property="MarkerAreaBackground" Value="#606060"/>
-        <Setter Property="TrackAreaBackground" Value="#404040"/>
-        <Setter Property="ZoomAreaBackground" Value="#202020"/>
+        <Setter Property="MarkerAreaBackground" Value="#404040"/>
+        <Setter Property="TrackAreaBackground" Value="#202020"/>
+        <Setter Property="ZoomAreaBackground" Value="#101010"/>
+        <Setter Property="TrackBackground" Value="#40FFFFFF"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Margin" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="ZoomBarHeight" Value="0.25*"/>
-        <Setter Property="MarkerBarHeight" Value="20"/>
+        <Setter Property="MarkerBarHeight" Value="15"/>
         <Setter Property="TrackHeight" Value="16"/>
+        <Setter Property="TrackSpacing" Value="2"/>
         <Setter Property="FramesPerSecond" Value="30"/>
         <Setter Property="IsPositionAdjustmentEnabled" Value="True"/>
         <Setter Property="IsSelectionAdjustmentEnabled" Value="True"/>

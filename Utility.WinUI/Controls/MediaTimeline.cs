@@ -161,6 +161,7 @@ namespace JLR.Utility.WinUI.Controls
             _tickAreaBackgroundBrush,
             _markerAreaBackgroundBrush,
             _trackAreaBackgroundBrush,
+            _trackBackgroundBrush,
             _originTickBrush,
             _majorTickBrush,
             _minorTickBrush,
@@ -962,6 +963,18 @@ namespace JLR.Utility.WinUI.Controls
 
         public static readonly DependencyProperty TrackAreaBackgroundProperty =
             DependencyProperty.Register("TrackAreaBackground",
+                                        typeof(Brush),
+                                        typeof(MediaTimeline),
+                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
+
+        public Brush TrackBackground
+        {
+            get => (Brush)GetValue(TrackBackgroundProperty);
+            set => SetValue(TrackBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty TrackBackgroundProperty =
+            DependencyProperty.Register("TrackBackground",
                                         typeof(Brush),
                                         typeof(MediaTimeline),
                                         new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
@@ -2167,9 +2180,9 @@ namespace JLR.Utility.WinUI.Controls
             else if (TrackAreaRect.Contains(point.Position))
             {
                 // Determine which track was clicked
-                int track = 0;
+                int track = 1;
                 var trackTopCoord = TrackAreaRect.Top;
-                for (; track < TrackCount; track++)
+                for (; track <= TrackCount; track++)
                 {
                     if (point.Position.Y >= trackTopCoord &&
                         point.Position.Y <= trackTopCoord + TrackHeight)
@@ -2178,7 +2191,7 @@ namespace JLR.Utility.WinUI.Controls
                     trackTopCoord += TrackHeight + TrackSpacing;
                 }
 
-                var closestMarker = closestMarkers.Where(x => x.Duration > 0 && x.Group == track).FirstOrDefault();
+                var closestMarker = closestMarkers.Where(x => x.Group == track).FirstOrDefault();
 
                 if (_wasCtrlKeyPressed && closestMarker != null)
                     SetSelectionFromMarker(closestMarker);
@@ -2502,8 +2515,15 @@ namespace JLR.Utility.WinUI.Controls
         #region Collection
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
+            var newTrackCount = 0;
             var prevTrackCount = TrackCount;
-            TrackCount = Markers.Where(x => x.Duration > 0).Select(x => x.Group).Distinct().Count();
+
+            foreach (var marker in Markers)
+            {
+                if (marker.Group > newTrackCount)
+                    newTrackCount = marker.Group;
+            }
+            TrackCount = newTrackCount;
 
             if (TrackCount != prevTrackCount)
             {
@@ -2545,6 +2565,7 @@ namespace JLR.Utility.WinUI.Controls
             _tickAreaBackgroundBrush     = TickAreaBackground?.CreateCanvasBrush(sender.Device);
             _markerAreaBackgroundBrush   = MarkerAreaBackground?.CreateCanvasBrush(sender.Device);
             _trackAreaBackgroundBrush    = TrackAreaBackground?.CreateCanvasBrush(sender.Device);
+            _trackBackgroundBrush        = TrackBackground?.CreateCanvasBrush(sender.Device);
             _originTickBrush             = OriginTickBrush?.CreateCanvasBrush(sender.Device);
             _majorTickBrush              = MajorTickBrush?.CreateCanvasBrush(sender.Device);
             _minorTickBrush              = MinorTickBrush?.CreateCanvasBrush(sender.Device);
@@ -2574,7 +2595,14 @@ namespace JLR.Utility.WinUI.Controls
                         if (group.Style.FillBrush != null)
                             ds.FillGeometry(group.Style.CanvasGeometry, group.Style.FillBrush);
                         if (group.Style.StrokeBrush != null && group.Style.StrokeThickness > 0)
-                            ds.DrawGeometry(group.Style.CanvasGeometry, group.Style.StrokeBrush);
+                        {
+                            using (ds.CreateLayer(1.0f))
+                            {
+                                ds.DrawGeometry(group.Style.CanvasGeometry,
+                                                group.Style.StrokeBrush,
+                                                (float)group.Style.StrokeThickness);
+                            }
+                        }
                     }
                 }
 
@@ -2598,7 +2626,14 @@ namespace JLR.Utility.WinUI.Controls
                         if (group.SelectedStyle.FillBrush != null)
                             ds.FillGeometry(group.SelectedStyle.CanvasGeometry, group.SelectedStyle.FillBrush);
                         if (group.SelectedStyle.StrokeBrush != null && group.SelectedStyle.StrokeThickness > 0)
-                            ds.DrawGeometry(group.SelectedStyle.CanvasGeometry, group.SelectedStyle.StrokeBrush);
+                        {
+                            using (ds.CreateLayer(1.0f))
+                            {
+                                ds.DrawGeometry(group.SelectedStyle.CanvasGeometry,
+                                                group.SelectedStyle.StrokeBrush,
+                                                (float)group.SelectedStyle.StrokeThickness);
+                            }
+                        }
                     }
                 }
 
@@ -2807,7 +2842,7 @@ namespace JLR.Utility.WinUI.Controls
                 }
             }
 
-            // Draw active track segments
+            // Draw track area markers
             using (args.DrawingSession.CreateLayer(1.0f))
             {
                 // Calculate top coordinate for each track
@@ -2819,9 +2854,18 @@ namespace JLR.Utility.WinUI.Controls
                     trackTopCoords.Add(trackTopCoords[i - 1] + TrackHeight + TrackSpacing);
                 }
 
-                // Find visible active track segments
+                // Draw track backgrounds
+                for (var i = 0; i < TrackCount; i++)
+                {
+                    args.DrawingSession.FillRectangle((float)trackAreaRect.Left, (float)trackTopCoords[i],
+                                                      (float)trackAreaRect.Width, (float)TrackHeight,
+                                                      _trackBackgroundBrush);
+                }
+
+                // Find visible track segments
                 var visibleSegments = from clip in Markers
-                                      where clip.Duration > 0 &&
+                                      where clip.Group > 0 &&
+                                            clip.Duration > 0 &&
                                             clip.Position < ZoomEnd &&
                                             clip.Position + clip.Duration > ZoomStart
                                       select clip;
@@ -2841,23 +2885,25 @@ namespace JLR.Utility.WinUI.Controls
                             : ZoomEnd,
                         ref trackAreaRect);
 
-                    var segmentRect = new Rect(x, trackTopCoords[segment.Group], width, TrackHeight);
+                    var segmentRect = new Rect(x, trackTopCoords[segment.Group - 1], width, TrackHeight);
 
                     // Draw segment rectangle
                     args.DrawingSession.FillRectangle(segmentRect, style.SpanFillBrush);
 
                     if (style.SpanStrokeThickness > 0)
                         args.DrawingSession.DrawRectangle(segmentRect,
-                            style.SpanStrokeBrush, (float)style.SpanStrokeThickness, style.SpanStrokeStyle);
+                                                          style.SpanStrokeBrush,
+                                                          (float)style.SpanStrokeThickness,
+                                                          style.SpanStrokeStyle);
 
-                    // Draw marker line(s)
+                    // Draw segment line(s)
                     if (segment.Position >= ZoomStart &&
                         segment.Position <= ZoomEnd &&
                         style.SpanStartTailStrokeThickness > 0)
                     {
                         args.DrawingSession.DrawLine((float)segmentRect.Left, (float)tickAreaRect.Top,
                                                      (float)segmentRect.Left, (float)segmentRect.Top,
-                                                     style.SpanEndTailStrokeBrush,
+                                                     style.SpanStartTailStrokeBrush,
                                                      (float)style.SpanStartTailStrokeThickness,
                                                      style.SpanStartTailStrokeStyle);
                     }
@@ -2939,7 +2985,7 @@ namespace JLR.Utility.WinUI.Controls
                         textLayoutAlt.LineSpacingBaseline = (float)textLayoutAlt.DrawBounds.Height;
                         textLayoutAlt.LineSpacing = textLayoutAlt.LineSpacingBaseline + 1;
 
-                        // Try to draw segment text using altername font
+                        // Try to draw segment text using alternate font
                         if (textLayoutAlt.DrawBounds.Height < segmentRect.Height &&
                             textLayoutAlt.DrawBounds.Width < segmentRect.Width)
                         {
@@ -2951,12 +2997,38 @@ namespace JLR.Utility.WinUI.Controls
                         }
                     }
                 }
+
+                // Find visible track markers
+                var visibleMarkers = from clip in Markers
+                                     where clip.Group > 0 &&
+                                           clip.Duration == 0 &&
+                                           clip.Position >= ZoomStart &&
+                                           clip.Position <= ZoomEnd
+                                     select clip;
+
+                // Draw visible track markers
+                foreach (var marker in visibleMarkers)
+                {
+                    var style = marker == SelectedMarker
+                        ? MarkerStyleGroups[marker.Style].SelectedStyle
+                        : MarkerStyleGroups[marker.Style].Style;
+
+                    var x = CalculateHorizontalRenderCoordinates(marker.Position, marker.Position, ref tickAreaRect).x;
+                    var y = (float)(trackTopCoords[marker.Group - 1] + ((TrackHeight - style.RenderTarget.Bounds.Height) / 2));
+
+                    args.DrawingSession.DrawImage(style.RenderTarget, (float)(x - style.RenderTarget.Bounds.Width / 2), y);
+                    args.DrawingSession.DrawLine((float)x, (float)tickAreaRect.Top,
+                                                 (float)x, y,
+                                                 style.TailStrokeBrush,
+                                                 (float)style.TailStrokeThickness,
+                                                 style.TailStrokeStyle);
+                }
             }
 
-            // Draw markers
+            // Draw marker area markers
             using (args.DrawingSession.CreateLayer(1.0f))
             {
-                foreach (var marker in Markers.Where(x => x.Duration == 0))
+                foreach (var marker in Markers.Where(x => x.Group == 0 && x.Duration == 0))
                 {
                     if (marker.Position < ZoomStart || marker.Position > ZoomEnd)
                         continue;
@@ -2965,10 +3037,15 @@ namespace JLR.Utility.WinUI.Controls
                         ? MarkerStyleGroups[marker.Style].SelectedStyle
                         : MarkerStyleGroups[marker.Style].Style;
 
-                    var x = (float)CalculateHorizontalRenderCoordinates(marker.Position, marker.Position, ref tickAreaRect).x;
+                    var x = CalculateHorizontalRenderCoordinates(marker.Position, marker.Position, ref tickAreaRect).x;
                     var y = (float)(markerAreaRect.Top + (markerAreaRect.Height - style.RenderTarget.Bounds.Height));
 
-                    args.DrawingSession.DrawImage(style.RenderTarget, x, y);
+                    args.DrawingSession.DrawImage(style.RenderTarget, (float)(x - style.RenderTarget.Bounds.Width / 2), y);
+                    args.DrawingSession.DrawLine((float)x, (float)style.RenderTarget.Bounds.Bottom,
+                                                 (float)x, (float)tickAreaRect.Bottom,
+                                                 style.TailStrokeBrush,
+                                                 (float)style.TailStrokeThickness,
+                                                 style.TailStrokeStyle);
                 }
             }
 
