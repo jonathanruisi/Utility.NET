@@ -183,9 +183,11 @@
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="TickAreaBackground" Value="#80FFFFFF"/>
         <Setter Property="MarkerAreaBackground" Value="#404040"/>
-        <Setter Property="TrackAreaBackground" Value="#202020"/>
         <Setter Property="ZoomAreaBackground" Value="#101010"/>
+        <Setter Property="TrackAreaBackground" Value="#202020"/>
         <Setter Property="TrackBackground" Value="#40FFFFFF"/>
+        <Setter Property="TrackLabelBackground" Value="#40000000"/>
+        <Setter Property="TrackLabelForeground" Value="#C0C0C0"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Margin" Value="0"/>
