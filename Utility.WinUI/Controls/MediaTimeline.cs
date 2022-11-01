@@ -642,7 +642,7 @@ namespace JLR.Utility.WinUI.Controls
             DependencyProperty.Register("AutoAdjustHeightForTracks",
                                         typeof(bool),
                                         typeof(MediaTimeline),
-                                        new PropertyMetadata(false));
+                                        new PropertyMetadata(true));
         #region Alignment
         public VerticalAlignment TickAlignment
         {
@@ -2248,10 +2248,13 @@ namespace JLR.Utility.WinUI.Controls
             else if (TrackAreaRect.Contains(point.Position))
             {
                 // Determine which track was clicked
-                int track = 1;
-                var trackTopCoord = TrackAreaRect.Top;
-                for (; track <= Tracks.Count; track++)
+                double trackTopCoord = 0;
+                int track = 0;
+                for (; track < Tracks.Count; track++)
                 {
+                    if (track == 0)
+                        trackTopCoord = TrackAreaRect.Top;
+
                     if (point.Position.Y >= trackTopCoord &&
                         point.Position.Y <= trackTopCoord + TrackHeight)
                         break;
@@ -2633,10 +2636,7 @@ namespace JLR.Utility.WinUI.Controls
 
         private void Tracks_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var delta = Tracks.Count - _prevTrackCount;
-            if (AutoAdjustHeightForTracks)
-                Height += delta * (TrackHeight + TrackSpacing);
-            _prevTrackCount = Tracks.Count;
+            ForceHeightUpdateForTracks();
         }
         #endregion
 
@@ -2759,6 +2759,14 @@ namespace JLR.Utility.WinUI.Controls
             if (Math.Abs(sender.ActualWidth) < double.Epsilon ||
                 Math.Abs(sender.ActualHeight) < double.Epsilon)
                 return;
+
+            // Without this block, MediaTimeline.Height won't take tracks into
+            // account if tracks exist in the Tracks collection during initialization.
+            if (Tracks.Count != _prevTrackCount)
+            {
+                ForceHeightUpdateForTracks();
+                return;
+            }
 
             var markerAreaRect = MarkerAreaRect;
             var trackAreaRect = TrackAreaRect;
@@ -2928,23 +2936,6 @@ namespace JLR.Utility.WinUI.Controls
             // Draw track area markers
             using (args.DrawingSession.CreateLayer(1.0f))
             {
-                using var textFormat = new CanvasTextFormat
-                {
-                    FontFamily = FontFamily.Source,
-                    FontSize = (float)FontSize,
-                    FontStretch = FontStretch,
-                    FontStyle = FontStyle,
-                    FontWeight = FontWeight,
-                    Direction = CanvasTextDirection.LeftToRightThenTopToBottom,
-                    LastLineWrapping = false,
-                    LineSpacingMode = CanvasLineSpacingMode.Default,
-                    LineSpacing = 0,
-                    LineSpacingBaseline = 0,
-                    HorizontalAlignment = CanvasHorizontalAlignment.Center,
-                    VerticalAlignment = CanvasVerticalAlignment.Top,
-                    WordWrapping = CanvasWordWrapping.EmergencyBreak
-                };
-
                 // Calculate top coordinate for each track
                 var trackTopCoords = new List<double>();
                 if (Tracks.Count > 0)
@@ -2963,31 +2954,52 @@ namespace JLR.Utility.WinUI.Controls
                 }
 
                 // Generate track label text
-                var trackLabelTextLayouts = new List<CanvasTextLayout>();
-                double maxTrackLabelWidth = 0;
-                for (var i = 0; i < Tracks.Count; i++)
+                if (AreTrackNamesVisible)
                 {
-                    trackLabelTextLayouts.Add(new CanvasTextLayout(sender.Device,
-                                                                   Tracks[i],
-                                                                   textFormat,
-                                                                   (float)trackAreaRect.Width,
-                                                                   (float)trackAreaRect.Height));
+                    var trackLabelTextLayouts = new List<CanvasTextLayout>();
+                    double maxTrackLabelWidth = 0;
 
-                    if (trackLabelTextLayouts[i].DrawBounds.Width > maxTrackLabelWidth)
-                        maxTrackLabelWidth = trackLabelTextLayouts[i].DrawBounds.Width;
-                }
+                    using var trackLabelTextFormat = new CanvasTextFormat
+                    {
+                        FontFamily = FontFamily.Source,
+                        FontSize = (float)FontSize,
+                        FontStretch = FontStretch,
+                        FontStyle = FontStyle,
+                        FontWeight = FontWeight,
+                        Direction = CanvasTextDirection.LeftToRightThenTopToBottom,
+                        LastLineWrapping = false,
+                        LineSpacingMode = CanvasLineSpacingMode.Default,
+                        LineSpacing = 0,
+                        LineSpacingBaseline = 0,
+                        HorizontalAlignment = CanvasHorizontalAlignment.Left,
+                        VerticalAlignment = CanvasVerticalAlignment.Center,
+                        WordWrapping = CanvasWordWrapping.EmergencyBreak
+                    };
 
-                // Draw track label text
-                for (var i = 0; i < Tracks.Count; i++)
-                {
-                    args.DrawingSession.FillRectangle((float)trackAreaRect.Left, (float)trackTopCoords[i],
-                                                      (float)(maxTrackLabelWidth + 10), (float)TrackHeight,
-                                                      _trackLabelBackgroundBrush);
+                    for (var i = 0; i < Tracks.Count; i++)
+                    {
+                        trackLabelTextLayouts.Add(new CanvasTextLayout(sender.Device,
+                                                                       Tracks[i],
+                                                                       trackLabelTextFormat,
+                                                                       (float)trackAreaRect.Width,
+                                                                       (float)TrackHeight));
 
-                    args.DrawingSession.DrawTextLayout(trackLabelTextLayouts[i],
-                                                       (float)(maxTrackLabelWidth + 5 - trackLabelTextLayouts[i].DrawBounds.Width),
-                                                       (float)(trackAreaRect.Bottom - (trackAreaRect.Height / 2) - (trackLabelTextLayouts[i].LayoutBounds.Height / 2)),
-                                                       _trackLabelForegroundBrush);
+                        if (trackLabelTextLayouts[i].DrawBounds.Width > maxTrackLabelWidth)
+                            maxTrackLabelWidth = trackLabelTextLayouts[i].DrawBounds.Width;
+                    }
+
+                    // Draw track label text
+                    for (var i = 0; i < Tracks.Count; i++)
+                    {
+                        args.DrawingSession.FillRectangle((float)trackAreaRect.Left, (float)trackTopCoords[i],
+                                                          (float)(maxTrackLabelWidth + 10), (float)TrackHeight,
+                                                          _trackLabelBackgroundBrush);
+
+                        args.DrawingSession.DrawTextLayout(trackLabelTextLayouts[i],
+                                                           (float)(maxTrackLabelWidth + 5 - trackLabelTextLayouts[i].DrawBounds.Width),
+                                                           (float)(trackTopCoords[i] + (TrackHeight / 2) - (trackLabelTextLayouts[i].DrawBounds.Height / 2)),
+                                                           _trackLabelForegroundBrush);
+                    }
                 }
 
                 // Find visible track segments
@@ -3013,7 +3025,7 @@ namespace JLR.Utility.WinUI.Controls
                             : ZoomEnd,
                         ref trackAreaRect);
 
-                    var segmentRect = new Rect(x, trackTopCoords[Tracks.IndexOf(segment.Group) - 1], width, TrackHeight);
+                    var segmentRect = new Rect(x, trackTopCoords[Tracks.IndexOf(segment.Group)], width, TrackHeight);
 
                     // Draw segment rectangle
                     args.DrawingSession.FillRectangle(segmentRect, style.SpanFillBrush);
@@ -3049,9 +3061,26 @@ namespace JLR.Utility.WinUI.Controls
                     }
 
                     // Generate text label for this segment
+                    using var segmentTextFormat = new CanvasTextFormat
+                    {
+                        FontFamily = FontFamily.Source,
+                        FontSize = (float)FontSize,
+                        FontStretch = FontStretch,
+                        FontStyle = FontStyle,
+                        FontWeight = FontWeight,
+                        Direction = CanvasTextDirection.LeftToRightThenTopToBottom,
+                        LastLineWrapping = false,
+                        LineSpacingMode = CanvasLineSpacingMode.Default,
+                        LineSpacing = 0,
+                        LineSpacingBaseline = 0,
+                        HorizontalAlignment = CanvasHorizontalAlignment.Center,
+                        VerticalAlignment = CanvasVerticalAlignment.Top,
+                        WordWrapping = CanvasWordWrapping.EmergencyBreak
+                    };
+
                     using var textLayout = new CanvasTextLayout(sender.Device,
                                                                 segment.Name,
-                                                                textFormat,
+                                                                segmentTextFormat,
                                                                 (float)segmentRect.Width,
                                                                 (float)segmentRect.Height);
 
@@ -3125,7 +3154,7 @@ namespace JLR.Utility.WinUI.Controls
                         : MarkerStyleGroups[marker.Style].Style;
 
                     var x = CalculateHorizontalRenderCoordinates(marker.Position, marker.Position, ref tickAreaRect).x;
-                    var y = (float)(trackTopCoords[Tracks.IndexOf(marker.Group) - 1] + ((TrackHeight - style.RenderTarget.Bounds.Height) / 2));
+                    var y = (float)(trackTopCoords[Tracks.IndexOf(marker.Group)] + ((TrackHeight - style.RenderTarget.Bounds.Height) / 2));
 
                     args.DrawingSession.DrawImage(style.RenderTarget, (float)(x - style.RenderTarget.Bounds.Width / 2), y);
                     args.DrawingSession.DrawLine((float)x, (float)tickAreaRect.Top,
@@ -3440,6 +3469,21 @@ namespace JLR.Utility.WinUI.Controls
                                            right > 0 ? right : 0,
                                            _zoomPanel.Margin.Bottom);
                 _zoomPanel.SetValue(MarginProperty, margin);
+            }
+        }
+
+        private void ForceHeightUpdateForTracks()
+        {
+            var delta = Tracks.Count - _prevTrackCount;
+            if (AutoAdjustHeightForTracks &&
+                delta != 0 &&
+                ActualHeight != 0)
+            {
+                if (double.IsNaN(Height))
+                    Height = ActualHeight;
+
+                Height += delta * (TrackHeight + TrackSpacing);
+                _prevTrackCount = Tracks.Count;
             }
         }
 
