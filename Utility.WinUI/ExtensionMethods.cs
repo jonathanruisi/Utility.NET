@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 
@@ -8,6 +10,7 @@ using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.UI;
 using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
+using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
 
 using Windows.Foundation;
@@ -135,6 +138,43 @@ namespace JLR.Utility.WinUI
                 default:
                     throw new InvalidOperationException(
                         "This type of geometry cannot be converted to CanvasGeometry via this method");
+            }
+        }
+        #endregion
+
+        #region Microsoft.UI.Xaml.Controls
+        public static IEnumerable<TreeViewNode> DepthFirstEnumerable(this TreeViewNode node)
+        {
+            yield return node;
+
+            foreach (var child in node.Children)
+            {
+                var childEnumerator = child.DepthFirstEnumerable().GetEnumerator();
+                while (childEnumerator.MoveNext())
+                {
+                    yield return childEnumerator.Current;
+                }
+            }
+        }
+
+        public static void CollapseAllNodes(this TreeView treeView)
+        {
+            var expandedNodes = new List<TreeViewNode>();
+            foreach (var rootNode in treeView.RootNodes)
+            {
+                if (rootNode.IsExpanded)
+                    expandedNodes.Add(rootNode);
+
+                foreach (var node in rootNode.DepthFirstEnumerable())
+                {
+                    if (node.IsExpanded)
+                        expandedNodes.Add(node);
+                }
+            }
+
+            foreach (var node in expandedNodes.OrderByDescending(x => x.Depth))
+            {
+                node.IsExpanded = false;
             }
         }
         #endregion

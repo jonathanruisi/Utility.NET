@@ -2618,7 +2618,8 @@ namespace JLR.Utility.WinUI.Controls
                 {
                     if (AutoRemoveEmptyTracks &&
                         !string.IsNullOrEmpty(marker.Group) &&
-                        Tracks.Contains(marker.Group))
+                        Tracks.Contains(marker.Group) &&
+                        !Markers.Any(x => x.Group == marker.Group)) // Only remove track if it is empty!
                     {
                         Tracks.Remove(marker.Group);
                         redrawTimeline = true;
