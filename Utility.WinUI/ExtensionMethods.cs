@@ -143,7 +143,7 @@ namespace JLR.Utility.WinUI
         #endregion
 
         #region Microsoft.UI.Xaml.Controls
-        public static IEnumerable<TreeViewNode> DepthFirstEnumerable(this TreeViewNode node)
+        public static IEnumerable<T> DepthFirstEnumerable<T>(this T node) where T : TreeViewNode
         {
             yield return node;
 
@@ -152,7 +152,7 @@ namespace JLR.Utility.WinUI
                 var childEnumerator = child.DepthFirstEnumerable().GetEnumerator();
                 while (childEnumerator.MoveNext())
                 {
-                    yield return childEnumerator.Current;
+                    yield return (T)childEnumerator.Current;
                 }
             }
         }
