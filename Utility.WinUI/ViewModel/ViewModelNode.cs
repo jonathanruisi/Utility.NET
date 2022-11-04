@@ -58,6 +58,40 @@ namespace JLR.Utility.WinUI.ViewModel
 
             return false;
         }
+
+        /// <summary>
+        /// Gets an enumerator that iterates over all nodes in the
+        /// tree using a depth-first traversal algorithm.
+        /// </summary>
+        /// <remarks>
+        /// The node on which <see cref="DepthFirstEnumerable"/>
+        /// is called acts as the root node for the traversal.
+        /// Only that node and nodes with greater depth
+        /// will be returned.
+        /// </remarks>
+        /// <returns>
+        /// An enumerator that traverses all nodes in the tree.
+        /// </returns>
+        public IEnumerable<ViewModelElement> DepthFirstEnumerable()
+        {
+            yield return this;
+
+            foreach (var child in Children)
+            {
+                if (child is ViewModelNode node)
+                {
+                    var childEnumerator = node.DepthFirstEnumerable().GetEnumerator();
+                    while (childEnumerator.MoveNext())
+                    {
+                        yield return childEnumerator.Current;
+                    }
+                }
+                else
+                {
+                    yield return child;
+                }
+            }
+        }
         #endregion
 
         #region Event Handlers
@@ -89,34 +123,6 @@ namespace JLR.Utility.WinUI.ViewModel
 
             Messenger.Send(collectionChangedMessage, nameof(Children));
             NotifySerializedCollectionChanged(nameof(Children));
-        }
-        #endregion
-
-        #region Interface Implementation (IEnumerable<T>)
-        public IEnumerator<ViewModelElement> GetEnumerator()
-        {
-            return DepthFirstEnumerable().GetEnumerator();
-        }
-
-        public IEnumerable<ViewModelElement> DepthFirstEnumerable()
-        {
-            yield return this;
-
-            foreach (var child in Children)
-            {
-                if (child is ViewModelNode node)
-                {
-                    var childEnumerator = node.DepthFirstEnumerable().GetEnumerator();
-                    while (childEnumerator.MoveNext())
-                    {
-                        yield return childEnumerator.Current;
-                    }
-                }
-                else
-                {
-                    yield return child;
-                }
-            }
         }
         #endregion
 
