@@ -11,16 +11,15 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.UI.Xaml.Input;
 using Microsoft.UI.Xaml.Media;
 using Microsoft.UI.Xaml.Navigation;
-using Microsoft.UI.Xaml.Shapes;
 
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 
 namespace WinUITestApp
 {
-    public sealed partial class MainWindow : Window
+    public sealed partial class TestContainerControl : UserControl
     {
-        public MainWindow()
+        public TestContainerControl()
         {
             InitializeComponent();
         }

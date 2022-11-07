@@ -5,6 +5,120 @@
     xmlns:win2d="using:Microsoft.Graphics.Canvas.UI.Xaml"
     xmlns:geometry="using:Microsoft.Graphics.Canvas.Geometry">
 
+    <!-- Marker -->
+    <controls:MarkerStyle x:Key="MarkerStyle_Default"
+                                 StrokeThickness="0"
+                                 TailStrokeThickness="1.0">
+        <controls:MarkerStyle.Geometry>
+            <PathGeometry>
+                <PathGeometry.Figures>
+                    <PathFigure IsClosed="True" IsFilled="True" StartPoint="0,0">
+                        <PathFigure.Segments>
+                            <LineSegment Point="10,0"/>
+                            <LineSegment Point="10,8"/>
+                            <LineSegment Point="5,15"/>
+                            <LineSegment Point="0,8"/>
+                        </PathFigure.Segments>
+                    </PathFigure>
+                </PathGeometry.Figures>
+            </PathGeometry>
+        </controls:MarkerStyle.Geometry>
+
+        <controls:MarkerStyle.Fill>
+            <SolidColorBrush Color="DarkOrange"/>
+        </controls:MarkerStyle.Fill>
+
+        <controls:MarkerStyle.TailStroke>
+            <SolidColorBrush Color="DarkOrange"/>
+        </controls:MarkerStyle.TailStroke>
+
+        <controls:MarkerStyle.TailStrokeStyle>
+            <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+        </controls:MarkerStyle.TailStrokeStyle>
+    </controls:MarkerStyle>
+
+    <!-- Marker (Selected) -->
+    <controls:MarkerStyle x:Key="SelectedMarkerStyle_Default"
+                                 StrokeThickness="1.0"
+                                 TailStrokeThickness="2.0">
+        <controls:MarkerStyle.Fill>
+            <SolidColorBrush Color="White"/>
+        </controls:MarkerStyle.Fill>
+
+        <controls:MarkerStyle.Stroke>
+            <SolidColorBrush Color="DarkOrange"/>
+        </controls:MarkerStyle.Stroke>
+
+        <controls:MarkerStyle.TailStroke>
+            <SolidColorBrush Color="White"/>
+        </controls:MarkerStyle.TailStroke>
+
+        <controls:MarkerStyle.TailStrokeStyle>
+            <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+        </controls:MarkerStyle.TailStrokeStyle>
+    </controls:MarkerStyle>
+
+    <!-- Track Span -->
+    <controls:TimespanMarkerStyle x:Key="TimespanMarkerStyle_Default"
+                                         SpanStrokeThickness="0"
+                                         SpanStartTailStrokeThickness="1.0"
+                                         SpanEndTailStrokeThickness="0">
+        <controls:TimespanMarkerStyle.SpanFill>
+            <SolidColorBrush Color="DarkOrange"/>
+        </controls:TimespanMarkerStyle.SpanFill>
+
+        <controls:TimespanMarkerStyle.SpanLabel>
+            <SolidColorBrush Color="White"/>
+        </controls:TimespanMarkerStyle.SpanLabel>
+
+        <controls:TimespanMarkerStyle.SpanStartTailStroke>
+            <SolidColorBrush Color="DarkOrange"/>
+        </controls:TimespanMarkerStyle.SpanStartTailStroke>
+
+        <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+            <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+        </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+    </controls:TimespanMarkerStyle>
+
+    <!-- Track Span (Selected) -->
+    <controls:TimespanMarkerStyle x:Key="SelectedTimespanMarkerStyle_Default"
+                                         SpanStrokeThickness="2.0"
+                                         SpanStartTailStrokeThickness="2.0"
+                                         SpanEndTailStrokeThickness="2.0">
+        <controls:TimespanMarkerStyle.SpanFill>
+            <SolidColorBrush Color="White"/>
+        </controls:TimespanMarkerStyle.SpanFill>
+
+        <controls:TimespanMarkerStyle.SpanLabel>
+            <SolidColorBrush Color="DarkOrange"/>
+        </controls:TimespanMarkerStyle.SpanLabel>
+
+        <controls:TimespanMarkerStyle.SpanStroke>
+            <SolidColorBrush Color="DarkOrange"/>
+        </controls:TimespanMarkerStyle.SpanStroke>
+
+        <controls:TimespanMarkerStyle.SpanStartTailStroke>
+            <SolidColorBrush Color="White"/>
+        </controls:TimespanMarkerStyle.SpanStartTailStroke>
+
+        <controls:TimespanMarkerStyle.SpanEndTailStroke>
+            <SolidColorBrush Color="White"/>
+        </controls:TimespanMarkerStyle.SpanEndTailStroke>
+
+        <controls:TimespanMarkerStyle.SpanStrokeStyle>
+            <geometry:CanvasStrokeStyle DashStyle="Solid"/>
+        </controls:TimespanMarkerStyle.SpanStrokeStyle>
+        
+        <controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+            <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+        </controls:TimespanMarkerStyle.SpanStartTailStrokeStyle>
+
+        <controls:TimespanMarkerStyle.SpanEndTailStrokeStyle>
+            <geometry:CanvasStrokeStyle DashStyle="Dash"/>
+        </controls:TimespanMarkerStyle.SpanEndTailStrokeStyle>
+    </controls:TimespanMarkerStyle>
+
+    <!-- MediaTimeline Control Template -->
     <ControlTemplate x:Key="MediaTimelineDefaultTemplate" TargetType="controls:MediaTimeline">
         <Border Background="{TemplateBinding Background}"
                 BorderBrush="{TemplateBinding BorderBrush}"
@@ -68,16 +182,20 @@
         <Setter Property="CursorShape" Value="UpArrow"/>
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="TickAreaBackground" Value="#80FFFFFF"/>
-        <Setter Property="MarkerAreaBackground" Value="#606060"/>
-        <Setter Property="TrackAreaBackground" Value="#404040"/>
-        <Setter Property="ZoomAreaBackground" Value="#202020"/>
+        <Setter Property="MarkerAreaBackground" Value="#404040"/>
+        <Setter Property="ZoomAreaBackground" Value="#101010"/>
+        <Setter Property="TrackAreaBackground" Value="#202020"/>
+        <Setter Property="TrackBackground" Value="#40FFFFFF"/>
+        <Setter Property="TrackLabelBackground" Value="#40000000"/>
+        <Setter Property="TrackLabelForeground" Value="#C0C0C0"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
         <Setter Property="BorderThickness" Value="0"/>
         <Setter Property="Margin" Value="0"/>
         <Setter Property="Padding" Value="0"/>
         <Setter Property="ZoomBarHeight" Value="0.25*"/>
-        <Setter Property="MarkerHeight" Value="20"/>
+        <Setter Property="MarkerBarHeight" Value="15"/>
         <Setter Property="TrackHeight" Value="16"/>
+        <Setter Property="TrackSpacing" Value="2"/>
         <Setter Property="FramesPerSecond" Value="30"/>
         <Setter Property="IsPositionAdjustmentEnabled" Value="True"/>
         <Setter Property="IsSelectionAdjustmentEnabled" Value="True"/>
@@ -106,18 +224,6 @@
         <Setter Property="MinorTickThickness" Value="1"/>
         <Setter Property="MinorTickRelativeHeight" Value="0.165"/>
         <Setter Property="MinorTickZIndex" Value="0"/>
-        <Setter Property="MarkerBrush" Value="DodgerBlue"/>
-        <Setter Property="SelectedMarkerBrush" Value="White"/>
-        <Setter Property="MarkerLineThickness" Value="2.0"/>
-        <Setter Property="MarkerLineStyle">
-            <Setter.Value>
-                <geometry:CanvasStrokeStyle DashStyle="Dash"/>
-            </Setter.Value>
-        </Setter>
-        <Setter Property="TrackItemSpanBrush" Value="#C0800000"/>
-        <Setter Property="SelectedTrackItemSpanBrush" Value="White"/>
-        <Setter Property="TrackItemLabelBrush" Value="White"/>
-        <Setter Property="SelectedTrackItemLabelBrush" Value="Black"/>
         <Setter Property="FontFamily" Value="Arial"/>
         <Setter Property="FontSize" Value="12"/>
         <Setter Property="FontStretch" Value="Normal"/>

@@ -19,15 +19,20 @@ using Windows.Storage;
 namespace JLR.Utility.WinUI.ViewModel
 {
     /// <summary>
-    /// <inheritdoc/>
+    /// <inheritdoc/><br/>
+    /// <see cref="ViewModelElement"/> can act as a base
+    /// "leaf node" class in a hierarchical data structure, and
+    /// is capable of identifying its parent, root, and siblings.<br/>
     /// <see cref="ViewModelElement"/> is also capable of
-    /// fully automatic XML serialization and deserialization.
+    /// fully automatic XML serialization and deserialization
+    /// of itself and all derived classes.
     /// </summary>
     public abstract class ViewModelElement : ObservableRecipient, IXmlSerializable
     {
         #region Fields
         private string _name;
         private bool _isSelected;
+        protected internal ViewModelNode _parent;
         private static readonly bool IsSubclassInfoLoaded = false;
         private static readonly Dictionary<Type, ViewModelSerializationInfo> SerializationInfo;
         private static readonly Dictionary<string, Type> DeserializationInfo;
@@ -53,6 +58,39 @@ namespace JLR.Utility.WinUI.ViewModel
             get => _isSelected;
             set => SetProperty(ref _isSelected, value, true);
         }
+
+        /// <summary>
+        /// Gets or sets a reference to this element's parent node.
+        /// </summary>
+        public ViewModelNode Parent
+        {
+            get => _parent;
+            set => SetProperty(_parent, value, newValue =>
+            {
+                _parent?.Children.Remove(this);
+                newValue?.Children.Add(this);
+                _parent = newValue;
+            }, true);
+        }
+
+        /// <summary>
+        /// Gets the depth of this element within the tree relative to the root node.
+        /// A value of zero indicates that this element is the root.
+        /// </summary>
+        public int Depth => _parent?.Depth + 1 ?? 0;
+
+        /// <summary>
+        /// Gets a reference to the root node.
+        /// </summary>
+        public ViewModelNode Root => _parent == null ? (this as ViewModelNode) : _parent.Root;
+
+        /// <summary>
+        /// Exposes an enumerator which iterates over all elements that share this element's parent node
+        /// (non-recursive).
+        /// </summary>
+        public IEnumerable<ViewModelElement> Siblings => from sibling in _parent?.Children
+                                                         where sibling != this && sibling.Depth == Depth
+                                                         select sibling;
 
         /// <summary>
         /// Gets or sets a value that controls whether or not empty collections
@@ -373,7 +411,7 @@ namespace JLR.Utility.WinUI.ViewModel
                         {
                             value = HijackDeserialization(collectionInfo.XmlChildName, ref reader);
                         }
-                        else if (collectionInfo.ChildType.IsSubclassOf(typeof(ViewModelElement)))
+                        else if (collectionInfo.ChildType.IsAssignableTo(typeof(ViewModelElement)))
                         {
                             var element = SerializationInfo[DeserializationInfo[elementName]].Constructor();
                             element.ReadXml(reader);
@@ -434,7 +472,7 @@ namespace JLR.Utility.WinUI.ViewModel
                     {
                         value = HijackDeserialization(elementName, ref reader);
                     }
-                    else if (propertyInfo.PropertyType.IsSubclassOf(typeof(ViewModelElement)))
+                    else if (propertyInfo.PropertyType.IsAssignableTo(typeof(ViewModelElement)))
                     {
                         var element = SerializationInfo[DeserializationInfo[elementName]].Constructor();
                         element.ReadXml(reader);

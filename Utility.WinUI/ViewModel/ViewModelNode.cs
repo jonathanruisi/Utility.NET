@@ -15,91 +15,89 @@ namespace JLR.Utility.WinUI.ViewModel
     /// <summary>
     /// Represents a node in a hierarchical structure ideal for
     /// use in user interfaces and other scenarios that
-    /// rely on data binding. <see cref="ViewModelNode"/>
+    /// rely on data binding.<br/><see cref="ViewModelNode"/>
     /// inherits from <see cref="ViewModelElement"/>,
     /// and is therefore capable of fully automatic
     /// XML serialization and deserialization.
     /// </summary>
     public abstract class ViewModelNode : ViewModelElement
     {
-        #region Fields
-        private ViewModelNode _parent;
-        #endregion
-
         #region Properties
-        /// <summary>
-        /// Gets or sets a reference to this node's parent node
-        /// </summary>
-        public ViewModelNode Parent
-        {
-            get => _parent;
-            set => SetProperty(_parent, value, newValue =>
-            {
-                _parent?.Children.Remove(this);
-                newValue?.Children.Add(this);
-                _parent = newValue;
-            }, true);
-        }
-
         /// <summary>
         /// Gets a collection of this node's children
         /// </summary>
         [ViewModelCollection("Children")]
-        public ObservableCollection<ViewModelNode> Children { get; }
-
-        /// <summary>
-        /// Gets the depth of this node within the tree relative to the root node.
-        /// A value of zero indicates that this node is the root.
-        /// </summary>
-        public int Depth => _parent?.Depth + 1 ?? 0;
-
-        /// <summary>
-        /// Gets a reference to the root node
-        /// </summary>
-        public ViewModelNode Root => _parent == null ? this : _parent.Root;
-
-        /// <summary>
-        /// Exposes an enumerator which iterates over all nodes that share this node's parent
-        /// </summary>
-        public IEnumerable<ViewModelNode> Siblings => from sibling in _parent?.Children
-                                                      where sibling != this && sibling.Depth == Depth
-                                                      select sibling;
+        public ObservableCollection<ViewModelElement> Children { get; }
         #endregion
 
         #region Constructor
         protected ViewModelNode()
         {
-            Children = new ObservableCollection<ViewModelNode>();
+            Children = new ObservableCollection<ViewModelElement>();
             Children.CollectionChanged += Children_CollectionChanged;
         }
         #endregion
 
         #region Public Methods
         /// <summary>
-        /// Removes the first occurence of the specified <see cref="ViewModelNode"/> instance,
+        /// Removes the first occurence of the specified <see cref="ViewModelElement"/> instance,
         /// if it exists, from any depth within this node's subtree.
         /// </summary>
-        /// <param name="node">The <see cref="ViewModelNode"/> to remove</param>
-        /// <returns><code>true</code> if the specified node was removed, <code>false</code> otherwise</returns>
-        public bool Remove(ViewModelNode node)
+        /// <param name="element">The <see cref="ViewModelElement"/> to remove.</param>
+        /// <returns><c>true</c> if the specified node was removed, <c>false</c> otherwise</returns>
+        public bool Remove(ViewModelElement element)
         {
-            if (Children.Remove(node))
+            if (Children.Remove(element))
                 return true;
 
-            var result = false;
-            for (var i = 0; result == false && i < Children.Count; i++)
+            for (var i = 0; i < Children.Count; i++)
             {
-                result = Children[i].Remove(node);
+                if (Children[i] is ViewModelNode node && node.Remove(element))
+                    return true;
             }
 
-            return result;
+            return false;
+        }
+
+        /// <summary>
+        /// Gets an enumerator that iterates over all nodes in the
+        /// tree using a depth-first traversal algorithm.
+        /// </summary>
+        /// <remarks>
+        /// The node on which <see cref="DepthFirstEnumerable"/>
+        /// is called acts as the root node for the traversal.
+        /// Only that node and nodes with greater depth
+        /// will be returned.
+        /// </remarks>
+        /// <returns>
+        /// An enumerator that traverses all nodes in the tree.
+        /// </returns>
+        public IEnumerable<ViewModelElement> DepthFirstEnumerable()
+        {
+            yield return this;
+
+            foreach (var child in Children)
+            {
+                if (child is ViewModelNode node)
+                {
+                    var childEnumerator = node.DepthFirstEnumerable().GetEnumerator();
+                    while (childEnumerator.MoveNext())
+                    {
+                        yield return childEnumerator.Current;
+                    }
+                }
+                else
+                {
+                    yield return child;
+                }
+            }
         }
         #endregion
 
         #region Event Handlers
         private void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var collectionChangedMessage = new CollectionChangedMessage<ViewModelNode>(this, nameof(Children), e.Action)
+            var collectionChangedMessage = new CollectionChangedMessage<ViewModelElement>(this, nameof(Children), e.Action)
             {
                 OldStartingIndex = e.OldStartingIndex,
                 NewStartingIndex = e.NewStartingIndex
@@ -107,45 +105,24 @@ namespace JLR.Utility.WinUI.ViewModel
 
             if (e.OldItems != null)
             {
-                foreach (ViewModelNode oldNode in e.OldItems)
+                foreach (ViewModelElement oldElement in e.OldItems)
                 {
-                    oldNode._parent = null;
-                    collectionChangedMessage.OldValue.Add(oldNode);
+                    oldElement._parent = null;
+                    collectionChangedMessage.OldValue.Add(oldElement);
                 }
             }
 
             if (e.NewItems != null)
             {
-                foreach (ViewModelNode newNode in e.NewItems)
+                foreach (ViewModelElement newElement in e.NewItems)
                 {
-                    newNode._parent = this;
-                    collectionChangedMessage.NewValue.Add(newNode);
+                    newElement._parent = this;
+                    collectionChangedMessage.NewValue.Add(newElement);
                 }
             }
 
             Messenger.Send(collectionChangedMessage, nameof(Children));
             NotifySerializedCollectionChanged(nameof(Children));
-        }
-        #endregion
-
-        #region Interface Implementation (IEnumerable<T>)
-        public IEnumerator<ViewModelNode> GetEnumerator()
-        {
-            return DepthFirstEnumerable().GetEnumerator();
-        }
-
-        public IEnumerable<ViewModelNode> DepthFirstEnumerable()
-        {
-            yield return this;
-
-            foreach (var child in Children)
-            {
-                var childEnumerator = child.DepthFirstEnumerable().GetEnumerator();
-                while (childEnumerator.MoveNext())
-                {
-                    yield return childEnumerator.Current;
-                }
-            }
         }
         #endregion
 

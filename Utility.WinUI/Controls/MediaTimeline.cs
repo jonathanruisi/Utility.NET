@@ -10,11 +10,13 @@ using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
+using Microsoft.UI;
 using Microsoft.UI.Input;
 using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Microsoft.UI.Xaml.Media.Animation;
 
 using Windows.Foundation;
 using Windows.UI.Text;
@@ -107,7 +109,13 @@ namespace JLR.Utility.WinUI.Controls
         /// <summary>
         /// Identifies the category/track to which the marker belongs.
         /// </summary>
-        int Group { get; }
+        string Group { get; }
+
+        /// <summary>
+        /// Gets the name of the <see cref="MarkerStyleGroup"/> which
+        /// defines the appearance of this <see cref="ITimelineMarker"/>.
+        /// </summary>
+        string Style { get; }
     }
     #endregion
 
@@ -137,6 +145,7 @@ namespace JLR.Utility.WinUI.Controls
         private bool _blockSelectionChangedEvent,
                      _blockZoomChangedEvent;
         private double _leftMouseStartX;
+        private int _prevTrackCount;
         private ValueDragType _lastUsedTransportControl;
         private Panel _mainPanel, _zoomPanel;
         private CanvasControl _timelineCanvas;
@@ -154,15 +163,12 @@ namespace JLR.Utility.WinUI.Controls
             _tickAreaBackgroundBrush,
             _markerAreaBackgroundBrush,
             _trackAreaBackgroundBrush,
+            _trackBackgroundBrush,
+            _trackLabelBackgroundBrush,
+            _trackLabelForegroundBrush,
             _originTickBrush,
             _majorTickBrush,
             _minorTickBrush,
-            _markerBrush,
-            _trackItemSpanBrush,
-            _trackItemLabelBrush,
-            _selectedMarkerBrush,
-            _selectedTrackItemSpanBrush,
-            _selectedTrackItemLabelBrush,
             _selectionHighlightBrush;
 
         private readonly List<(decimal start, decimal end)> _selections;
@@ -177,8 +183,13 @@ namespace JLR.Utility.WinUI.Controls
             _intervals = new LinkedList<(int major, int minor, int subdivisionCount)>();
             _selections = new List<(decimal start, decimal end)>();
 
+            MarkerStyleGroups = new Dictionary<string, MarkerStyleGroup>();
+
             Markers = new ObservableCollection<ITimelineMarker>();
             Markers.CollectionChanged += Markers_CollectionChanged;
+
+            Tracks = new ObservableCollection<string>();
+            Tracks.CollectionChanged += Tracks_CollectionChanged;
 
             Loaded += MediaTimeline_Loaded;
             Unloaded += MediaTimeline_Unloaded;
@@ -261,6 +272,8 @@ namespace JLR.Utility.WinUI.Controls
         {
             get => new(_selections);
         }
+
+        public Dictionary<string, MarkerStyleGroup> MarkerStyleGroups { get; }
         #endregion
 
         #region Dependency Properties
@@ -437,21 +450,17 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(MediaTimeline),
                                         new PropertyMetadata(null, OnSelectedMarkerChanged));
 
-        /// <summary>
-        /// Gets the number of different tracks present in
-        /// <see cref="Markers"/>.
-        /// </summary>
-        public int TrackCount
+        public ObservableCollection<string> Tracks
         {
-            get => (int)GetValue(TrackCountProperty);
-            private set => SetValue(TrackCountProperty, value);
+            get => (ObservableCollection<string>)GetValue(TracksProperty);
+            private set => SetValue(TracksProperty, value);
         }
 
-        public static readonly DependencyProperty TrackCountProperty =
-            DependencyProperty.Register("TrackCount",
-                                        typeof(int),
+        public static readonly DependencyProperty TracksProperty =
+            DependencyProperty.Register("Tracks",
+                                        typeof(ObservableCollection<string>),
                                         typeof(MediaTimeline),
-                                        new PropertyMetadata(0));
+                                        new PropertyMetadata(null));
         #endregion
 
         #region Behavior
@@ -587,6 +596,53 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(MediaTimeline),
                                         new PropertyMetadata(InputSystemCursorShape.Arrow, OnCursorShapePropertyChanged));
 
+        public bool AreTrackNamesVisible
+        {
+            get => (bool)GetValue(AreTrackNamesVisibleProperty);
+            set => SetValue(AreTrackNamesVisibleProperty, value);
+        }
+
+        public static readonly DependencyProperty AreTrackNamesVisibleProperty =
+            DependencyProperty.Register("AreTrackNamesVisible",
+                                        typeof(bool),
+                                        typeof(MediaTimeline),
+                                        new PropertyMetadata(true));
+
+        public bool AutoAddNewTrackFromMarker
+        {
+            get => (bool)GetValue(AutoAddNewTrackFromMarkerProperty);
+            set => SetValue(AutoAddNewTrackFromMarkerProperty, value);
+        }
+
+        public static readonly DependencyProperty AutoAddNewTrackFromMarkerProperty =
+            DependencyProperty.Register("AutoAddNewTrackFromMarker",
+                                        typeof(bool),
+                                        typeof(MediaTimeline),
+                                        new PropertyMetadata(true));
+
+        public bool AutoRemoveEmptyTracks
+        {
+            get => (bool)GetValue(AutoRemoveEmptyTracksProperty);
+            set => SetValue(AutoRemoveEmptyTracksProperty, value);
+        }
+
+        public static readonly DependencyProperty AutoRemoveEmptyTracksProperty =
+            DependencyProperty.Register("AutoRemoveEmptyTracks",
+                                        typeof(bool),
+                                        typeof(MediaTimeline),
+                                        new PropertyMetadata(false));
+
+        public bool AutoAdjustHeightForTracks
+        {
+            get => (bool)GetValue(AutoAdjustHeightForTracksProperty);
+            set => SetValue(AutoAdjustHeightForTracksProperty, value);
+        }
+
+        public static readonly DependencyProperty AutoAdjustHeightForTracksProperty =
+            DependencyProperty.Register("AutoAdjustHeightForTracks",
+                                        typeof(bool),
+                                        typeof(MediaTimeline),
+                                        new PropertyMetadata(true));
         #region Alignment
         public VerticalAlignment TickAlignment
         {
@@ -667,14 +723,14 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(MediaTimeline),
                                         new PropertyMetadata(new GridLength(0.5, GridUnitType.Star)));
 
-        public double MarkerHeight
+        public double MarkerBarHeight
         {
-            get => (double)GetValue(MarkerHeightProperty);
-            set => SetValue(MarkerHeightProperty, value);
+            get => (double)GetValue(MarkerBarHeightProperty);
+            set => SetValue(MarkerBarHeightProperty, value);
         }
 
-        public static readonly DependencyProperty MarkerHeightProperty =
-            DependencyProperty.Register("MarkerHeight",
+        public static readonly DependencyProperty MarkerBarHeightProperty =
+            DependencyProperty.Register("MarkerBarHeight",
                                         typeof(double),
                                         typeof(MediaTimeline),
                                         new PropertyMetadata(25.0, OnTimelineCanvasRenderPropertyChanged));
@@ -822,18 +878,6 @@ namespace JLR.Utility.WinUI.Controls
                                         typeof(double),
                                         typeof(MediaTimeline),
                                         new PropertyMetadata(1.0, OnTimelineCanvasRenderPropertyChanged));
-
-        public double MarkerLineThickness
-        {
-            get => (double)GetValue(MarkerLineThicknessProperty);
-            set => SetValue(MarkerLineThicknessProperty, value);
-        }
-
-        public static readonly DependencyProperty MarkerLineThicknessProperty =
-            DependencyProperty.Register("MarkerLineThickness",
-                                        typeof(double),
-                                        typeof(MediaTimeline),
-                                        new PropertyMetadata(1.0, OnTimelineCanvasRenderPropertyChanged));
         #endregion
 
         #region Z-Index
@@ -936,20 +980,6 @@ namespace JLR.Utility.WinUI.Controls
                                         new PropertyMetadata(FontWeights.Normal, OnTimelineCanvasRenderPropertyChanged));
         #endregion
 
-        #region Line Styles
-        public CanvasStrokeStyle MarkerLineStyle
-        {
-            get => (CanvasStrokeStyle)GetValue(MarkerLineStyleProperty);
-            set => SetValue(MarkerLineStyleProperty, value);
-        }
-
-        public static readonly DependencyProperty MarkerLineStyleProperty =
-            DependencyProperty.Register("MarkerLineStyle",
-                                        typeof(CanvasStrokeStyle),
-                                        typeof(MediaTimeline),
-                                        new PropertyMetadata(null, OnTimelineCanvasRenderPropertyChanged));
-        #endregion
-
         #region Brushes
         public Brush TickAreaBackground
         {
@@ -983,6 +1013,42 @@ namespace JLR.Utility.WinUI.Controls
 
         public static readonly DependencyProperty TrackAreaBackgroundProperty =
             DependencyProperty.Register("TrackAreaBackground",
+                                        typeof(Brush),
+                                        typeof(MediaTimeline),
+                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
+
+        public Brush TrackBackground
+        {
+            get => (Brush)GetValue(TrackBackgroundProperty);
+            set => SetValue(TrackBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty TrackBackgroundProperty =
+            DependencyProperty.Register("TrackBackground",
+                                        typeof(Brush),
+                                        typeof(MediaTimeline),
+                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
+
+        public Brush TrackLabelBackground
+        {
+            get => (Brush)GetValue(TrackLabelBackgroundProperty);
+            set => SetValue(TrackLabelBackgroundProperty, value);
+        }
+
+        public static readonly DependencyProperty TrackLabelBackgroundProperty =
+            DependencyProperty.Register("TrackLabelBackground",
+                                        typeof(Brush),
+                                        typeof(MediaTimeline),
+                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
+
+        public Brush TrackLabelForeground
+        {
+            get => (Brush)GetValue(TrackLabelForegroundProperty);
+            set => SetValue(TrackLabelForegroundProperty, value);
+        }
+
+        public static readonly DependencyProperty TrackLabelForegroundProperty =
+            DependencyProperty.Register("TrackLabelForeground",
                                         typeof(Brush),
                                         typeof(MediaTimeline),
                                         new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
@@ -1043,78 +1109,6 @@ namespace JLR.Utility.WinUI.Controls
 
         public static readonly DependencyProperty MinorTickBrushProperty =
             DependencyProperty.Register("MinorTickBrush",
-                                        typeof(Brush),
-                                        typeof(MediaTimeline),
-                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
-
-        public Brush MarkerBrush
-        {
-            get => (Brush)GetValue(MarkerBrushProperty);
-            set => SetValue(MarkerBrushProperty, value);
-        }
-
-        public static readonly DependencyProperty MarkerBrushProperty =
-            DependencyProperty.Register("MarkerBrush",
-                                        typeof(Brush),
-                                        typeof(MediaTimeline),
-                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
-
-        public Brush TrackItemSpanBrush
-        {
-            get => (Brush)GetValue(TrackItemSpanBrushProperty);
-            set => SetValue(TrackItemSpanBrushProperty, value);
-        }
-
-        public static readonly DependencyProperty TrackItemSpanBrushProperty =
-            DependencyProperty.Register("TrackItemSpanBrush",
-                                        typeof(Brush),
-                                        typeof(MediaTimeline),
-                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
-
-        public Brush TrackItemLabelBrush
-        {
-            get => (Brush)GetValue(TrackItemLabelBrushProperty);
-            set => SetValue(TrackItemLabelBrushProperty, value);
-        }
-
-        public static readonly DependencyProperty TrackItemLabelBrushProperty =
-            DependencyProperty.Register("TrackItemLabelBrush",
-                                        typeof(Brush),
-                                        typeof(MediaTimeline),
-                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
-
-        public Brush SelectedMarkerBrush
-        {
-            get => (Brush)GetValue(SelectedMarkerBrushProperty);
-            set => SetValue(SelectedMarkerBrushProperty, value);
-        }
-
-        public static readonly DependencyProperty SelectedMarkerBrushProperty =
-            DependencyProperty.Register("SelectedMarkerBrush",
-                                        typeof(Brush),
-                                        typeof(MediaTimeline),
-                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
-
-        public Brush SelectedTrackItemSpanBrush
-        {
-            get => (Brush)GetValue(SelectedTrackItemSpanBrushProperty);
-            set => SetValue(SelectedTrackItemSpanBrushProperty, value);
-        }
-
-        public static readonly DependencyProperty SelectedTrackItemSpanBrushProperty =
-            DependencyProperty.Register("SelectedTrackItemSpanBrush",
-                                        typeof(Brush),
-                                        typeof(MediaTimeline),
-                                        new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
-
-        public Brush SelectedTrackItemLabelBrush
-        {
-            get => (Brush)GetValue(SelectedTrackItemLabelBrushProperty);
-            set => SetValue(SelectedTrackItemLabelBrushProperty, value);
-        }
-
-        public static readonly DependencyProperty SelectedTrackItemLabelBrushProperty =
-            DependencyProperty.Register("SelectedTrackItemLabelBrush",
                                         typeof(Brush),
                                         typeof(MediaTimeline),
                                         new PropertyMetadata(null, OnTimelineCanvasBrushChanged));
@@ -1217,7 +1211,6 @@ namespace JLR.Utility.WinUI.Controls
         public event EventHandler<int> FramesPerSecondChanged;
         public event EventHandler<ITimelineMarker> SelectedMarkerChanged;
         public event NotifyCollectionChangedEventHandler SelectionListChanged;
-        public event EventHandler<int> TrackCountChanged;
 
         private void RaiseDurationChanged()
         {
@@ -1288,12 +1281,6 @@ namespace JLR.Utility.WinUI.Controls
         {
             var handler = SelectionListChanged;
             handler?.Invoke(this, new NotifyCollectionChangedEventArgs(action, changedItems));
-        }
-
-        private void RaiseTrackCountChanged()
-        {
-            var handler = TrackCountChanged;
-            handler?.Invoke(this, TrackCount);
         }
         #endregion
 
@@ -1778,6 +1765,7 @@ namespace JLR.Utility.WinUI.Controls
             SelectionStart = 0;
             SelectionEnd = 0;
             Markers.Clear();
+            Tracks.Clear();
             Start = 0;
             End = MinimumVisibleRange;
             ClearSelections();
@@ -2260,10 +2248,13 @@ namespace JLR.Utility.WinUI.Controls
             else if (TrackAreaRect.Contains(point.Position))
             {
                 // Determine which track was clicked
+                double trackTopCoord = 0;
                 int track = 0;
-                var trackTopCoord = TrackAreaRect.Top;
-                for (; track < TrackCount; track++)
+                for (; track < Tracks.Count; track++)
                 {
+                    if (track == 0)
+                        trackTopCoord = TrackAreaRect.Top;
+
                     if (point.Position.Y >= trackTopCoord &&
                         point.Position.Y <= trackTopCoord + TrackHeight)
                         break;
@@ -2271,7 +2262,7 @@ namespace JLR.Utility.WinUI.Controls
                     trackTopCoord += TrackHeight + TrackSpacing;
                 }
 
-                var closestMarker = closestMarkers.Where(x => x.Duration > 0 && x.Group == track).FirstOrDefault();
+                var closestMarker = closestMarkers.Where(x => Tracks.IndexOf(x.Group) == track).FirstOrDefault();
 
                 if (_wasCtrlKeyPressed && closestMarker != null)
                     SetSelectionFromMarker(closestMarker);
@@ -2595,40 +2586,58 @@ namespace JLR.Utility.WinUI.Controls
         #region Collection
         private void Markers_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
-            var prevTrackCount = TrackCount;
-            TrackCount = Markers.Where(x => x.Duration > 0).Select(x => x.Group).Distinct().Count();
-
-            if (TrackCount != prevTrackCount)
-            {
-                _timelineCanvas?.Invalidate();
-                UpdatePositionElementLayout();
-                UpdateSelectionElementLayout();
-                RaiseTrackCountChanged();
-                return;
-            }
+            bool redrawTimeline = false;
 
             if (e.NewItems?.Count > 0)
             {
-                if (e.NewItems.Cast<ITimelineMarker>().Any(x => (x.Position >= ZoomStart &&
-                                                                 x.Position <= ZoomEnd) ||
-                                                                (x.Position + x.Duration >= ZoomStart &&
-                                                                 x.Position + x.Duration <= ZoomEnd)))
+                redrawTimeline = e.NewItems.Cast<ITimelineMarker>().Any(x => (x.Position >= ZoomStart &&
+                                                                              x.Position <= ZoomEnd) ||
+                                                                             (x.Position + x.Duration >= ZoomStart &&
+                                                                              x.Position + x.Duration <= ZoomEnd));
+
+                foreach (var marker in e.NewItems.Cast<ITimelineMarker>())
                 {
-                    _timelineCanvas?.Invalidate();
-                    return;
+                    if (AutoAddNewTrackFromMarker &&
+                        !string.IsNullOrEmpty(marker.Group) &&
+                        !Tracks.Contains(marker.Group))
+                    {
+                        Tracks.Add(marker.Group);
+                        redrawTimeline = true;
+                    }
                 }
             }
 
             if (e.OldItems?.Count > 0)
             {
-                if (e.OldItems.Cast<ITimelineMarker>().Any(x => (x.Position >= ZoomStart &&
-                                                                 x.Position <= ZoomEnd) ||
-                                                                (x.Position + x.Duration >= ZoomStart &&
-                                                                 x.Position + x.Duration <= ZoomEnd)))
+                redrawTimeline = e.OldItems.Cast<ITimelineMarker>().Any(x => (x.Position >= ZoomStart &&
+                                                                              x.Position <= ZoomEnd) ||
+                                                                             (x.Position + x.Duration >= ZoomStart &&
+                                                                              x.Position + x.Duration <= ZoomEnd));
+
+                foreach (var marker in e.OldItems.Cast<ITimelineMarker>())
                 {
-                    _timelineCanvas?.Invalidate();
+                    if (AutoRemoveEmptyTracks &&
+                        !string.IsNullOrEmpty(marker.Group) &&
+                        Tracks.Contains(marker.Group) &&
+                        !Markers.Any(x => x.Group == marker.Group)) // Only remove track if it is empty!
+                    {
+                        Tracks.Remove(marker.Group);
+                        redrawTimeline = true;
+                    }
                 }
             }
+
+            if (redrawTimeline)
+            {
+                _timelineCanvas?.Invalidate();
+                UpdatePositionElementLayout();
+                UpdateSelectionElementLayout();
+            }
+        }
+
+        private void Tracks_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            ForceHeightUpdateForTracks();
         }
         #endregion
 
@@ -2638,16 +2647,111 @@ namespace JLR.Utility.WinUI.Controls
             _tickAreaBackgroundBrush     = TickAreaBackground?.CreateCanvasBrush(sender.Device);
             _markerAreaBackgroundBrush   = MarkerAreaBackground?.CreateCanvasBrush(sender.Device);
             _trackAreaBackgroundBrush    = TrackAreaBackground?.CreateCanvasBrush(sender.Device);
+            _trackBackgroundBrush        = TrackBackground?.CreateCanvasBrush(sender.Device);
+            _trackLabelBackgroundBrush   = TrackLabelBackground?.CreateCanvasBrush(sender.Device);
+            _trackLabelForegroundBrush   = TrackLabelForeground?.CreateCanvasBrush(sender.Device);
             _originTickBrush             = OriginTickBrush?.CreateCanvasBrush(sender.Device);
             _majorTickBrush              = MajorTickBrush?.CreateCanvasBrush(sender.Device);
             _minorTickBrush              = MinorTickBrush?.CreateCanvasBrush(sender.Device);
-            _markerBrush                 = MarkerBrush?.CreateCanvasBrush(sender.Device);
-            _trackItemSpanBrush          = TrackItemSpanBrush?.CreateCanvasBrush(sender.Device);
-            _trackItemLabelBrush         = TrackItemLabelBrush?.CreateCanvasBrush(sender.Device);
-            _selectedMarkerBrush         = SelectedMarkerBrush?.CreateCanvasBrush(sender.Device);
-            _selectedTrackItemSpanBrush  = SelectedTrackItemSpanBrush?.CreateCanvasBrush(sender.Device);
-            _selectedTrackItemLabelBrush = SelectedTrackItemLabelBrush?.CreateCanvasBrush(sender.Device);
             _selectionHighlightBrush     = SelectionHighlightBrush?.CreateCanvasBrush(sender.Device);
+
+            // Marker resources
+            foreach (var groupEntry in MarkerStyleGroups)
+            {
+                if (groupEntry.Value is not MarkerStyleGroup group || group.AreResourcesCreated)
+                    continue;
+
+                if (group.Style is not null)
+                {
+                    group.Style.CanvasGeometry = group.Style.Geometry?.CreateCanvasGeometry(sender.Device);
+                    group.Style.FillBrush = group.Style.Fill?.CreateCanvasBrush(sender.Device);
+                    group.Style.StrokeBrush = group.Style.Stroke?.CreateCanvasBrush(sender.Device);
+                    group.Style.TailStrokeBrush = group.Style.TailStroke?.CreateCanvasBrush(sender.Device);
+
+                    if (group.Style.CanvasGeometry != null)
+                    {
+                        var bounds = group.Style.CanvasGeometry.ComputeBounds();
+                        group.Style.RenderTarget = new CanvasRenderTarget(sender.Device,
+                            (float)bounds.Width, (float)bounds.Height, sender.Dpi);
+                        using CanvasDrawingSession ds = group.Style.RenderTarget.CreateDrawingSession();
+
+                        ds.Clear(Colors.Transparent);
+                        if (group.Style.FillBrush != null)
+                            ds.FillGeometry(group.Style.CanvasGeometry, group.Style.FillBrush);
+                        if (group.Style.StrokeBrush != null && group.Style.StrokeThickness > 0)
+                        {
+                            using (ds.CreateLayer(1.0f))
+                            {
+                                ds.DrawGeometry(group.Style.CanvasGeometry,
+                                                group.Style.StrokeBrush,
+                                                (float)group.Style.StrokeThickness);
+                            }
+                        }
+                    }
+                }
+
+                if (group.SelectedStyle is not null)
+                {
+                    group.SelectedStyle.CanvasGeometry = group.SelectedStyle.Geometry != null
+                        ? (group.SelectedStyle.Geometry?.CreateCanvasGeometry(sender.Device))
+                        : group.Style.CanvasGeometry;
+                    group.SelectedStyle.FillBrush = group.SelectedStyle.Fill?.CreateCanvasBrush(sender.Device);
+                    group.SelectedStyle.StrokeBrush = group.SelectedStyle.Stroke?.CreateCanvasBrush(sender.Device);
+                    group.SelectedStyle.TailStrokeBrush = group.SelectedStyle.TailStroke?.CreateCanvasBrush(sender.Device);
+
+                    if (group.SelectedStyle.CanvasGeometry != null)
+                    {
+                        var bounds = group.SelectedStyle.CanvasGeometry.ComputeBounds();
+                        group.SelectedStyle.RenderTarget = new CanvasRenderTarget(sender.Device,
+                            (float)bounds.Width, (float)bounds.Height, sender.Dpi);
+                        using CanvasDrawingSession ds = group.SelectedStyle.RenderTarget.CreateDrawingSession();
+
+                        ds.Clear(Colors.Transparent);
+                        if (group.SelectedStyle.FillBrush != null)
+                            ds.FillGeometry(group.SelectedStyle.CanvasGeometry, group.SelectedStyle.FillBrush);
+                        if (group.SelectedStyle.StrokeBrush != null && group.SelectedStyle.StrokeThickness > 0)
+                        {
+                            using (ds.CreateLayer(1.0f))
+                            {
+                                ds.DrawGeometry(group.SelectedStyle.CanvasGeometry,
+                                                group.SelectedStyle.StrokeBrush,
+                                                (float)group.SelectedStyle.StrokeThickness);
+                            }
+                        }
+                    }
+                }
+
+                if (group.TimespanMarkerStyle is not null)
+                {
+                    group.TimespanMarkerStyle.SpanFillBrush =
+                        group.TimespanMarkerStyle.SpanFill?.CreateCanvasBrush(sender.Device);
+                    group.TimespanMarkerStyle.SpanLabelBrush =
+                        group.TimespanMarkerStyle.SpanLabel?.CreateCanvasBrush(sender.Device);
+                    group.TimespanMarkerStyle.SpanStrokeBrush =
+                        group.TimespanMarkerStyle.SpanStroke?.CreateCanvasBrush(sender.Device);
+                    group.TimespanMarkerStyle.SpanStartTailStrokeBrush =
+                        group.TimespanMarkerStyle.SpanStartTailStroke?.CreateCanvasBrush(sender.Device);
+                    group.TimespanMarkerStyle.SpanEndTailStrokeBrush =
+                        group.TimespanMarkerStyle.SpanEndTailStroke?.CreateCanvasBrush(sender.Device);
+                }
+
+                if (group.SelectedTimespanMarkerStyle is not null)
+                {
+                    group.SelectedTimespanMarkerStyle.SpanFillBrush =
+                        group.SelectedTimespanMarkerStyle.SpanFill?.CreateCanvasBrush(sender.Device);
+                    group.SelectedTimespanMarkerStyle.SpanLabelBrush =
+                        group.SelectedTimespanMarkerStyle.SpanLabel?.CreateCanvasBrush(sender.Device);
+                    group.SelectedTimespanMarkerStyle.SpanStrokeBrush =
+                        group.SelectedTimespanMarkerStyle.SpanStroke?.CreateCanvasBrush(sender.Device);
+                    group.SelectedTimespanMarkerStyle.SpanStartTailStrokeBrush =
+                        group.SelectedTimespanMarkerStyle.SpanStartTailStroke?.CreateCanvasBrush(sender.Device);
+                    group.SelectedTimespanMarkerStyle.SpanEndTailStrokeBrush =
+                        group.SelectedTimespanMarkerStyle.SpanEndTailStroke?.CreateCanvasBrush(sender.Device);
+                }
+
+                group.AreResourcesCreated = group.Style != null ||
+                                            group.TimespanMarkerStyle != null;
+            }
         }
 
         private void CanvasControl_Draw(CanvasControl sender, CanvasDrawEventArgs args)
@@ -2656,6 +2760,14 @@ namespace JLR.Utility.WinUI.Controls
             if (Math.Abs(sender.ActualWidth) < double.Epsilon ||
                 Math.Abs(sender.ActualHeight) < double.Epsilon)
                 return;
+
+            // Without this block, MediaTimeline.Height won't take tracks into
+            // account if tracks exist in the Tracks collection during initialization.
+            if (Tracks.Count != _prevTrackCount)
+            {
+                ForceHeightUpdateForTracks();
+                return;
+            }
 
             var markerAreaRect = MarkerAreaRect;
             var trackAreaRect = TrackAreaRect;
@@ -2677,21 +2789,6 @@ namespace JLR.Utility.WinUI.Controls
                 MajorTickRelativeHeight, TickAlignment, ref tickAreaRect);
             var verticalCoordsMinor = CalculateVerticalRenderCoordinates(
                 MinorTickRelativeHeight, TickAlignment, ref tickAreaRect);
-
-            // Calculate vertical axis render coordinates for marker geometry
-            var y0 = (float)markerAreaRect.Top;
-            var y1 = (float)(markerAreaRect.Height * 0.667);
-            var y2 = (float)(markerAreaRect.Top + markerAreaRect.Height);
-
-            // Create marker geometry
-            using var path = new CanvasPathBuilder(sender.Device);
-            path.BeginFigure(5.0f, y0);
-            path.AddLine(5.0f, y1);
-            path.AddLine(0.0f, y2);
-            path.AddLine(-5.0f, y1);
-            path.AddLine(-5.0f, y0);
-            path.EndFigure(CanvasFigureLoop.Closed);
-            var markerGeometry = CanvasGeometry.CreatePath(path);
 
             // Optimize tick spacing
             _currentInterval = _intervals.First;
@@ -2837,27 +2934,90 @@ namespace JLR.Utility.WinUI.Controls
                 }
             }
 
-            // Draw active track segments
+            // Draw track area markers
             using (args.DrawingSession.CreateLayer(1.0f))
             {
                 // Calculate top coordinate for each track
                 var trackTopCoords = new List<double>();
-                if (TrackCount > 0)
+                if (Tracks.Count > 0)
                     trackTopCoords.Add(trackAreaRect.Top);
-                for (var i = 1; i < TrackCount; i++)
+                for (var i = 1; i < Tracks.Count; i++)
                 {
                     trackTopCoords.Add(trackTopCoords[i - 1] + TrackHeight + TrackSpacing);
                 }
 
-                // Find visible active track segments
+                // Draw track backgrounds
+                for (var i = 0; i < Tracks.Count; i++)
+                {
+                    args.DrawingSession.FillRectangle((float)trackAreaRect.Left, (float)trackTopCoords[i],
+                                                      (float)trackAreaRect.Width, (float)TrackHeight,
+                                                      _trackBackgroundBrush);
+                }
+
+                // Generate track label text
+                if (AreTrackNamesVisible)
+                {
+                    var trackLabelTextLayouts = new List<CanvasTextLayout>();
+                    double maxTrackLabelWidth = 0;
+
+                    using var trackLabelTextFormat = new CanvasTextFormat
+                    {
+                        FontFamily = FontFamily.Source,
+                        FontSize = (float)FontSize,
+                        FontStretch = FontStretch,
+                        FontStyle = FontStyle,
+                        FontWeight = FontWeight,
+                        Direction = CanvasTextDirection.LeftToRightThenTopToBottom,
+                        LastLineWrapping = false,
+                        LineSpacingMode = CanvasLineSpacingMode.Default,
+                        LineSpacing = 0,
+                        LineSpacingBaseline = 0,
+                        HorizontalAlignment = CanvasHorizontalAlignment.Left,
+                        VerticalAlignment = CanvasVerticalAlignment.Center,
+                        WordWrapping = CanvasWordWrapping.EmergencyBreak
+                    };
+
+                    for (var i = 0; i < Tracks.Count; i++)
+                    {
+                        trackLabelTextLayouts.Add(new CanvasTextLayout(sender.Device,
+                                                                       Tracks[i],
+                                                                       trackLabelTextFormat,
+                                                                       (float)trackAreaRect.Width,
+                                                                       (float)TrackHeight));
+
+                        if (trackLabelTextLayouts[i].DrawBounds.Width > maxTrackLabelWidth)
+                            maxTrackLabelWidth = trackLabelTextLayouts[i].DrawBounds.Width;
+                    }
+
+                    // Draw track label text
+                    for (var i = 0; i < Tracks.Count; i++)
+                    {
+                        args.DrawingSession.FillRectangle((float)trackAreaRect.Left, (float)trackTopCoords[i],
+                                                          (float)(maxTrackLabelWidth + 10), (float)TrackHeight,
+                                                          _trackLabelBackgroundBrush);
+
+                        args.DrawingSession.DrawTextLayout(trackLabelTextLayouts[i],
+                                                           (float)(maxTrackLabelWidth + 5 - trackLabelTextLayouts[i].DrawBounds.Width),
+                                                           (float)(trackTopCoords[i] + (TrackHeight / 2) - (trackLabelTextLayouts[i].DrawBounds.Height / 2)),
+                                                           _trackLabelForegroundBrush);
+                    }
+                }
+
+                // Find visible track segments
                 var visibleSegments = from clip in Markers
-                                      where clip.Duration > 0 &&
+                                      where !string.IsNullOrEmpty(clip.Group) &&
+                                            clip.Duration > 0 &&
                                             clip.Position < ZoomEnd &&
                                             clip.Position + clip.Duration > ZoomStart
                                       select clip;
 
                 foreach (var segment in visibleSegments)
                 {
+                    // Lookup marker style
+                    var style = segment == SelectedMarker
+                        ? MarkerStyleGroups[segment.Style].SelectedTimespanMarkerStyle
+                        : MarkerStyleGroups[segment.Style].TimespanMarkerStyle;
+
                     // Calculate rectangle where this segment will be drawn
                     var (x, width) = CalculateHorizontalRenderCoordinates(
                         segment.Position > ZoomStart ? segment.Position : ZoomStart,
@@ -2866,35 +3026,43 @@ namespace JLR.Utility.WinUI.Controls
                             : ZoomEnd,
                         ref trackAreaRect);
 
-                    var segmentRect = new Rect(x, trackTopCoords[segment.Group], width, TrackHeight);
-                    var brush = segment == SelectedMarker ? _selectedTrackItemSpanBrush : _trackItemSpanBrush;
+                    var segmentRect = new Rect(x, trackTopCoords[Tracks.IndexOf(segment.Group)], width, TrackHeight);
 
                     // Draw segment rectangle
-                    args.DrawingSession.FillRectangle(segmentRect, brush);
+                    args.DrawingSession.FillRectangle(segmentRect, style.SpanFillBrush);
 
-                    // Draw marker line(s)
-                    if (segment.Position >= ZoomStart && segment.Position <= ZoomEnd)
+                    if (style.SpanStrokeThickness > 0)
+                        args.DrawingSession.DrawRectangle(segmentRect,
+                                                          style.SpanStrokeBrush,
+                                                          (float)style.SpanStrokeThickness,
+                                                          style.SpanStrokeStyle);
+
+                    // Draw segment line(s)
+                    if (segment.Position >= ZoomStart &&
+                        segment.Position <= ZoomEnd &&
+                        style.SpanStartTailStrokeThickness > 0)
                     {
                         args.DrawingSession.DrawLine((float)segmentRect.Left, (float)tickAreaRect.Top,
                                                      (float)segmentRect.Left, (float)segmentRect.Top,
-                                                     brush,
-                                                     (float)MarkerLineThickness,
-                                                     MarkerLineStyle);
+                                                     style.SpanStartTailStrokeBrush,
+                                                     (float)style.SpanStartTailStrokeThickness,
+                                                     style.SpanStartTailStrokeStyle);
                     }
 
                     if (segment == SelectedMarker &&
                         segment.Position + segment.Duration >= ZoomStart &&
-                        segment.Position + segment.Duration <= ZoomEnd)
+                        segment.Position + segment.Duration <= ZoomEnd &&
+                        style.SpanEndTailStrokeThickness > 0)
                     {
                         args.DrawingSession.DrawLine((float)segmentRect.Right, (float)tickAreaRect.Top,
                                                      (float)segmentRect.Right, (float)segmentRect.Top,
-                                                     brush,
-                                                     (float)MarkerLineThickness,
-                                                     MarkerLineStyle);
+                                                     style.SpanEndTailStrokeBrush,
+                                                     (float)style.SpanEndTailStrokeThickness,
+                                                     style.SpanEndTailStrokeStyle);
                     }
 
                     // Generate text label for this segment
-                    var textFormat = new CanvasTextFormat
+                    using var segmentTextFormat = new CanvasTextFormat
                     {
                         FontFamily = FontFamily.Source,
                         FontSize = (float)FontSize,
@@ -2911,19 +3079,28 @@ namespace JLR.Utility.WinUI.Controls
                         WordWrapping = CanvasWordWrapping.EmergencyBreak
                     };
 
-                    var textLayout = new CanvasTextLayout(sender.Device,
-                                                          segment.Name,
-                                                          textFormat,
-                                                          (float)segmentRect.Width,
-                                                          (float)segmentRect.Height);
+                    using var textLayout = new CanvasTextLayout(sender.Device,
+                                                                segment.Name,
+                                                                segmentTextFormat,
+                                                                (float)segmentRect.Width,
+                                                                (float)segmentRect.Height);
 
                     textLayout.LineSpacingBaseline = (float)textLayout.DrawBounds.Height;
                     textLayout.LineSpacing = textLayout.LineSpacingBaseline + 1;
 
-                    // Generate alternate text label for this segment
-                    if (AlternateFontFamily != null && AlternateFontSize > 0)
+                    // Try to draw segment text using primary font
+                    if (textLayout.DrawBounds.Height < segmentRect.Height &&
+                        textLayout.DrawBounds.Width < segmentRect.Width)
                     {
-                        var textFormatAlt = new CanvasTextFormat
+                        args.DrawingSession.DrawTextLayout(
+                            textLayout,
+                            (float)x,
+                            (float)(segmentRect.Bottom - (segmentRect.Height / 2) - (textLayout.LayoutBounds.Height / 2)),
+                            style.SpanLabelBrush);
+                    }
+                    else if (AlternateFontFamily != null && AlternateFontSize > 0)
+                    {
+                        using var textFormatAlt = new CanvasTextFormat
                         {
                             FontFamily = AlternateFontFamily.Source,
                             FontSize = (float)AlternateFontSize,
@@ -2940,48 +3117,78 @@ namespace JLR.Utility.WinUI.Controls
                             WordWrapping = CanvasWordWrapping.EmergencyBreak
                         };
 
-                        var textLayoutAlt = new CanvasTextLayout(sender.Device,
-                                                                 segment.Name,
-                                                                 textFormatAlt,
-                                                                 (float)segmentRect.Width,
-                                                                 (float)segmentRect.Height);
+                        using var textLayoutAlt = new CanvasTextLayout(sender.Device,
+                                                                       segment.Name,
+                                                                       textFormatAlt,
+                                                                       (float)segmentRect.Width,
+                                                                       (float)segmentRect.Height);
 
                         textLayoutAlt.LineSpacingBaseline = (float)textLayoutAlt.DrawBounds.Height;
                         textLayoutAlt.LineSpacing = textLayoutAlt.LineSpacingBaseline + 1;
-                    }
 
-                    if (textLayout.DrawBounds.Height < segmentRect.Height && textLayout.DrawBounds.Width < segmentRect.Width)
-                    {
-                        args.DrawingSession.DrawTextLayout(
-                            textLayout,
-                            (float)x,
-                            (float)(segmentRect.Bottom - (segmentRect.Height / 2) - (textLayout.LayoutBounds.Height / 2)),
-                            SelectedMarker == segment ? _selectedTrackItemLabelBrush : _trackItemLabelBrush);
+                        // Try to draw segment text using alternate font
+                        if (textLayoutAlt.DrawBounds.Height < segmentRect.Height &&
+                            textLayoutAlt.DrawBounds.Width < segmentRect.Width)
+                        {
+                            args.DrawingSession.DrawTextLayout(
+                                textLayoutAlt,
+                                (float)x,
+                                (float)(segmentRect.Bottom - (segmentRect.Height / 2) - (textLayoutAlt.LayoutBounds.Height / 2)),
+                                style.SpanLabelBrush);
+                        }
                     }
+                }
+
+                // Find visible track markers
+                var visibleMarkers = from clip in Markers
+                                     where !string.IsNullOrEmpty(clip.Group) &&
+                                           clip.Duration == 0 &&
+                                           clip.Position >= ZoomStart &&
+                                           clip.Position <= ZoomEnd
+                                     select clip;
+
+                // Draw visible track markers
+                foreach (var marker in visibleMarkers)
+                {
+                    var style = marker == SelectedMarker
+                        ? MarkerStyleGroups[marker.Style].SelectedStyle
+                        : MarkerStyleGroups[marker.Style].Style;
+
+                    var x = CalculateHorizontalRenderCoordinates(marker.Position, marker.Position, ref tickAreaRect).x;
+                    var y = (float)(trackTopCoords[Tracks.IndexOf(marker.Group)] + ((TrackHeight - style.RenderTarget.Bounds.Height) / 2));
+
+                    args.DrawingSession.DrawImage(style.RenderTarget, (float)(x - style.RenderTarget.Bounds.Width / 2), y);
+                    args.DrawingSession.DrawLine((float)x, (float)tickAreaRect.Top,
+                                                 (float)x, y,
+                                                 style.TailStrokeBrush,
+                                                 (float)style.TailStrokeThickness,
+                                                 style.TailStrokeStyle);
                 }
             }
 
-            // Draw markers
+            // Draw marker area markers
             using (args.DrawingSession.CreateLayer(1.0f))
             {
-                foreach (var marker in Markers.Where(x => x.Duration == 0))
+                foreach (var marker in Markers.Where(x => string.IsNullOrEmpty(x.Group) && x.Duration == 0))
                 {
                     if (marker.Position < ZoomStart || marker.Position > ZoomEnd)
                         continue;
 
-                    var x = (float)CalculateHorizontalRenderCoordinates(marker.Position, marker.Position, ref tickAreaRect).x;
-                    var brush = marker == SelectedMarker ? _selectedMarkerBrush : _markerBrush;
-                    args.DrawingSession.FillGeometry(markerGeometry, x, (float)markerAreaRect.Top, brush);
-                    args.DrawingSession.DrawLine(x, (float)tickAreaRect.Top,
-                                                 x, (float)trackAreaRect.Bottom,
-                                                 brush,
-                                                 (float)MarkerLineThickness,
-                                                 MarkerLineStyle);
+                    var style = marker == SelectedMarker
+                        ? MarkerStyleGroups[marker.Style].SelectedStyle
+                        : MarkerStyleGroups[marker.Style].Style;
+
+                    var x = CalculateHorizontalRenderCoordinates(marker.Position, marker.Position, ref tickAreaRect).x;
+                    var y = (float)(markerAreaRect.Top + (markerAreaRect.Height - style.RenderTarget.Bounds.Height));
+
+                    args.DrawingSession.DrawImage(style.RenderTarget, (float)(x - style.RenderTarget.Bounds.Width / 2), y);
+                    args.DrawingSession.DrawLine((float)x, (float)style.RenderTarget.Bounds.Bottom,
+                                                 (float)x, (float)tickAreaRect.Bottom,
+                                                 style.TailStrokeBrush,
+                                                 (float)style.TailStrokeThickness,
+                                                 style.TailStrokeStyle);
                 }
             }
-
-            // Make sure everything is disposed at this point
-            markerGeometry.Dispose();
 
             // Local function to add a major tick to its list and advance to the next
             void AddMajorTick()
@@ -3021,12 +3228,12 @@ namespace JLR.Utility.WinUI.Controls
         {
             get
             {
-                var trackBarHeight = TrackCount > 0 ? (TrackHeight * TrackCount) + ((TrackCount - 1) * TrackSpacing) : 0;
+                var trackBarHeight = Tracks.Count > 0 ? (TrackHeight * Tracks.Count) + ((Tracks.Count - 1) * TrackSpacing) : 0;
                 return new Rect(0, _mainPanel.ActualHeight - trackBarHeight, _mainPanel.ActualWidth, trackBarHeight);
             }
         }
 
-        private Rect MarkerAreaRect => new(0, 0, _mainPanel.ActualWidth, MarkerHeight);
+        private Rect MarkerAreaRect => new(0, 0, _mainPanel.ActualWidth, MarkerBarHeight);
 
         private Rect TickAreaRect => new(new Point(0, MarkerAreaRect.Bottom),
                                          new Point(_mainPanel.ActualWidth, TrackAreaRect.Top));
@@ -3263,6 +3470,21 @@ namespace JLR.Utility.WinUI.Controls
                                            right > 0 ? right : 0,
                                            _zoomPanel.Margin.Bottom);
                 _zoomPanel.SetValue(MarginProperty, margin);
+            }
+        }
+
+        private void ForceHeightUpdateForTracks()
+        {
+            var delta = Tracks.Count - _prevTrackCount;
+            if (AutoAdjustHeightForTracks &&
+                delta != 0 &&
+                ActualHeight != 0)
+            {
+                if (double.IsNaN(Height))
+                    Height = ActualHeight;
+
+                Height += delta * (TrackHeight + TrackSpacing);
+                _prevTrackCount = Tracks.Count;
             }
         }
 
