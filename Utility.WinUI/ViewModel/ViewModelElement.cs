@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection.PortableExecutable;
 using System.Threading.Tasks;
 using System.Xml;
 using System.Xml.Schema;
@@ -235,15 +236,25 @@ namespace JLR.Utility.WinUI.ViewModel
                     "The current XML element is either empty or invalid");
             }
 
-            if (!DeserializationInfo.ContainsKey(reader.Name))
-            {
-                throw new InvalidOperationException(
-                    $"The current XML element \"{reader.Name}\" is not recognized and/or cannot be instantiated");
-            }
-
-            var element = SerializationInfo[DeserializationInfo[reader.Name]].Constructor();
+            var element = InstantiateObjectFromXmlTagName(reader.Name);
             element.ReadXml(reader);
             return element;
+        }
+
+        public static string GetXmlTagForType(Type type)
+        {
+            return SerializationInfo.ContainsKey(type)
+                ? SerializationInfo[type].XmlName
+                : null;
+        }
+
+        public static ViewModelElement InstantiateObjectFromXmlTagName(string xmlName)
+        {
+            if (!DeserializationInfo.ContainsKey(xmlName))
+                throw new ArgumentException(
+                    $"{xmlName} does not represent a known ViewModelElement-derived type");
+
+            return SerializationInfo[DeserializationInfo[xmlName]].Constructor();
         }
         #endregion
 
@@ -270,12 +281,15 @@ namespace JLR.Utility.WinUI.ViewModel
         /// </summary>
         /// <param name="propertyName">The name of the property to parse.</param>
         /// <param name="content">The property's content as read from XML.</param>
+        /// <param name="args">A list of optional parameter strings.</param>
         /// <remarks>
         /// Classes that override this function are only responsible for parsing
         /// the content passed to it. Do not set the property directly.
         /// Simply return the fully constructed property value.
         /// </remarks>
-        protected virtual object CustomPropertyParser(string propertyName, string content)
+        protected virtual object CustomPropertyParser(string propertyName,
+                                                      string content,
+                                                      params string[] args)
         {
             return null;
         }
@@ -290,6 +304,7 @@ namespace JLR.Utility.WinUI.ViewModel
         /// The <b><u>XML name</u></b> of the property to be written.
         /// </param>
         /// <param name="value">The object to be written.</param>
+        /// <param name="args">A list of optional parameter strings.</param>
         /// <returns>
         /// A string representation of the object.
         /// </returns>
@@ -297,7 +312,9 @@ namespace JLR.Utility.WinUI.ViewModel
         /// Use this method when a property is not a <see cref="ViewModelElement"/>,
         /// and <see cref="object.ToString"/> does not adequately represent the property.
         /// </remarks>
-        protected virtual string CustomPropertyWriter(string propertyName, object value)
+        protected virtual string CustomPropertyWriter(string propertyName,
+                                                      object value,
+                                                      params string[] args)
         {
             return null;
         }
@@ -313,10 +330,13 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <param name="reader">
         /// The <see cref="XmlReader"/> currently pointing to the start tag of the object to be read.
         /// </param>
+        /// <param name="args">A list of optional parameter strings.</param>
         /// <returns>
         /// The fully constructed object which will be assigned to <paramref name="propertyName"/>.
         /// </returns>
-        protected virtual object HijackDeserialization(string propertyName, ref XmlReader reader)
+        protected virtual object HijackDeserialization(string propertyName,
+                                                       ref XmlReader reader,
+                                                       params string[] args)
         {
             return null;
         }
@@ -333,7 +353,11 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <param name="writer">
         /// The <see cref="XmlWriter"/> with which to write the object's contents.
         /// </param>
-        protected virtual void HijackSerialization(string propertyName, object value, ref XmlWriter writer) { }
+        /// <param name="args">A list of optional parameter strings.</param>
+        protected virtual void HijackSerialization(string propertyName,
+                                                   object value,
+                                                   ref XmlWriter writer,
+                                                   params string[] args) { }
         #endregion
 
         #region Interface Implementation (IXmlSerializable)
@@ -409,17 +433,21 @@ namespace JLR.Utility.WinUI.ViewModel
                         object value;
                         if (collectionInfo.HijackSerdes)
                         {
-                            value = HijackDeserialization(collectionInfo.XmlChildName, ref reader);
+                            value = HijackDeserialization(collectionInfo.PropertyName,
+                                                          ref reader,
+                                                          collectionInfo.XmlChildName);
                         }
                         else if (collectionInfo.ChildType.IsAssignableTo(typeof(ViewModelElement)))
                         {
-                            var element = SerializationInfo[DeserializationInfo[elementName]].Constructor();
+                            var element = InstantiateObjectFromXmlTagName(elementName);
                             element.ReadXml(reader);
                             value = element;
                         }
                         else if (collectionInfo.UseCustomParser)
                         {
-                            value = CustomPropertyParser(collectionInfo.XmlChildName, reader.ReadElementContentAsString());
+                            value = CustomPropertyParser(collectionInfo.PropertyName,
+                                                         reader.ReadElementContentAsString(),
+                                                         collectionInfo.XmlChildName);
                         }
                         else
                         {
@@ -474,7 +502,7 @@ namespace JLR.Utility.WinUI.ViewModel
                     }
                     else if (propertyInfo.PropertyType.IsAssignableTo(typeof(ViewModelElement)))
                     {
-                        var element = SerializationInfo[DeserializationInfo[elementName]].Constructor();
+                        var element = InstantiateObjectFromXmlTagName(elementName);
                         element.ReadXml(reader);
                         value = element;
                     }
@@ -571,7 +599,7 @@ namespace JLR.Utility.WinUI.ViewModel
                 {
                     if (kvp.Value.HijackSerdes)
                     {
-                        HijackSerialization(kvp.Value.XmlChildName, item, ref writer);
+                        HijackSerialization(kvp.Value.PropertyName, item, ref writer, kvp.Value.XmlChildName);
                     }
                     else if (item is ViewModelElement vme)
                     {
@@ -580,7 +608,7 @@ namespace JLR.Utility.WinUI.ViewModel
                     else
                     {
                         var itemString = kvp.Value.UseCustomWriter
-                            ? CustomPropertyWriter(kvp.Value.XmlChildName, item)
+                            ? CustomPropertyWriter(kvp.Value.PropertyName, item, kvp.Value.XmlChildName)
                             : item?.ToString();
 
                         if (!string.IsNullOrEmpty(itemString))
@@ -590,7 +618,7 @@ namespace JLR.Utility.WinUI.ViewModel
 
                 writer.WriteEndElement();
             }
-            
+
             // Write end tag
             writer.WriteEndElement();
         }

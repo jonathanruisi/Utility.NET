@@ -273,6 +273,10 @@ namespace JLR.Utility.WinUI.Controls
             get => new(_selections);
         }
 
+        /// <summary>
+        /// Gets the collection of marker style groups for
+        /// this instance of <see cref="MediaTimeline"/>.
+        /// </summary>
         public Dictionary<string, MarkerStyleGroup> MarkerStyleGroups { get; }
         #endregion
 
