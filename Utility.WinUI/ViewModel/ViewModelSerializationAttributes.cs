@@ -11,7 +11,7 @@ namespace JLR.Utility.WinUI.ViewModel
     /// Customizes the serialization and deserialization of a
     /// <see cref="ViewModelElement"/> to/from XML.
     /// </summary>
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     public class ViewModelTypeAttribute : Attribute
     {
         /// <summary>
