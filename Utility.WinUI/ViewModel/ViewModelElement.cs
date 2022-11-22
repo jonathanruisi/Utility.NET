@@ -374,7 +374,7 @@ namespace JLR.Utility.WinUI.ViewModel
 
             // Read start tag and return if this element is empty
             reader.MoveToElement();
-            var isEmpty = reader.IsEmptyElement;
+            var isEmpty = reader.IsEmptyElement && !reader.HasAttributes;
             var name = reader.Name;
             if (isEmpty)
             {
@@ -417,7 +417,7 @@ namespace JLR.Utility.WinUI.ViewModel
                 var elementName = reader.Name;
 
                 // Element is empty, advance to the next XML node
-                if (reader.IsEmptyElement)
+                if (reader.IsEmptyElement && !reader.HasAttributes)
                 {
                     reader.ReadStartElement();
                     continue;
