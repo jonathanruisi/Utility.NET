@@ -64,12 +64,18 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <returns>An initialized <see cref="ViewModelSerializationInfo"/> object.</returns>
         public static ViewModelSerializationInfo Create(Type type)
         {
-            var classAttribute = (ViewModelTypeAttribute)Attribute.GetCustomAttribute(
+            var classAttributes = (ViewModelTypeAttribute[])Attribute.GetCustomAttributes(
                 type, typeof(ViewModelTypeAttribute));
+
+            var propertyOverrides = (ViewModelPropertyOverrideAttribute[])Attribute.GetCustomAttributes(
+                type, typeof(ViewModelPropertyOverrideAttribute));
+
+            var collectionOverrides = (ViewModelCollectionOverrideAttribute[])Attribute.GetCustomAttributes(
+                type, typeof(ViewModelCollectionOverrideAttribute));
 
             var result = new ViewModelSerializationInfo
             {
-                XmlName = classAttribute.XmlName,
+                XmlName = classAttributes[0].XmlName,
                 Constructor = (Func<ViewModelElement>)type.Constructor()
             };
 
@@ -84,20 +90,28 @@ namespace JLR.Utility.WinUI.ViewModel
 
                 if (propertyAttribute is ViewModelCollectionAttribute collectionAttribute)
                 {
-                    result.MemberCollections.Add(collectionAttribute.XmlName, new ViewModelSerializationCollectionInfo
+                    var ca = collectionOverrides.Any(x => x.CollectionToOverride == property.Name)
+                        ? collectionOverrides.First(x => x.CollectionToOverride == property.Name)
+                        : collectionAttribute;
+
+                    result.MemberCollections.Add(ca.XmlName, new ViewModelSerializationCollectionInfo
                     {
                         PropertyName = property.Name,
                         Getter = (Func<ViewModelElement, ICollection>)property.PropertyGetter<ICollection>(),
-                        XmlChildName = collectionAttribute.XmlChildName,
+                        XmlChildName = ca.XmlChildName,
                         ChildType = property.PropertyType.GetGenericArguments().First(),
-                        UseCustomParser = collectionAttribute.UseCustomParser,
-                        UseCustomWriter = collectionAttribute.UseCustomWriter,
-                        HijackSerdes = collectionAttribute.HijackSerdes
+                        UseCustomParser = ca.UseCustomParser,
+                        UseCustomWriter = ca.UseCustomWriter,
+                        HijackSerdes = ca.HijackSerdes
                     });
                 }
                 else
                 {
-                    var xmlName = propertyAttribute.XmlName;
+                    var pa = propertyOverrides.Any(x => x.PropertyToOverride == property.Name)
+                        ? propertyOverrides.First(x => x.PropertyToOverride == property.Name)
+                        : propertyAttribute;
+
+                    var xmlName = pa.XmlName;
 
                     // For properties of type ViewModelElement, make sure they use the
                     // XmlName defined in that class' XmlTypeAttribute.
@@ -112,12 +126,12 @@ namespace JLR.Utility.WinUI.ViewModel
                     {
                         PropertyName = property.Name,
                         PropertyType = property.PropertyType,
-                        TargetNodeType = propertyAttribute.TargetNodeType,
+                        TargetNodeType = pa.TargetNodeType,
                         Getter = (Func<ViewModelElement, object>)property.PropertyGetter<object>(),
                         Setter = (Action<ViewModelElement, object>)property.PropertySetter(),
-                        UseCustomParser = propertyAttribute.UseCustomParser,
-                        UseCustomWriter = propertyAttribute.UseCustomWriter,
-                        HijackSerdes = propertyAttribute.HijackSerdes
+                        UseCustomParser = pa.UseCustomParser,
+                        UseCustomWriter = pa.UseCustomWriter,
+                        HijackSerdes = pa.HijackSerdes
                     });
                 }
             }

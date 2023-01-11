@@ -137,7 +137,7 @@ namespace JLR.Utility.WinUI.ViewModel
     /// as well as the possible XML names of items within the collection.
     /// </summary>
     [AttributeUsage(AttributeTargets.Property, AllowMultiple = false, Inherited = true)]
-    public sealed class ViewModelCollectionAttribute : ViewModelPropertyAttribute
+    public class ViewModelCollectionAttribute : ViewModelPropertyAttribute
     {
         /// <summary>
         /// Gets the XML name of items within the collection.
@@ -185,6 +185,40 @@ namespace JLR.Utility.WinUI.ViewModel
             : base(xmlName, XmlNodeType.Element, useCustomParser, useCustomWriter, hijackSerdes)
         {
             XmlChildName = xmlChildName;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+    public sealed class ViewModelPropertyOverrideAttribute : ViewModelPropertyAttribute
+    {
+        public string PropertyToOverride { get; }
+
+        public ViewModelPropertyOverrideAttribute(string propertyToOverride,
+                                                  string xmlName,
+                                                  XmlNodeType targetNodeType,
+                                                  bool useCustomParser = false,
+                                                  bool useCustomWriter = false,
+                                                  bool hijackSerdes = false)
+            : base(xmlName, targetNodeType, useCustomParser, useCustomWriter, hijackSerdes)
+        {
+            PropertyToOverride = propertyToOverride;
+        }
+    }
+
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = true, Inherited = true)]
+    public sealed class ViewModelCollectionOverrideAttribute : ViewModelCollectionAttribute
+    {
+        public string CollectionToOverride { get; }
+
+        public ViewModelCollectionOverrideAttribute(string collectionToOverride,
+                                                    string xmlName,
+                                                    string xmlChildName = null,
+                                                    bool useCustomParser = false,
+                                                    bool useCustomWriter = false,
+                                                    bool hijackSerdes = false)
+            : base(xmlName, xmlChildName, useCustomParser, useCustomWriter, hijackSerdes)
+        {
+            CollectionToOverride = collectionToOverride;
         }
     }
 }

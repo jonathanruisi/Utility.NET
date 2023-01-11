@@ -157,6 +157,10 @@ namespace JLR.Utility.WinUI
             }
         }
 
+        /// <summary>
+        /// Collapses all currently expanded <see cref="TreeViewNode"/>s
+        /// in this <see cref="TreeView"/> instance.
+        /// </summary>
         public static void CollapseAllNodes(this TreeView treeView)
         {
             var expandedNodes = new List<TreeViewNode>();
@@ -176,6 +180,32 @@ namespace JLR.Utility.WinUI
             {
                 node.IsExpanded = false;
             }
+        }
+
+        public static IEnumerable<TreeViewNode> GetSelectedNodes(this TreeView treeView)
+        {
+            if (treeView.SelectionMode == TreeViewSelectionMode.Single)
+                yield return treeView.SelectedNode;
+            else if (treeView.SelectionMode == TreeViewSelectionMode.Multiple)
+            {
+                var enumerator = treeView.SelectedNodes.GetEnumerator();
+                while (enumerator.MoveNext())
+                {
+                    yield return enumerator.Current;
+                }
+            }
+        }
+
+        public static void ClearSelectedNodes(this TreeView treeView)
+        {
+            treeView.SelectedNode = null;
+            treeView.SelectedNodes.Clear();
+        }
+
+        public static void ClearSelectedItems(this ListView listView)
+        {
+            listView.SelectedItem = null;
+            listView.SelectedItems.Clear();
         }
         #endregion
 
