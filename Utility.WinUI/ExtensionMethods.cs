@@ -201,6 +201,12 @@ namespace JLR.Utility.WinUI
             treeView.SelectedNode = null;
             treeView.SelectedNodes.Clear();
         }
+
+        public static void ClearSelectedItems(this ListView listView)
+        {
+            listView.SelectedItem = null;
+            listView.SelectedItems.Clear();
+        }
         #endregion
 
         #region Windows.Foundation.Rect
