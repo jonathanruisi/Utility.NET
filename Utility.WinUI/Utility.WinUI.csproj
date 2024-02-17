@@ -19,7 +19,7 @@
       <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
       <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.1.1" />
       <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.22621.2428" />
-      <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.4.231219000" />
+      <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.4.240211001" />
       <PackageReference Include="PInvoke.User32" Version="0.7.124" />
   </ItemGroup>
 
