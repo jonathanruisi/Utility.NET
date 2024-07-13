@@ -225,5 +225,32 @@ namespace JLR.Utility.WinUI
             return string.Empty;
         }
         #endregion
+
+        #region Windows.UI.Color
+        public static double CalculateLuminance(this Windows.UI.Color color)
+        {
+            var vR = color.R / 255.0;
+            var vG = color.G / 255.0;
+            var vB = color.B / 255.0;
+
+            return 0.2126 * sRgbToLinear(vR) + 0.7152 * sRgbToLinear(vG) + 0.0722 * sRgbToLinear(vB);
+
+            static double sRgbToLinear(double channelValue)
+            {
+                return channelValue <= 0.04045
+                    ? channelValue / 12.92
+                    : Math.Pow(((channelValue + 0.055) / 1.055), 2.4);
+            }
+        }
+
+        public static int CalculatePerceivedLightness(this Windows.UI.Color color)
+        {
+            var luminance = CalculateLuminance(color);
+            var lStar = luminance <= 0.008856
+                ? luminance * 903.3
+                : Math.Pow(luminance, 1.0 / 3.0) * 116 - 16;
+            return (int)lStar;
+        }
+        #endregion
     }
 }
