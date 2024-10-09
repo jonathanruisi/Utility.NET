@@ -3499,9 +3499,9 @@ namespace JLR.Utility.WinUI.Controls
                 case FollowMode.Advance:
                     var currentWindow = ZoomEnd - ZoomStart;
                     if (Position > ZoomEnd)
-                        OffsetVisibleWindow(currentWindow);
+                        OffsetVisibleWindow(currentWindow / 2);
                     else if (Position < ZoomStart)
-                        OffsetVisibleWindow(decimal.Negate(currentWindow));
+                        OffsetVisibleWindow(decimal.Negate(currentWindow / 2));
                     break;
 
                 case FollowMode.Scroll:

@@ -1,11 +1,13 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-    <TargetFramework>net6.0-windows10.0.22621.0</TargetFramework>
+	<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
+	<WindowsSdkPackageVersion>10.0.22621.38</WindowsSdkPackageVersion>
     <RootNamespace>JLR.Utility.WinUI</RootNamespace>
-    <RuntimeIdentifiers>win10-x86;win10-x64;win10-arm64</RuntimeIdentifiers>
+    <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
     <SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
     <Platforms>AnyCPU;x64</Platforms>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Controls\DebugLogControl.xaml" />
@@ -15,11 +17,11 @@
   </ItemGroup>
 
   <ItemGroup>
-      <PackageReference Include="CommunityToolkit.Mvvm" Version="8.2.2" />
+      <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
       <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
       <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.2.0" />
-      <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1" />
-      <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.5.240627000" />
+      <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
+      <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.240923002" />
       <PackageReference Include="PInvoke.User32" Version="0.7.124" />
   </ItemGroup>
 
