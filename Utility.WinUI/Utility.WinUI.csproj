@@ -1,13 +1,24 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
-	<TargetFramework>net8.0-windows10.0.22621.0</TargetFramework>
-	<WindowsSdkPackageVersion>10.0.22621.38</WindowsSdkPackageVersion>
+	<TargetFramework>net9.0-windows10.0.26100.0</TargetFramework>
     <RootNamespace>JLR.Utility.WinUI</RootNamespace>
     <RuntimeIdentifiers>win-x86;win-x64;win-arm64</RuntimeIdentifiers>
     <UseWinUI>true</UseWinUI>
-    <SupportedOSPlatformVersion>10.0.22621.0</SupportedOSPlatformVersion>
+    <SupportedOSPlatformVersion>10.0.26100.0</SupportedOSPlatformVersion>
     <Platforms>AnyCPU;x64</Platforms>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+    <IsAotCompatible>False</IsAotCompatible>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <IsAotCompatible>False</IsAotCompatible>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+    <IsAotCompatible>False</IsAotCompatible>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <IsAotCompatible>False</IsAotCompatible>
   </PropertyGroup>
   <ItemGroup>
     <None Remove="Controls\DebugLogControl.xaml" />
@@ -17,11 +28,11 @@
   </ItemGroup>
 
   <ItemGroup>
-      <PackageReference Include="CommunityToolkit.Mvvm" Version="8.3.2" />
+      <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
       <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.1.2" />
-      <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.2.0" />
+      <PackageReference Include="Microsoft.Graphics.Win2D" Version="1.3.1" />
       <PackageReference Include="Microsoft.Windows.SDK.BuildTools" Version="10.0.26100.1742" />
-      <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.240923002" />
+      <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.6.241114003" />
       <PackageReference Include="PInvoke.User32" Version="0.7.124" />
   </ItemGroup>
 
