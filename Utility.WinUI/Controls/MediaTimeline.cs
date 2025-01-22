@@ -6,7 +6,6 @@ using System.Linq;
 
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Brushes;
-using Microsoft.Graphics.Canvas.Geometry;
 using Microsoft.Graphics.Canvas.Text;
 using Microsoft.Graphics.Canvas.UI;
 using Microsoft.Graphics.Canvas.UI.Xaml;
@@ -16,10 +15,12 @@ using Microsoft.UI.Text;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
-using Microsoft.UI.Xaml.Media.Animation;
 
 using Windows.Foundation;
 using Windows.UI.Text;
+
+using Windows.Win32;
+using Windows.Win32.UI.Input.KeyboardAndMouse;
 
 namespace JLR.Utility.WinUI.Controls
 {
@@ -3253,10 +3254,10 @@ namespace JLR.Utility.WinUI.Controls
                     SnapInterval.MajorTick)) - MajorTickThickness;
 
         private static bool IsCtrlKeyPressed =>
-            PInvoke.User32.GetKeyState((int)PInvoke.User32.VirtualKey.VK_CONTROL) < 0;
+            PInvoke.GetKeyState((int)VIRTUAL_KEY.VK_CONTROL) < 0;
 
         private static bool IsShiftKeyPressed =>
-            PInvoke.User32.GetKeyState((int)PInvoke.User32.VirtualKey.VK_SHIFT) < 0;
+            PInvoke.GetKeyState((int)VIRTUAL_KEY.VK_SHIFT) < 0;
         #endregion
 
         #region Private Methods
