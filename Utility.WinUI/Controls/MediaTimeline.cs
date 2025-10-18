@@ -1742,11 +1742,11 @@ namespace JLR.Utility.WinUI.Controls
             SelectionEnd = marker.Position + marker.Duration;
         }
 
-        public T GetClosestMarkerBeforeCurrentPosition<T>(decimal minDistance = 0.0M)
+        public T GetClosestMarkerAtOrBeforeCurrentPosition<T>(decimal minDistance = 0.0M)
             where T : class, ITimelineMarker
         {
             var markers = from marker in Markers.OfType<T>()
-                          where Position > marker.Position + minDistance
+                          where Position >= marker.Position + minDistance
                           orderby Position - marker.Position
                           select marker;
 
