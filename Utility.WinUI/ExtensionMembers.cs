@@ -20,8 +20,27 @@ using WinRT.Interop;
 
 namespace JLR.Utility.WinUI
 {
-    public static class ExtensionMethods
+    public static class ExtensionMembers
     {
+        #region System
+        /// <summary>Checks if the specified value is of a numeric type.</summary>
+        extension(object value)
+        {
+            public bool IsNumber =>
+                value is sbyte ||
+                value is byte ||
+                value is short ||
+                value is ushort ||
+                value is int ||
+                value is uint ||
+                value is long ||
+                value is ulong ||
+                value is float ||
+                value is double ||
+                value is decimal;
+        }
+        #endregion
+
         #region Microsoft.UI.Xaml.Window
         public static AppWindow GetAppWindowForCurrentWindow(this Window window)
         {
