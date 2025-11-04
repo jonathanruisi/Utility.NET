@@ -118,7 +118,7 @@ namespace JLR.Utility.WinUI.ViewModel
             }
         }
 
-        protected ViewModelElement() : base(StrongReferenceMessenger.Default)
+        protected ViewModelElement() : base(WeakReferenceMessenger.Default)
         {
             _name = string.Empty;
             _isSelected = false;
