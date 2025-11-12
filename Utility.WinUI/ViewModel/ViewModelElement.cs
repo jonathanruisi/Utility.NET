@@ -27,7 +27,7 @@ namespace JLR.Utility.WinUI.ViewModel
     /// fully automatic XML serialization and deserialization
     /// of itself and all derived classes.
     /// </summary>
-    public abstract class ViewModelElement : ObservableRecipient, IXmlSerializable
+    public abstract class ViewModelElement : ObservableRecipient, IViewModelElement, IViewModelFlags, IXmlSerializable
     {
         #region Fields
         private string _name;
@@ -41,7 +41,7 @@ namespace JLR.Utility.WinUI.ViewModel
 
         #region Properties
         /// <summary>
-        /// Gets or sets the name of the element.
+        /// Gets or sets the name of this element.
         /// </summary>
         [ViewModelProperty(nameof(Name), XmlNodeType.Attribute)]
         public string Name
