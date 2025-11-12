@@ -32,6 +32,7 @@ namespace JLR.Utility.WinUI.ViewModel
         #region Fields
         private string _name;
         private bool _isSelected;
+        private ulong _flags;
         protected internal ViewModelNode _parent;
         private static readonly bool IsSubclassInfoLoaded = false;
         private static readonly Dictionary<Type, ViewModelSerializationInfo> SerializationInfo;
@@ -57,6 +58,20 @@ namespace JLR.Utility.WinUI.ViewModel
         {
             get => _isSelected;
             set => SetProperty(ref _isSelected, value, true);
+        }
+
+        /// <summary>
+        /// Gets or sets the value of a 64-bit mask.
+        /// </summary>
+        /// <remarks>
+        /// From the perspective of <see cref="ViewModelElement"/>, the meaning of each flag bit is arbitrary.
+        /// It is up to derived classes to define the purpose of each flag bit.
+        /// </remarks>
+        [ViewModelProperty(nameof(Flags), XmlNodeType.Element)]
+        public ulong Flags
+        {
+            get => _flags;
+            set => SetProperty(ref _flags, value);
         }
 
         /// <summary>
@@ -102,8 +117,8 @@ namespace JLR.Utility.WinUI.ViewModel
         #region Constructors
         static ViewModelElement()
         {
-            SerializationInfo ??= new Dictionary<Type, ViewModelSerializationInfo>();
-            DeserializationInfo ??= new Dictionary<string, Type>();
+            SerializationInfo ??= [];
+            DeserializationInfo ??= [];
 
             if (!IsSubclassInfoLoaded)
             {
@@ -118,15 +133,69 @@ namespace JLR.Utility.WinUI.ViewModel
             }
         }
 
-        protected ViewModelElement() : base(WeakReferenceMessenger.Default)
+        protected ViewModelElement() : base(StrongReferenceMessenger.Default)
         {
             _name = string.Empty;
             _isSelected = false;
+            _flags = 0;
             WriteEmptyCollectionElements = false;
         }
         #endregion
 
         #region Public Methods
+        /// <summary>
+        /// Returns <b><c>true</c></b> if <paramref name="flag"/> is set; otherwise, <b><c>false</c></b>.
+        /// </summary>
+        /// <param name="flag">The specific flag to check.</param>
+        /// <returns></returns>
+        public bool CheckFlag(int flag)
+        {
+            flag--;
+            if (flag is < 0 or > 63)
+                throw new ArgumentOutOfRangeException(nameof(flag));
+
+            return (Flags & (1UL << flag)) != 0;
+        }
+
+        /// <summary>
+        /// Sets (enables) the specified <paramref name="flag"/>.
+        /// </summary>
+        /// <param name="flag">The flag to set.</param>
+        public void SetFlag(int flag)
+        {
+            flag--;
+            if (flag is < 0 or > 63)
+                throw new ArgumentOutOfRangeException(nameof(flag));
+
+            Flags |= 1UL << flag;
+        }
+
+        /// <summary>
+        /// Clears (disables) the specified <paramref name="flag"/>.
+        /// </summary>
+        /// <param name="flag">The flag to clear.</param>
+        public void ClearFlag(int flag)
+        {
+            flag--;
+            if (flag is < 0 or > 63)
+                throw new ArgumentOutOfRangeException(nameof(flag));
+
+            Flags &= ~(1UL << flag);
+        }
+
+        /// <summary>
+        /// Toggles the specified <paramref name="flag"/>.
+        /// </summary>
+        /// <param name="flag">The flag to toggle.</param>
+        public void ToggleFlag(int flag)
+        {
+            flag--;
+            if (flag is < 0 or > 63)
+                throw new ArgumentOutOfRangeException(nameof(flag));
+
+            Flags ^= 1UL << flag;
+        }
+
         /// <summary>
         /// Saves the XML representation of this <see cref="ViewModelElement"/>
         /// to a specified <see cref="StorageFile"/>.
@@ -224,8 +293,7 @@ namespace JLR.Utility.WinUI.ViewModel
         /// <exception cref="InvalidOperationException"></exception>
         public static ViewModelElement FromXml(XmlReader reader)
         {
-            if (reader == null)
-                throw new ArgumentNullException(nameof(reader));
+            ArgumentNullException.ThrowIfNull(reader);
 
             if (reader.IsEmptyElement ||
                (reader.NodeType != XmlNodeType.Attribute &&
@@ -242,18 +310,18 @@ namespace JLR.Utility.WinUI.ViewModel
 
         public static string GetXmlTagForType(Type type)
         {
-            return SerializationInfo.ContainsKey(type)
-                ? SerializationInfo[type].XmlName
+            return SerializationInfo.TryGetValue(type, out ViewModelSerializationInfo value)
+                ? value.XmlName
                 : null;
         }
 
         public static ViewModelElement InstantiateObjectFromXmlTagName(string xmlName)
         {
-            if (!DeserializationInfo.ContainsKey(xmlName))
+            if (!DeserializationInfo.TryGetValue(xmlName, out Type value))
                 throw new ArgumentException(
                     $"{xmlName} does not represent a known ViewModelElement-derived type");
 
-            return SerializationInfo[DeserializationInfo[xmlName]].Constructor();
+            return SerializationInfo[value].Constructor();
         }
         #endregion
 
@@ -482,19 +550,17 @@ namespace JLR.Utility.WinUI.ViewModel
                 }
 
                 // Element marks the beginning of a known collection
-                if (info.MemberCollections.ContainsKey(elementName))
+                if (info.MemberCollections.TryGetValue(elementName, out ViewModelSerializationInfo.ViewModelSerializationCollectionInfo collectionInfoValue))
                 {
-                    collectionInfo = info.MemberCollections[elementName];
+                    collectionInfo = collectionInfoValue;
                     reader.ReadStartElement();
                     continue;
                 }
 
                 // Element is a known property
-                if (info.MemberProperties.ContainsKey(elementName))
+                if (info.MemberProperties.TryGetValue(elementName, out ViewModelSerializationInfo.ViewModelSerializationPropertyInfo propertyInfo))
                 {
                     object value;
-                    var propertyInfo = info.MemberProperties[elementName];
-
                     if (propertyInfo.HijackSerdes)
                     {
                         value = HijackDeserialization(elementName, ref reader);
@@ -669,14 +735,9 @@ namespace JLR.Utility.WinUI.ViewModel
     /// <see cref="ViewModelElement"/> in memory no longer
     /// matches its serialized state.
     /// </remarks>
-    public sealed class SerializedPropertyChangedMessage
+    public sealed class SerializedPropertyChangedMessage(ViewModelElement sender, string propertyName)
     {
-        public ViewModelElement Sender { get; }
-        public string PropertyName { get; }
-        public SerializedPropertyChangedMessage(ViewModelElement sender, string propertyName)
-        {
-            Sender = sender;
-            PropertyName = propertyName;
-        }
+        public ViewModelElement Sender { get; } = sender;
+        public string PropertyName { get; } = propertyName;
     }
 }

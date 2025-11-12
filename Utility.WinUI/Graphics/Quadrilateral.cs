@@ -7,19 +7,36 @@ using Windows.Foundation;
 
 namespace JLR.Utility.WinUI.Graphics;
 
-public readonly struct Polygon
+public readonly struct Quadrilateral
 {
-    public readonly Vector2[] Vertices;
+    public readonly Vector2[] Vertices = new Vector2[4];
 
-    public Polygon(params Vector2[] vertices)
+    public Quadrilateral(Vector2 v0, Vector2 v1, Vector2 v2, Vector2 v4)
     {
-        Vertices = new Vector2[vertices.Length];
+        Vertices[0] = v0;
+        Vertices[1] = v1;
+        Vertices[2] = v2;
+        Vertices[3] = v4;
+    }
 
-        int i = 0;
-        foreach (var vertex in vertices)
-        {
-            Vertices[i++] = vertex;
-        }
+    public bool IsEmpty => Vertices.All(v => float.IsNaN(v.X) || float.IsNaN(v.Y));
+
+    public bool IsZero => Vertices.All(v => v == Vector2.Zero);
+
+    public static Quadrilateral Empty => new Quadrilateral(
+        Vector2.NaN, Vector2.NaN, Vector2.NaN, Vector2.NaN);
+
+    public static Quadrilateral Zero => new Quadrilateral(
+        Vector2.Zero, Vector2.Zero, Vector2.Zero, Vector2.Zero);
+
+    public static Quadrilateral FromRect(Rect rect)
+    {
+        return new Quadrilateral(
+            new Vector2((float)rect.Left, (float)rect.Top),
+            new Vector2((float)rect.Right, (float)rect.Top),
+            new Vector2((float)rect.Right, (float)rect.Bottom),
+            new Vector2((float)rect.Left, (float)rect.Bottom)
+        );
     }
 
     public Rect BoundingBox
@@ -84,5 +101,10 @@ public readonly struct Polygon
 
             return true;
         }
+    }
+
+    public override string ToString()
+    {
+        return $"{Vertices[0]}, {Vertices[1]}, {Vertices[2]}, {Vertices[3]}";
     }
 }

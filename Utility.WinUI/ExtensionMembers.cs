@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using System.Runtime.CompilerServices;
 
 using Microsoft.Graphics.Canvas;
 using Microsoft.Graphics.Canvas.Brushes;
@@ -213,6 +214,16 @@ namespace JLR.Utility.WinUI
         public static Point GetCenterPoint(this Rect rect)
         {
             return new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
+        }
+
+        extension(Rect)
+        {
+            public static Rect Zero => new(0, 0, 0, 0);
+        }
+
+        extension(Rect value)
+        {
+            public bool IsZero => value.X == 0 && value.Y == 0 && value.Width == 0 && value.Height == 0;
         }
         #endregion
 

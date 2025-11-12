@@ -33,7 +33,7 @@ namespace JLR.Utility.WinUI.ViewModel
         #region Constructor
         protected ViewModelNode()
         {
-            Children = new ObservableCollection<ViewModelElement>();
+            Children = [];
             Children.CollectionChanged += Children_CollectionChanged;
         }
         #endregion
@@ -94,6 +94,20 @@ namespace JLR.Utility.WinUI.ViewModel
         }
         #endregion
 
+        #region Protected Methods
+        /// <summary>
+        /// Called when the <c>Children.CollectionChanged</c> event is raised,
+        /// but before a <see cref="CollectionChangedMessage{T}"/> is sent.
+        /// </summary>
+        /// <remarks>
+        /// Override this method to respond to changes in the collection of child elements,
+        /// providing derived classes the opportunity to act on and/or modify the
+        /// <see cref="CollectionChangedMessage{T}"/> before it is sent.
+        /// </remarks>
+        /// <param name="message">The message about to be sent</param>
+        protected virtual void OnChildrenChanged(CollectionChangedMessage<ViewModelElement> message) { }
+        #endregion
+
         #region Event Handlers
         private void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
@@ -121,6 +135,7 @@ namespace JLR.Utility.WinUI.ViewModel
                 }
             }
 
+            OnChildrenChanged(collectionChangedMessage);
             Messenger.Send(collectionChangedMessage, nameof(Children));
             NotifySerializedCollectionChanged(nameof(Children));
         }
