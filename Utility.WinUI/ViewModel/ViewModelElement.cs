@@ -31,6 +31,7 @@ namespace JLR.Utility.WinUI.ViewModel
     {
         #region Fields
         private string _name;
+        private string _id;
         private bool _isSelected;
         private ulong _flags;
         protected internal ViewModelNode _parent;
@@ -40,9 +41,6 @@ namespace JLR.Utility.WinUI.ViewModel
         #endregion
 
         #region Properties
-        /// <summary>
-        /// Gets or sets the name of this element.
-        /// </summary>
         [ViewModelProperty(nameof(Name), XmlNodeType.Attribute)]
         public string Name
         {
@@ -50,23 +48,19 @@ namespace JLR.Utility.WinUI.ViewModel
             set => SetProperty(ref _name, value, true);
         }
 
-        /// <summary>
-        /// Gets or sets a value indicating whether or not this element
-        /// is currently selected somewhere in the user interface.
-        /// </summary>
+        [ViewModelProperty(nameof(Id), XmlNodeType.Element)]
+        public string Id
+        {
+            get => _id;
+            set => SetProperty(ref _id, value);
+        }
+
         public bool IsSelected
         {
             get => _isSelected;
             set => SetProperty(ref _isSelected, value, true);
         }
 
-        /// <summary>
-        /// Gets or sets the value of a 64-bit mask.
-        /// </summary>
-        /// <remarks>
-        /// From the perspective of <see cref="ViewModelElement"/>, the meaning of each flag bit is arbitrary.
-        /// It is up to derived classes to define the purpose of each flag bit.
-        /// </remarks>
         [ViewModelProperty(nameof(Flags), XmlNodeType.Element)]
         public ulong Flags
         {
@@ -74,9 +68,6 @@ namespace JLR.Utility.WinUI.ViewModel
             set => SetProperty(ref _flags, value);
         }
 
-        /// <summary>
-        /// Gets or sets a reference to this element's parent node.
-        /// </summary>
         public ViewModelNode Parent
         {
             get => _parent;
@@ -136,18 +127,14 @@ namespace JLR.Utility.WinUI.ViewModel
         protected ViewModelElement() : base(StrongReferenceMessenger.Default)
         {
             _name = string.Empty;
+            _id = string.Empty;
             _isSelected = false;
-            _flags = 0;
+            _flags = 0UL;
             WriteEmptyCollectionElements = false;
         }
         #endregion
 
         #region Public Methods
-        /// <summary>
-        /// Returns <b><c>true</c></b> if <paramref name="flag"/> is set; otherwise, <b><c>false</c></b>.
-        /// </summary>
-        /// <param name="flag">The specific flag to check.</param>
-        /// <returns></returns>
         public bool CheckFlag(int flag)
         {
             flag--;
@@ -157,10 +144,6 @@ namespace JLR.Utility.WinUI.ViewModel
             return (Flags & (1UL << flag)) != 0;
         }
 
-        /// <summary>
-        /// Sets (enables) the specified <paramref name="flag"/>.
-        /// </summary>
-        /// <param name="flag">The flag to set.</param>
         public void SetFlag(int flag)
         {
             flag--;
@@ -170,10 +153,6 @@ namespace JLR.Utility.WinUI.ViewModel
             Flags |= 1UL << flag;
         }
 
-        /// <summary>
-        /// Clears (disables) the specified <paramref name="flag"/>.
-        /// </summary>
-        /// <param name="flag">The flag to clear.</param>
         public void ClearFlag(int flag)
         {
             flag--;
@@ -183,10 +162,6 @@ namespace JLR.Utility.WinUI.ViewModel
             Flags &= ~(1UL << flag);
         }
 
-        /// <summary>
-        /// Toggles the specified <paramref name="flag"/>.
-        /// </summary>
-        /// <param name="flag">The flag to toggle.</param>
         public void ToggleFlag(int flag)
         {
             flag--;
