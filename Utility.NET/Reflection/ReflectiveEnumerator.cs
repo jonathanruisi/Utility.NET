@@ -1,4 +1,5 @@
-﻿using System.Reflection;
+﻿using System.Diagnostics.CodeAnalysis;
+using System.Reflection;
 
 namespace JLR.Utility.NET.Reflection
 {
@@ -14,7 +15,6 @@ namespace JLR.Utility.NET.Reflection
         /// <returns>A list of <see cref="Type"/>s derived from <typeparamref name="T"/>.</returns>
         public static IEnumerable<Type> GetSubclassTypes<T>() where T : class
         {
-
             var assemblies = AppDomain.CurrentDomain.GetAssemblies();
 
             if (assemblies == null)

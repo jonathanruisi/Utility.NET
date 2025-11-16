@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -20,6 +21,7 @@ namespace JLR.Utility.WinUI.ViewModel
     /// and is therefore capable of fully automatic
     /// XML serialization and deserialization.
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.PublicConstructors)]
     public abstract class ViewModelNode : ViewModelElement
     {
         #region Properties
@@ -34,7 +36,7 @@ namespace JLR.Utility.WinUI.ViewModel
         protected ViewModelNode()
         {
             Children = [];
-            Children.CollectionChanged += Children_CollectionChanged;
+            Children.CollectionChanged += ChildrenChanged;
         }
         #endregion
 
@@ -94,22 +96,19 @@ namespace JLR.Utility.WinUI.ViewModel
         }
         #endregion
 
-        #region Protected Methods
+        #region Event Handlers
         /// <summary>
-        /// Called when the <c>Children.CollectionChanged</c> event is raised,
-        /// but before a <see cref="CollectionChangedMessage{T}"/> is sent.
+        /// Handles changes to the Children collection by updating parent references and notifying listeners of the
+        /// change.
         /// </summary>
         /// <remarks>
-        /// Override this method to respond to changes in the collection of child elements,
-        /// providing derived classes the opportunity to act on and/or modify the
-        /// <see cref="CollectionChangedMessage{T}"/> before it is sent.
+        /// This method updates the parent references of affected child elements and sends a
+        /// notification message to registered listeners. Override this method to customize how collection changes are
+        /// handled in derived classes.
         /// </remarks>
-        /// <param name="message">The message about to be sent</param>
-        protected virtual void OnChildrenChanged(CollectionChangedMessage<ViewModelElement> message) { }
-        #endregion
-
-        #region Event Handlers
-        private void Children_CollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        /// <param name="sender">The source of the collection changed event, typically the Children collection.</param>
+        /// <param name="e">The event data containing information about the change to the collection.</param>
+        protected virtual void ChildrenChanged(object sender, NotifyCollectionChangedEventArgs e)
         {
             var collectionChangedMessage = new CollectionChangedMessage<ViewModelElement>(this, nameof(Children), e.Action)
             {
@@ -135,7 +134,6 @@ namespace JLR.Utility.WinUI.ViewModel
                 }
             }
 
-            OnChildrenChanged(collectionChangedMessage);
             Messenger.Send(collectionChangedMessage, nameof(Children));
             NotifySerializedCollectionChanged(nameof(Children));
         }

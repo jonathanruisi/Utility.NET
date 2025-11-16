@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
@@ -27,6 +28,12 @@ namespace JLR.Utility.WinUI.ViewModel
     /// fully automatic XML serialization and deserialization
     /// of itself and all derived classes.
     /// </summary>
+    [DynamicallyAccessedMembers(DynamicallyAccessedMemberTypes.AllConstructors | 
+                                DynamicallyAccessedMemberTypes.AllEvents |
+                                DynamicallyAccessedMemberTypes.AllFields |
+                                DynamicallyAccessedMemberTypes.AllMethods |
+                                DynamicallyAccessedMemberTypes.AllNestedTypes |
+                                DynamicallyAccessedMemberTypes.AllProperties)]
     public abstract class ViewModelElement : ObservableRecipient, IViewModelElement, IViewModelFlags, IXmlSerializable
     {
         #region Fields
