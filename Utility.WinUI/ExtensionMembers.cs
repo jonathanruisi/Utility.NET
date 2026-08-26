@@ -210,20 +210,63 @@ namespace JLR.Utility.WinUI
         }
         #endregion
 
-        #region Windows.Foundation.Rect
-        public static Point GetCenterPoint(this Rect rect)
+        #region Windows.Foundation.Point
+        extension(Point)
         {
-            return new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
+            public static Point Empty => new(double.NaN, double.NaN);
         }
+        #endregion
 
+        #region Windows.Foundation.Rect
         extension(Rect)
         {
             public static Rect Zero => new(0, 0, 0, 0);
         }
 
-        extension(Rect value)
+        extension(Rect rect)
         {
-            public bool IsZero => value.X == 0 && value.Y == 0 && value.Width == 0 && value.Height == 0;
+            public bool IsZero => rect.X == 0 && rect.Y == 0 && rect.Width == 0 && rect.Height == 0;
+
+            public Point GetCenterPoint()
+            {
+                return new Point(rect.X + (rect.Width / 2), rect.Y + (rect.Height / 2));
+            }
+
+            public RectLocations IsPointOnOrNear(Point point, double maxDistance)
+            {
+                if (point.X >= rect.X - maxDistance && point.X <= rect.X + maxDistance)
+                {
+                    if (point.Y >= rect.Y - maxDistance && point.Y <= rect.Y + maxDistance)
+                        return RectLocations.TopLeft;
+                    if (point.Y >= rect.Bottom - maxDistance && point.Y <= rect.Bottom + maxDistance)
+                        return RectLocations.BottomLeft;
+                    if (point.Y > rect.Y + maxDistance && point.Y < rect.Bottom - maxDistance)
+                        return RectLocations.Left;
+                }
+
+                if (point.X >= rect.Right - maxDistance && point.X <= rect.Right + maxDistance)
+                {
+                    if (point.Y >= rect.Y - maxDistance && point.Y <= rect.Y + maxDistance)
+                        return RectLocations.TopRight;
+                    if (point.Y >= rect.Bottom - maxDistance && point.Y <= rect.Bottom + maxDistance)
+                        return RectLocations.BottomRight;
+                    if (point.Y > rect.Y + maxDistance && point.Y < rect.Bottom - maxDistance)
+                        return RectLocations.Right;
+                }
+
+                if (point.X > rect.X + maxDistance && point.X < rect.Right - maxDistance)
+                {
+                    if (point.Y >= rect.Y - maxDistance && point.Y <= rect.Y + maxDistance)
+                        return RectLocations.Top;
+                    if (point.Y >= rect.Bottom - maxDistance && point.Y <= rect.Bottom + maxDistance)
+                        return RectLocations.Bottom;
+                }
+
+                if (point.X > rect.X && point.X < rect.Right && point.Y > rect.Y && point.Y < rect.Bottom)
+                    return RectLocations.Inside;
+
+                return RectLocations.Outside;
+            }
         }
         #endregion
 
